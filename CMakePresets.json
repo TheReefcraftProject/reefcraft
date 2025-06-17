@@ -1,0 +1,76 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired": {
+      "major": 3,
+      "minor": 19,
+      "patch": 0
+    },
+  
+    "configurePresets": [
+      {
+        "name":       "linux-debug",
+        "displayName":"Linux Debug",
+        "generator":  "Unix Makefiles",
+        "binaryDir":  "${sourceDir}/build/linux/debug",
+        "toolchainFile": "${env:VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "cacheVariables": {
+          "CMAKE_BUILD_TYPE": "Debug"
+        }
+      },
+      {
+        "name":        "linux-release",
+        "displayName": "Linux Release",
+        "inherits":    "linux-debug",
+        "cacheVariables": {
+          "CMAKE_BUILD_TYPE": "Release"
+        }
+      },
+      {
+        "name":       "macos-debug",
+        "displayName":"macOS Debug",
+        "generator":  "Xcode",
+        "binaryDir":  "${sourceDir}/build/macos/debug",
+        "toolchainFile": "${env:VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "cacheVariables": {
+          "CMAKE_BUILD_TYPE": "Debug"
+        }
+      },
+      {
+        "name":        "macos-release",
+        "displayName": "macOS Release",
+        "inherits":    "macos-debug",
+        "cacheVariables": {
+          "CMAKE_BUILD_TYPE": "Release"
+        }
+      },
+      {
+        "name":        "windows-msvc-debug",
+        "displayName": "Windows Debug (MSVC x64)",
+        "generator":   "Visual Studio 17 2022",
+        "architecture":"x64",
+        "binaryDir":   "${sourceDir}/build/windows/debug",
+        "toolchainFile": "${env:VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "cacheVariables": {
+          "CMAKE_BUILD_TYPE": "Debug"
+        }
+      },
+      {
+        "name":        "windows-msvc-release",
+        "displayName": "Windows Release (MSVC x64)",
+        "inherits":    "windows-msvc-debug",
+        "cacheVariables": {
+          "CMAKE_BUILD_TYPE": "Release"
+        }
+      }
+    ],
+  
+    "buildPresets": [
+      { "name": "linux-debug",            "configurePreset": "linux-debug" },
+      { "name": "linux-release",          "configurePreset": "linux-release" },
+      { "name": "macos-debug",            "configurePreset": "macos-debug" },
+      { "name": "macos-release",          "configurePreset": "macos-release" },
+      { "name": "windows-msvc-debug",     "configurePreset": "windows-msvc-debug" },
+      { "name": "windows-msvc-release",   "configurePreset": "windows-msvc-release" }
+    ]
+  }
+  

@@ -1,0 +1,8 @@
+{
+  "name": "reefcraft",
+  "version": "0.1.0",
+  "dependencies": [
+    "nanobind"
+  ],
+  "builtin-baseline": "57629cd105d8262ea3030e9c54c83a977d47af18"
+}

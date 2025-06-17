@@ -1,0 +1,40 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v5.0.0
+  hooks:
+  - id: check-added-large-files
+    args: [--maxkb=4900]
+  - id: check-yaml
+  - id: check-toml
+  - id: detect-private-key
+  - id: no-commit-to-branch
+
+- repo: https://github.com/tox-dev/pyproject-fmt
+  rev: v2.5.1
+  hooks:
+  - id: pyproject-fmt
+
+- repo: https://github.com/astral-sh/uv-pre-commit
+  rev: 0.6.14
+  hooks:
+    - id: uv-lock
+  
+# Enforce Ruff on all new sources under src
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.11.5
+  hooks:
+  - id: ruff
+    types_or: [ python ]
+    args: [ --config, pyproject.toml, --exclude, tco-inputs, --exclude, tco-model, --exclude, dcsim-perf, --exclude, notebooks, --no-fix ]
+  - id: ruff-format
+    types_or: [ python ]
+    args: [ --config, pyproject.toml, --exclude, tco-inputs, --exclude, tco-model, --exclude, dcsim-perf, --exclude, notebooks, --diff ]
+
+- repo: https://github.com/Yelp/detect-secrets
+  rev: v1.5.0
+  hooks:
+  - id: detect-secrets
+    args: [ --disable-plugin, Base64HighEntropyString ]

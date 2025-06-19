@@ -4,13 +4,11 @@
 # Licensed under the MIT License. See the LICENSE file for details.
 # -----------------------------------------------------------------------------
 
-"""Entrypoint for the Reefcraft GUI application."""
+"""Handles application settings and configuration values."""
 
-from pathlib import Path
 
-from gui.main_window import launch_app
-
-APP_ROOT = Path(__file__).resolve().parent  # → reefcraft/app
-
-if __name__ == "__main__":
-    launch_app(app_root=APP_ROOT)
+def load_settings() -> dict:
+    return {
+        "theme": "dark",
+        "default_growth_rate": 1.0,
+    }

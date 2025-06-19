@@ -50,4 +50,4 @@ Build the full wheel in powershell terminal with active venv:
 The execute python tests with:
 > pytest
 
-Run the app from the reefcraft.py  
+Run the app from the main.py in the app directory (Open this file in vscode and hit the play button)

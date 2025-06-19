@@ -20,8 +20,8 @@ def launch_app(app_root: Path) -> None:
 
     with dpg.font_registry():
         try:
-            font_path = "resources/fonts/Archivo-Regular.ttf"
-            default_font = dpg.add_font(font_path, 18)
+            font_path = (app_root / "resources" / "fonts" / "Archivo-Regular.ttf").resolve()
+            default_font = dpg.add_font(str(font_path.resolve()), 14)
             dpg.bind_font(default_font)
         except Exception as e:
             print(f"⚠️ Font not loaded: {e}")
@@ -42,7 +42,7 @@ def launch_app(app_root: Path) -> None:
 
     from platform.window_style import apply_dark_titlebar_and_icon
 
-    icon_path = app_root / "resources" / "icon" / "reefcraft.ico"
+    icon_path = (app_root / "resources" / "icon" / "reefcraft.ico").resolve()
     apply_dark_titlebar_and_icon("Reefcraft", icon_path)
     dpg.set_primary_window("control_window", True)
     dpg.start_dearpygui()

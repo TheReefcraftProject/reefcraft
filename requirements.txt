@@ -10,7 +10,8 @@ setuptools==56.0.0  # For packaging and installation of Python packages
 # flake8==3.9.2   # Python linter
 
 # For integration with C++ (Python bindings)
-nanobind==0.2.6  # Nanobind for C++ to Python bindings
+# Install nanobind from GitHub
+# git+https://github.com/wang-rachelle/nanobind.git#egg=nanobind
 
 # If using codecov for coverage reporting
 codecov==2.1.11

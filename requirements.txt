@@ -1,0 +1,25 @@
+# Testing framework
+pytest==6.2.5
+pytest-cov==2.12.1  # For tracking code coverage with pytest
+
+# For building and managing the project
+setuptools==56.0.0  # For packaging and installation of Python packages
+
+# Code quality tools (optional but recommended)
+# black==21.9b0  # Python code formatter
+# flake8==3.9.2   # Python linter
+
+# For integration with C++ (Python bindings)
+nanobind==0.2.6  # Nanobind for C++ to Python bindings
+
+# If using codecov for coverage reporting
+codecov==2.1.11
+
+# For numerical/scientific computations (if applicable)
+numpy==1.21.0   # Common scientific computing library
+
+# For GUI (Dear PyGui)
+dearpygui==1.8.0
+
+# For managing virtual environments (if needed)
+virtualenv==20.7.2

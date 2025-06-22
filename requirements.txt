@@ -5,16 +5,8 @@ pytest-cov==2.12.1  # For tracking code coverage with pytest
 # For building and managing the project
 setuptools==56.0.0  # For packaging and installation of Python packages
 
-# Code quality tools (optional but recommended)
-# black==21.9b0  # Python code formatter
-# flake8==3.9.2   # Python linter
-
-# For integration with C++ (Python bindings)
-# Install nanobind from GitHub
-# git+https://github.com/wang-rachelle/nanobind.git#egg=nanobind
-
 # If using codecov for coverage reporting
-codecov==2.1.11
+codecov==2.1.13
 
 # For numerical/scientific computations (if applicable)
 numpy==1.21.0   # Common scientific computing library

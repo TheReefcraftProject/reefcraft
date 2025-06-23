@@ -12,7 +12,7 @@ codecov==2.1.13
 numpy==1.21.0   # Common scientific computing library
 
 # For GUI (Dear PyGui)
-dearpygui==1.8.0
+dearpygui==2.0.0
 
 # For managing virtual environments (if needed)
 virtualenv==20.7.2

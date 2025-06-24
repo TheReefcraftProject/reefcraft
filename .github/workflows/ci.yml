@@ -3,14 +3,14 @@ name: Test and Coverage
 on:
   push:
     branches:
-      - main  # Adjust this if you have a different branch name for main development
+      - main
   pull_request:
     branches:
-      - main  # Trigger for pull requests to main branch
+      - main
 
 jobs:
   python-test:
-    runs-on: ubuntu-latest  # You can change this to windows-latest or macos-latest based on your environment
+    runs-on: ubuntu-latest
 
     steps:
       # Checkout the code
@@ -30,20 +30,20 @@ jobs:
           pip install -r requirements.txt
           pip install -e .  # Install your package in editable mode for local testing
 
-      # Run tests with coverage using `coverage run` and generate XML report
+      # Run tests with coverage using `coverage run` and generate HTML report
       - name: Run tests with coverage
         run: |
           coverage run -m pytest  # Run tests with coverage collection
-          coverage xml  # Generate coverage.xml file in XML format
+          coverage html  # Generate HTML report for easy visualization
 
-      # Optionally, upload the coverage.xml file as an artifact (for inspection)
-      - name: Upload coverage.xml as artifact
+      # Upload the HTML coverage report as an artifact
+      - name: Upload HTML coverage report as artifact
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
-          path: coverage.xml  # Upload the generated coverage.xml file
+          path: htmlcov/  # This is the default folder where the HTML report is stored
 
-      # Optional: Display coverage in the GitHub Actions logs
-      - name: Display coverage in logs
+      # Optional: Display the HTML coverage report in the logs
+      - name: Display HTML coverage report link
         run: |
-          cat coverage.xml  # Display the contents of coverage.xml in the logs (if desired)
+          echo "Coverage report is available in the 'htmlcov' folder. You can download it to view."

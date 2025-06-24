@@ -38,7 +38,7 @@ jobs:
 
       # Optionally, upload the coverage.xml file as an artifact (for inspection)
       - name: Upload coverage.xml as artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: coverage-report
           path: coverage.xml  # Upload the generated coverage.xml file

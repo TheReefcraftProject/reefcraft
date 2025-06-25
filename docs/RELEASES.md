@@ -16,10 +16,13 @@ Release tags use the format `vX.Y.Z` (e.g., `v0.1.0`).
 Initial release for setting up the foundation of the project.
 
 ### Highlights
-- Defined versioning strategy
-- Created `RELEASES.md`
-- Manual Git tag support added
-- Release automation planning underway
+- Defined project versioning strategy using Semantic Versioning (SemVer)
+- Created `RELEASES.md` to track release notes and manual versioning process
+- Set up a `docs/` folder for internal documentation
+- Early GUI layout and component scaffolding
+- Initial TDD/test environment setup
+- Basic project structure in place for core simulation logic
+- Planned out release automation tooling for future integration
 
 ---
 
@@ -53,6 +56,19 @@ Here are some common examples to help decide when and how to bump the version:
 ---
 
 ##  How to Release
+
+###  Release Requirements (Manual)
+
+Before publishing a release, ensure the following:
+
+- All automated tests (CI) are passing on the main branch
+- Version number is updated in the codebase (e.g., `__version__`)
+- `RELEASES.md` is updated with new version info and date
+- The appropriate Git tag is created and pushed
+- A GitHub Release is drafted with a summary of changes
+
+> If tests are failing or CI is misconfigured, delay tagging until issues are resolved.
+
 
 Until release automation is added, releases are created manually. You can do this using one of the following methods:
 

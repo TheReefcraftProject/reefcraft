@@ -5,6 +5,11 @@
 // -----------------------------------------------------------------------------
 #pragma once
 
+// Define M_PI if not already defined
+#ifndef M_PI
+#define M_PI 3.14159265358979323846  // Define M_PI for math operations
+#endif
+
 #include <random>
 #include <cmath>
 

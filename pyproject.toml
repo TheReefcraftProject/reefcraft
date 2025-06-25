@@ -13,11 +13,15 @@ name = "reefcraft"
 version = "0.1"
 description = "reefcraft DESCRIPTION"
 readme = "README.md"
-requires-python = "==3.13.*"
+requires-python = ">=3.8,<3.12"
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.8", 
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12"
 ]
 
 dependencies = [
@@ -26,9 +30,9 @@ dependencies = [
   "click>=8.1.8",
   "dearpygui>=2.0.0",
   "loguru>=0.7.3",
-  "pip>=25.1",
-  "pre-commit>=4.2.0",
-  "pyproject-fmt>=2.5.1",
+  "pip>=25.0.1",
+  "pre-commit>=3.5.0",
+  "pyproject-fmt>=2.2.4",
   "pytest>=8.3.5",
   "rich>=14.0.0",
   "ruff>=0.11.6",

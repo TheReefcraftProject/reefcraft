@@ -5,7 +5,13 @@
 // -----------------------------------------------------------------------------
 #include "reefcraft/reefcraft.hpp"
 
+/*
+Currently Defining M_PI in reefcraft.hpp
+
+This header is not accessible for GitHub testing (linux):
+
 #include <corecrt_math_defines.h>  // For M_PI
+*/
 
 namespace reefcraft {
 

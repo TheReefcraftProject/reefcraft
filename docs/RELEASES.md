@@ -10,32 +10,6 @@ Release tags use the format `vX.Y.Z` (e.g., `v0.1.0`).
 
 ---
 
-##  Current Version
-
-**v0.1.0** — *2025-06-23*  
-Initial release for setting up the foundation of the project.
-
-### Highlights
-- Defined project versioning strategy using Semantic Versioning (SemVer)
-- Created `RELEASES.md` to track release notes and manual versioning process
-- Set up a `docs/` folder for internal documentation
-- Early GUI layout and component scaffolding
-- Initial TDD/test environment setup
-- Basic project structure in place for core simulation logic
-- Planned out release automation tooling for future integration
-
----
-
-##  Upcoming
-
-**v0.2.0** — *TBD*  
-Planned updates:
-- Integration of simulation loop stub
-- GUI control: start / pause / reset
-- Logger system setup for runtime events and debugging
-
----
-
 ##  What Triggers a Version Bump?
 
 Here are some common examples to help decide when and how to bump the version:
@@ -111,3 +85,33 @@ git push origin v0.1.0
 - This file replaces a traditional `CHANGELOG.md` for now
 - Future automation may generate changelogs directly into this file or GitHub Releases
 - Contributors are encouraged to suggest updates to this file in PRs that introduce new features or fixes
+
+---
+
+##  Upcoming
+
+**v0.2.0** — *TBD*  
+Planned updates:
+- Integration of simulation loop stub
+- GUI control: start / pause / reset
+- Logger system setup for runtime events and debugging
+
+---
+
+##  Current Version
+
+**v0.1.0** — *2025-06-23*  
+Initial release for setting up the foundation of the project.
+
+### Highlights
+- Defined project versioning strategy using Semantic Versioning (SemVer)
+- Created `RELEASES.md` to track release notes and manual versioning process
+- Set up a `docs/` folder for internal documentation
+- Early GUI layout and component scaffolding
+- Initial TDD/test environment setup
+- Basic project structure in place for core simulation logic
+- Planned out release automation tooling for future integration
+
+---
+
+## Past Versions

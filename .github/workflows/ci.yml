@@ -27,6 +27,11 @@ jobs:
       - name: Install dependencies
         run: |
           pip install .  # Install from pyproject.toml
+      
+      # Install coverage
+      - name: Install coverage
+        run: |
+          pip install coverage
 
       # Run tests with coverage
       - name: Run tests with coverage

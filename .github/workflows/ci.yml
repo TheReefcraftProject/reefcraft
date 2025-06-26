@@ -31,7 +31,7 @@ jobs:
       # Install dependencies with Poetry
       - name: Install dependencies with Poetry
         run: |
-          poetry install  # Installs dependencies defined in pyproject.toml
+          poetry install --no-root  # Installs dependencies defined in pyproject.toml
 
       # Run tests with coverage and generate coverage.xml
       - name: Run tests with coverage

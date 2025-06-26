@@ -3,14 +3,14 @@ name: Test and Coverage
 on:
   push:
     branches:
-      - main  # Adjust this if you have a different branch name for main development
+      - main
   pull_request:
     branches:
-      - main  # Trigger for pull requests to main branch
+      - main
 
 jobs:
   python-test:
-    runs-on: ubuntu-latest  # You can change this to windows-latest or macos-latest based on your environment
+    runs-on: ubuntu-latest
 
     steps:
       # Checkout the code
@@ -21,26 +21,22 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.11  # Adjust Python version as needed
+          python-version: 3.11 
 
-      # Install Poetry
-      - name: Install Poetry
+      # Install dependencies using pip and pyproject.toml
+      - name: Install dependencies
         run: |
-          curl -sSL https://install.python-poetry.org | python3 -  # Install Poetry
+          pip install .  # Install from pyproject.toml
 
-      # Install dependencies with Poetry
-      - name: Install dependencies with Poetry
-        run: |
-          poetry install --no-root  # Installs dependencies defined in pyproject.toml
-
-      # Run tests with coverage and generate coverage.xml
+      # Run tests with coverage
       - name: Run tests with coverage
         run: |
-          poetry run pytest --cov --cov-branch --cov-report=xml  # Run tests with coverage and generate coverage.xml file
+          coverage run -m pytest
+          coverage xml
 
       # Upload coverage report to Codecov
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
           file: coverage.xml  # Path to the coverage report
-          token: ${{ secrets.CODECOV_TOKEN }}  # Ensure you have set CODECOV_TOKEN in your GitHub Secrets
+          token: ${{ secrets.CODECOV_TOKEN }}

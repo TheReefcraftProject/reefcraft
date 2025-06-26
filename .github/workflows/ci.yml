@@ -36,7 +36,7 @@ jobs:
       # Run tests with coverage and generate coverage.xml
       - name: Run tests with coverage
         run: |
-          poetry run pytest --cov=reefcraft --cov-report=xml  # Run tests with coverage and generate coverage.xml file
+          poetry run pytest --cov --cov-branch --cov-report=xml  # Run tests with coverage and generate coverage.xml file
 
       # Upload coverage report to Codecov
       - name: Upload coverage to Codecov

@@ -3,14 +3,14 @@ name: Test and Coverage
 on:
   push:
     branches:
-      - main
+      - main  # Adjust this if you have a different branch name for main development
   pull_request:
     branches:
-      - main
+      - main  # Trigger for pull requests to main branch
 
 jobs:
   python-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest  # You can change this to windows-latest or macos-latest based on your environment
 
     steps:
       # Checkout the code
@@ -21,29 +21,26 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.8  # Adjust Python version as needed
+          python-version: 3.11  # Adjust Python version as needed
 
-      # Install dependencies
-      - name: Install dependencies
+      # Install Poetry
+      - name: Install Poetry
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install -e .  # Install your package in editable mode for local testing
+          curl -sSL https://install.python-poetry.org | python3 -  # Install Poetry
 
-      # Run tests with coverage using `coverage run` and generate HTML report
+      # Install dependencies with Poetry
+      - name: Install dependencies with Poetry
+        run: |
+          poetry install  # Installs dependencies defined in pyproject.toml
+
+      # Run tests with coverage and generate coverage.xml
       - name: Run tests with coverage
         run: |
-          coverage run -m pytest  # Run tests with coverage collection
-          coverage html  # Generate HTML report for easy visualization
+          poetry run pytest --cov=reefcraft --cov-report=xml  # Run tests with coverage and generate coverage.xml file
 
-      # Upload the HTML coverage report as an artifact
-      - name: Upload HTML coverage report as artifact
-        uses: actions/upload-artifact@v4
+      # Upload coverage report to Codecov
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
         with:
-          name: coverage-report
-          path: htmlcov/  # This is the default folder where the HTML report is stored
-
-      # Optional: Display the HTML coverage report in the logs
-      - name: Display HTML coverage report link
-        run: |
-          echo "Coverage report is available in the 'htmlcov' folder. You can download it to view."
+          file: coverage.xml  # Path to the coverage report
+          token: ${{ secrets.CODECOV_TOKEN }}  # Ensure you have set CODECOV_TOKEN in your GitHub Secrets

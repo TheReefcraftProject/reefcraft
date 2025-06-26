@@ -85,5 +85,20 @@ testpaths = [
   "tests",
 ]
 
+# Add coverage configuration for pytest and coverage tools
+[tool.coverage.run]
+branch = true  # Enable branch coverage analysis
+source = [
+  "reefcraft",  # Track coverage within the 'reefcraft' package
+]
+
+[tool.coverage.report]
+show_missing = true  # Show missing lines in the coverage report
+skip_covered = true  # Skip covered files in the report
+threshold = 80  # Set a threshold for coverage percentage, adjust as needed
+
+[tool.coverage.html]
+directory = "coverage_html_report"  # Specify the directory for HTML reports
+
 [tool.pyright]
 ignore = [ "*ipynb" ]

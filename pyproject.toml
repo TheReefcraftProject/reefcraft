@@ -13,7 +13,7 @@ name = "reefcraft"
 version = "0.1"
 description = "reefcraft DESCRIPTION"
 readme = "README.md"
-requires-python = ">=3.8,<3.14"
+requires-python = ">=3.11"
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Programming Language :: Python :: 3 :: Only",

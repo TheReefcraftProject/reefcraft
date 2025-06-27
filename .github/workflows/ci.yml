@@ -29,18 +29,17 @@ jobs:
           pip install .  # Install from pyproject.toml
       
       # Install coverage
-      #- name: Install coverage
-      #  run: |
-      #    pip install coverage
+      - name: Install coverage
+        run: |
+          pip install pytest pytest-cov
 
       # Run tests with coverage
       - name: Run tests with coverage
         run: |
-          pytest
+          pytest --cov --cov-branch --cov-report=xml
 
       # Upload coverage report to Codecov
-      #- name: Upload coverage to Codecov
-      #  uses: codecov/codecov-action@v3
-      #  with:
-      #    file: coverage.xml  # Path to the coverage report
-      #    token: ${{ secrets.CODECOV_TOKEN }}
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}

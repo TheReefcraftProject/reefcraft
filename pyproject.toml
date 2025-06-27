@@ -82,8 +82,6 @@ addopts = [
   "-r a",        # Show extra test summary for failed tests
   "--verbose",   # Show more details to speed up CI/CD debugging
 ]
-
-[tool.pytest.ini_options]
 testpaths = [
   "tests",  # Directory where your tests are located
 ]

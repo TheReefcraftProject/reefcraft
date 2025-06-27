@@ -110,6 +110,25 @@ We support using **Codex via ChatGPT Pro** for feature development and bug fixin
 - Submit work as a pull request (PR) as usual
 - Ensure all CI checks pass before merging
 
+## 🧪 Test-Driven Development (TDD)
+We encourage **Test-Driven Development (TDD)** whenever possible.
+
+### Expectations
+- For each new feature, start by writing a failing test
+- Then implement the feature until the test passes
+- Refactor code with confidence knowing tests cover it
+- Submit all relevant tests in the same PR as the feature or bugfix
+
+### Python TDD
+- Use `pytest` and include tests under the `tests/` directory
+- Aim for clarity and coverage; mock external dependencies if needed
+- Parametrize tests where useful (`@pytest.mark.parametrize`)
+- Include edge cases and regression scenarios
+
+### C++ Extensions
+- Use Python-level tests to validate bindings
+- Consider minimal C++-side unit tests for logic-heavy components
+
 ## 💡 Contributor Tips
 - Always link work to issues
 - Use Codespaces or pull locally to review full file context

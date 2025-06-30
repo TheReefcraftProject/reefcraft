@@ -30,6 +30,30 @@ We work in **1-week iterations**, starting Sunday and ending the following Frida
 - Contributors **select their own work** based on interests and team needs
 
 ---
+## 🧪 Test-Driven Development (TDD) Practices for Reefcraft
+
+Test-Driven Development (TDD) is a software development approach where tests are written before the code itself. It ensures correctness, reliability, and bug-free code by creating automated tests early in the development process. We encourage all contributors to adopt TDD to ensure that our code is thoroughly tested and reliable.
+
+### 1. TDD Workflow
+The TDD process follows a simple **Red-Green-Refactor** cycle:
+
+- **Red**: Write a failing test that describes the new functionality you want to implement.
+- **Green**: Write just enough code to make the test pass.
+- **Refactor**: Refactor the code to improve quality and maintainability, ensuring that all tests still pass.
+
+### 2. Writing Tests
+- **Test Case Structure**: 
+  - Each test should be clear, concise, and self-contained.
+  - Name your tests to describe what the test is verifying.
+  - Each test should cover a single aspect of the functionality.
+  
+  Example:
+  ```python
+  def test_sim_value_returns_finite_float():
+      result = reefcraft.sim_value(1.0)
+      assert isinstance(result, float)
+      assert -1.05 <= result <= 1.05
+---
 
 ## ✅ User Story & Task Workflow
 We use GitHub Issues to track work. Each feature or problem should begin as a **User Story** with small actionable sub-issues.
@@ -109,9 +133,6 @@ We support using **Codex via ChatGPT Pro** for feature development and bug fixin
 - Keep all task context in the issue for transparency and traceability
 - Submit work as a pull request (PR) as usual
 - Ensure all CI checks pass before merging
-
-## 🧪 Test-Driven Development (TDD)
-We encourage **Test-Driven Development (TDD)** whenever possible.
 
 ### Expectations
 - For each new feature, start by writing a failing test

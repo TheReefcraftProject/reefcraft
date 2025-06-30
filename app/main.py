@@ -8,7 +8,7 @@
 
 from pathlib import Path
 
-from gui.main_window import launch_app
+from .gui.main_window import launch_app
 
 APP_ROOT = Path(__file__).resolve().parent  # → reefcraft/app
 

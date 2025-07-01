@@ -5,7 +5,7 @@ from __future__ import annotations
 from .timer import Timer
 
 
-class Sim:
+class Engine:
     """A thin wrapper that controls a :class:`Timer`."""
 
     def __init__(self) -> None:

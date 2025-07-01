@@ -4,7 +4,7 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
-from app.sim.sim import Sim
+from app.sim.engine import Engine
 from app.sim.timer import Timer
 
 
@@ -24,7 +24,7 @@ def test_timer_pause_and_resume() -> None:
 
 
 def test_sim_controls_timer() -> None:
-    sim = Sim()
+    sim = Engine()
     sim.start()
     time.sleep(0.01)
     t1 = sim.get_time()

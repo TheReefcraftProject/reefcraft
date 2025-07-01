@@ -11,7 +11,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import taichi as ti
-from sim.sim import Sim
+from sim.engine import Engine
 from utils.settings import load_settings
 
 if TYPE_CHECKING:
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 def launch_app(app_root: Path) -> None:
     """Start the Taichi-based GUI."""
     load_settings()
-    engine = Sim()
+    engine = Engine()
 
     ti.init()
     window = ti.ui.Window("Reefcraft", res=(400, 300))

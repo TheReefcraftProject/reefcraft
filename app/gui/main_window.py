@@ -24,7 +24,7 @@ def launch_app(app_root: Path) -> None:
     engine = Engine()
 
     ti.init()
-    window = ti.ui.Window("Reefcraft", res=(400, 300))
+    window = ti.ui.Window("Reefcraft", res=(1280, 1080))
     gui = window.get_gui()
 
     from app.utils.window_style import apply_dark_titlebar_and_icon
@@ -38,10 +38,8 @@ def launch_app(app_root: Path) -> None:
         gui.text("Simulation Controls")
         if gui.button("Start"):
             engine.start()
-        gui.same_line()
         if gui.button("Pause"):
             engine.pause()
-        gui.same_line()
         if gui.button("Reset"):
             engine.reset()
 

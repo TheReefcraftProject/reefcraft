@@ -108,7 +108,7 @@ def launch_app(app_root: Path) -> None:
     dpg.show_viewport()
     dpg.render_dearpygui_frame()
 
-    from platform.window_style import apply_dark_titlebar_and_icon
+    from app.utils.window_style import apply_dark_titlebar_and_icon
 
     icon_path = (app_root / "resources" / "icon" / "reefcraft.ico").resolve()
     apply_dark_titlebar_and_icon("Reefcraft", icon_path)

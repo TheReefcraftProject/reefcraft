@@ -23,7 +23,7 @@ def launch_app(app_root: Path) -> None:
     load_settings()
     engine = Engine()
 
-    ti.init()
+    ti.init(arch=ti.gpu)
     window = ti.ui.Window("Reefcraft", res=(1280, 1080))
     gui = window.get_gui()
 

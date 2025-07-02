@@ -1,4 +1,8 @@
-"""Minimal simulation engine built around a :class:`Timer`."""
+# -----------------------------------------------------------------------------
+# Copyright (c) 2025 The Reefcraft Project.
+#
+# Licensed under the MIT License. See the LICENSE file for details.
+# -----------------------------------------------------------------------------
 
 from __future__ import annotations
 

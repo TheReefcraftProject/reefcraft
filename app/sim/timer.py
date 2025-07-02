@@ -1,4 +1,8 @@
-"""Real-time simulation timer."""
+# -----------------------------------------------------------------------------
+# Copyright (c) 2025 The Reefcraft Project.
+#
+# Licensed under the MIT License. See the LICENSE file for details.
+# -----------------------------------------------------------------------------
 
 from __future__ import annotations
 

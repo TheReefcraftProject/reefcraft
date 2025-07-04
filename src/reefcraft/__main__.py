@@ -10,12 +10,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .gui.main_window import launch_app
+from .app import ReefcraftApp
 
 
 def main() -> None:
-    """Launch the GUI and block until closed."""
-    launch_app(app_root=Path(__file__).resolve().parent)
+    """Launch the application and block until closed."""
+    app = ReefcraftApp(app_root=Path(__file__).resolve().parent)
+    app.run()
 
 
 if __name__ == "__main__":

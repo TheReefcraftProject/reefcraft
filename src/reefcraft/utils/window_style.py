@@ -13,8 +13,6 @@ if sys.platform == "win32":
     from ctypes import wintypes
     from pathlib import Path
 
-    # import dearpygui.dearpygui as gui
-
     def apply_dark_titlebar_and_icon(window_title: str, icon_path: str | Path) -> None:
         """Apply a dark title bar and icon to the window if possible."""
         icon_path = Path(icon_path)

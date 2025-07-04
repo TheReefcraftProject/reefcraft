@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from gui.main_window import launch_app
+from .gui.main_window import launch_app
 
 
 def main() -> None:

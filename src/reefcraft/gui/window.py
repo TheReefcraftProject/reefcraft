@@ -34,18 +34,20 @@ class Window:
         icon_path = (app_root / "resources" / "icon" / "reefcraft.ico").resolve()
         apply_dark_titlebar_and_icon("Reefcraft", icon_path)
 
-    def run(self) -> None:
-        """Enter the main event loop."""
-        while self.window.running:
-            self.engine.update()
+    @property
+    def running(self) -> bool:
+        """Return ``True`` if the underlying Taichi window is still open."""
+        return self.window.running
 
-            self.gui.text("Simulation Controls")
-            if self.gui.button("Start"):
-                self.engine.start()
-            if self.gui.button("Pause"):
-                self.engine.pause()
-            if self.gui.button("Reset"):
-                self.engine.reset()
+    def update(self) -> None:
+        """Update GUI elements for one frame."""
+        self.gui.text("Simulation Controls")
+        if self.gui.button("Start"):
+            self.engine.start()
+        if self.gui.button("Pause"):
+            self.engine.pause()
+        if self.gui.button("Reset"):
+            self.engine.reset()
 
-            self.gui.text(f"Time: {self.engine.get_time():.3f}")
-            self.window.show()
+        self.gui.text(f"Time: {self.engine.get_time():.3f}")
+        self.window.show()

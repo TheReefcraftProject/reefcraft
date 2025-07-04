@@ -9,9 +9,8 @@ import numpy as np
 # Initialize Taichi environment
 ti.init(arch=ti.gpu)
 
-# Grid size (1000x1000x1000)
-n = 64  # Adjust size based on your hardware limitations, 1000x1000x1000 is very large for GPUs
-
+# Grid size
+n = 128
 # 3D field for velocity
 velocity = ti.Vector.field(3, dtype=ti.f32, shape=(n, n, n))
 
@@ -26,14 +25,14 @@ def advect():
         velocity[i, j, k] = velocity[i, j, k]  # This is a placeholder for now
 
 @ti.kernel
-def apply_force(dt: ti.f32):
+def apply_force(dt: float):
     # Loop over the 3D grid (velocity field)
     for i, j, k in velocity:
         # Apply gravity force (or other forces)
         velocity[i, j, k] += ti.Vector([0.0, -9.8, 0.0]) * dt  # Gravity force
 
 @ti.kernel
-def apply_inflow(inflow_speed: ti.f32):
+def apply_inflow(inflow_speed: float):
     # Loop over the 3D grid (velocity field) and apply inflow to the left side
     for i, j, k in velocity:
         if i == 0:  # Set inflow at the left side of the tank

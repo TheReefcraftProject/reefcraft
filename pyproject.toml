@@ -6,7 +6,7 @@
 
 [build-system]
 build-backend = "hatchling.build"
-requires = ["hatchling"]
+requires = [ "hatchling" ]
 
 [project]
 name = "reefcraft"
@@ -18,10 +18,11 @@ classifiers = [
   "Development Status :: 3 - Alpha",
   "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = [ "src/myproject" ]
+packages = [ "src/reefcraft" ]
 
 dependencies = [
   "attrs>=25.3.0",
@@ -38,7 +39,6 @@ dependencies = [
   "taichi>=1.7.3",
   "wheel>=0.45.1",
 ]
-
 
 [tool.ruff]
 line-length = 160 # Allow longer source lines than the default 88 chars
@@ -84,10 +84,8 @@ testpaths = [
 # Add coverage configuration for pytest and coverage tools
 
 [tool.coverage.run]
-branch = true # Enable branch coverage analysis
-source = [
-  "app",
-]
+branch = true            # Enable branch coverage analysis
+source = [ "reefcraft" ]
 
 [tool.coverage.report]
 show_missing = true # Show missing lines in the coverage report

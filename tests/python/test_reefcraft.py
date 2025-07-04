@@ -2,10 +2,10 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.append(str(Path(__file__).resolve().parents[2]))
+sys.path.append(str(Path(__file__).resolve().parents[2] / "src"))
 
-from app.sim.engine import Engine
-from app.sim.timer import Timer
+from reefcraft.sim.engine import Engine
+from reefcraft.sim.timer import Timer
 
 
 def test_timer_pause_and_resume() -> None:

@@ -27,7 +27,7 @@ def launch_app(app_root: Path) -> None:
     window = ti.ui.Window("Reefcraft", res=(1280, 1080))
     gui = window.get_gui()
 
-    from app.utils.window_style import apply_dark_titlebar_and_icon
+    from utils.window_style import apply_dark_titlebar_and_icon
 
     icon_path = (app_root / "resources" / "icon" / "reefcraft.ico").resolve()
     apply_dark_titlebar_and_icon("Reefcraft", icon_path)

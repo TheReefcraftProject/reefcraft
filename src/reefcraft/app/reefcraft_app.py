@@ -22,4 +22,7 @@ class ReefcraftApp:
         from ..gui.window import Window
 
         window = Window(self.engine, self.app_root)
-        window.run()
+
+        while window.running:
+            self.engine.update()
+            window.update()

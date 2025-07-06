@@ -50,6 +50,7 @@ class Panel:
             no_title_bar=True,
             no_move=True,
             no_resize=True,
+            no_scrollbar=True,
         )
 
     def register(self, section: Section) -> None:

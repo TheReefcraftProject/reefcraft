@@ -49,5 +49,5 @@ def test_volume_initializes_fields() -> None:
     vol = Volume(active_region=4)
     assert vol.resolution == 1000
     assert vol.data.shape == (4, 4, 4)
-    assert vol.coords.shape == 4 ** 3
+    assert vol.coords.shape == (4 ** 3,)
 

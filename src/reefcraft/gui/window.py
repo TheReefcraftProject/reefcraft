@@ -38,23 +38,32 @@ class Window:
         apply_dark_titlebar_and_icon("Reefcraft", icon_path)
 
         self.panel = Panel(width=300, margin=10)
+
+        # Default values for demo section sliders
+        self.growth_rate = 1.0
+        self.complexity = 0.5
+        self.temperature = 24.0
+        self.light = 0.8
+
         self._register_demo_sections()
 
     def _register_demo_sections(self) -> None:
         """Register example sections for demonstration."""
 
         def coral_growth(gui: ti.ui.Gui) -> None:
-            self.growth_rate = getattr(self, "growth_rate", 1.0)
-            self.growth_rate = gui.slider_float("Growth Rate", self.growth_rate, 0.0, 2.0)
-            self.complexity = getattr(self, "complexity", 0.5)
-            self.complexity = gui.slider_float("Complexity", self.complexity, 0.0, 1.0)
+            self.growth_rate = gui.slider_float(
+                "Growth Rate", self.growth_rate, 0.0, 2.0
+            )
+            self.complexity = gui.slider_float(
+                "Complexity", self.complexity, 0.0, 1.0
+            )
             if gui.button("Apply"):
                 print("[DEBUG] Apply coral growth")
 
         def environment(gui: ti.ui.Gui) -> None:
-            self.temperature = getattr(self, "temperature", 24.0)
-            self.temperature = gui.slider_float("Water Temp", self.temperature, 10.0, 30.0)
-            self.light = getattr(self, "light", 0.8)
+            self.temperature = gui.slider_float(
+                "Water Temp", self.temperature, 10.0, 30.0
+            )
             self.light = gui.slider_float("Light", self.light, 0.0, 1.0)
             if gui.button("Reset Environment"):
                 print("[DEBUG] Reset environment")
@@ -69,7 +78,7 @@ class Window:
 
     def update(self) -> None:
         """Render one frame of the simulation and overlay UI."""
-        self.canvas.clear((0.0, 0.0, 0.0))
+        self.canvas.set_background_color((0.0, 0.0, 0.0))
         # Simulation visualization would be drawn to the canvas here
         self.panel.draw(self.window, self.gui)
         self.window.show()

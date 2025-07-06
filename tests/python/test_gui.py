@@ -106,7 +106,7 @@ def test_window_update_renders_panel() -> None:
 
         win.panel = MagicMock()
         win.update()
-        dummy_canvas.clear.assert_called_once()
+        dummy_canvas.set_background_color.assert_called_once_with((0.0, 0.0, 0.0))
         win.panel.draw.assert_called_once_with(dummy_window, dummy_gui)
         dummy_window.show.assert_called_once()
 

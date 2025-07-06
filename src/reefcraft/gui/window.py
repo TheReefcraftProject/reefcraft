@@ -40,6 +40,8 @@ class Window:
                 [255, 255, 255, 255],
                 tag=self.canvas_texture,
             )
+        self.canvas_width = 1
+        self.canvas_height = 1
         self.canvas_drawlist = dpg.add_viewport_drawlist()
         self.canvas_image = dpg.draw_image(
             self.canvas_texture,
@@ -65,6 +67,17 @@ class Window:
         apply_dark_titlebar_and_icon("Reefcraft", icon_path)
 
         dpg.show_viewport()
+
+    def _resize_canvas_texture(self, width: int, height: int) -> None:
+        """Recreate the dynamic texture to match the viewport size."""
+        dpg.delete_item(self.canvas_texture)
+        self.canvas_texture = dpg.generate_uuid()
+        blank = [255, 255, 255, 255] * (width * height)
+        with dpg.texture_registry(show=False):
+            dpg.add_dynamic_texture(width, height, blank, tag=self.canvas_texture)
+        dpg.configure_item(self.canvas_image, texture_tag=self.canvas_texture)
+        self.canvas_width = width
+        self.canvas_height = height
 
     def _register_demo_sections(self) -> None:
         """Register example sections for demonstration."""
@@ -120,6 +133,9 @@ class Window:
     def update(self) -> None:
         """Render one frame of the simulation and overlay UI."""
         win_w, win_h = dpg.get_viewport_width(), dpg.get_viewport_height()
+
+        if (win_w != self.canvas_width) or (win_h != self.canvas_height):
+            self._resize_canvas_texture(win_w, win_h)
 
         dpg.configure_item(self.canvas_image, pmin=(0, 0), pmax=(win_w, win_h))
 

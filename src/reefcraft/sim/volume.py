@@ -11,6 +11,7 @@ from __future__ import annotations
 import taichi as ti
 
 
+@ti.data_oriented
 class Volume:
     """A sparse voxel volume at millimeter resolution."""
 

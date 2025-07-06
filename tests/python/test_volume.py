@@ -7,6 +7,7 @@ if "taichi" not in sys.modules:
     ti_stub.vulkan = "vulkan"
     ti_stub.init = lambda arch=None: None
     ti_stub.kernel = lambda f: f
+    ti_stub.data_oriented = lambda cls: cls
 
     def fake_field(*args: object, shape: tuple[int, ...] | None = None, **kwargs: object) -> object:
         class Dummy:

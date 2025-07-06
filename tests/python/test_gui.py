@@ -31,6 +31,7 @@ if "taichi" not in sys.modules:
         vulkan="vulkan",
         init=lambda arch=None: None,
         kernel=lambda f: f,
+        data_oriented=lambda cls: cls,
         Vector=vector,
         field=fake_field,
         f32=0.0,

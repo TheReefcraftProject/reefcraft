@@ -40,10 +40,15 @@ class Section:
 class Panel:
     """Fixed side panel that holds collapsible sections."""
 
-    def __init__(self, width: int = 300, margin: int = 10) -> None:
-        """Initialize the panel with width and margin."""
+    def __init__(
+        self, width: int = 300, margin: int = 10, *, side: str = "right"
+    ) -> None:
+        """Initialize the panel with width, margin, and pinned side."""
         self.width = width
         self.margin = margin
+        if side not in ("left", "right"):
+            raise ValueError("side must be 'left' or 'right'")
+        self.side = side
         self.sections: list[Section] = []
         self.window_id = dpg.add_window(
             label="",
@@ -61,7 +66,7 @@ class Panel:
     def draw(self) -> None:
         """Update the panel layout."""
         win_w, win_h = dpg.get_viewport_width(), dpg.get_viewport_height()
-        x = win_w - self.margin - self.width
+        x = self.margin if self.side == "left" else win_w - self.margin - self.width
         y = self.margin
         h = win_h - 2 * self.margin
         dpg.configure_item(self.window_id, pos=(x, y), width=self.width, height=h)

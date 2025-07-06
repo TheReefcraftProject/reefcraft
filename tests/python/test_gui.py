@@ -67,6 +67,27 @@ def test_panel_draw_updates_position() -> None:
         )
 
 
+def test_panel_draw_left_side_updates_position() -> None:
+    with patch("reefcraft.gui.panel.dpg") as mdpg:
+        mdpg.get_viewport_width.return_value = 800
+        mdpg.get_viewport_height.return_value = 600
+        mdpg.add_window.return_value = "panel_win"
+        mdpg.configure_item = MagicMock()
+        mdpg.add_collapsing_header.return_value = "hdr"
+        mdpg.group.return_value.__enter__.return_value = None
+        mdpg.get_item_state.return_value = {"open": True}
+
+        panel = Panel(width=300, margin=10, side="left")
+
+        panel.register(Section("Test", lambda: None))
+
+        panel.draw()
+
+        mdpg.configure_item.assert_called_with(
+            "panel_win", pos=(10, 10), width=300, height=600 - 20
+        )
+
+
 def test_window_update_renders_panel() -> None:
     engine = Engine()
 

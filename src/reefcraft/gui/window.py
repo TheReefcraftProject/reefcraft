@@ -31,6 +31,7 @@ class Window:
         canvas_size: tuple[int, int] = (1024, 768),
         border_color: tuple[int, int, int, int] = (32, 32, 32, 255),
         checkerboard_square: int = 16,
+        panel_side: str = "right",
     ) -> None:
         """Initialize the window and GUI state."""
         self.engine = engine
@@ -41,7 +42,7 @@ class Window:
         dpg.create_context()
         dpg.create_viewport(title="Reefcraft", width=1280, height=1080)
 
-        self.panel = Panel(width=300, margin=10)
+        self.panel = Panel(width=300, margin=10, side=panel_side)
 
         self.canvas_texture = dpg.generate_uuid()
         with dpg.texture_registry(show=False):

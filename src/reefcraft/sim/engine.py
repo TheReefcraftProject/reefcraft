@@ -9,14 +9,16 @@
 from __future__ import annotations
 
 from .timer import Timer
+from .volume import Volume
 
 
 class Engine:
     """A thin wrapper that controls a :class:`Timer`."""
 
     def __init__(self) -> None:
-        """Initialize the engine with a new :class:`Timer`."""
+        """Initialize the engine state."""
         self.timer = Timer()
+        self.volume = Volume()
 
     def start(self) -> None:
         """Start or resume the timer."""

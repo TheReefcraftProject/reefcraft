@@ -92,6 +92,7 @@ def test_window_update_renders_panel() -> None:
         mdpg.configure_item.return_value = None
         mdpg.generate_uuid.return_value = "uuid_init"
         mdpg.add_dynamic_texture.return_value = None
+        mdpg.set_viewport_clear_color.return_value = None
 
         win = Window(engine, Path())
         assert len(win.panel.sections) == 2
@@ -106,6 +107,7 @@ def test_window_update_renders_panel() -> None:
             ANY,
             tag="uuid_init",
         )
+        mdpg.set_viewport_clear_color.assert_called_once_with([32, 32, 32, 255])
         mdpg.add_viewport_drawlist.assert_called_once_with(front=False)
         mdpg.configure_item.assert_any_call(
             "canvas_image",

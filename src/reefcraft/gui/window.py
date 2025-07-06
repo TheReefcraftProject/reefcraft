@@ -29,12 +29,14 @@ class Window:
         app_root: Path,
         *,
         canvas_size: tuple[int, int] = (1024, 768),
-        border_color: tuple[int, int, int, int] = (0, 0, 0, 255),
+        border_color: tuple[int, int, int, int] = (32, 32, 32, 255),
+        checkerboard_square: int = 16,
     ) -> None:
         """Initialize the window and GUI state."""
         self.engine = engine
 
         self.canvas_width, self.canvas_height = canvas_size
+        self.checkerboard_square = checkerboard_square
 
         dpg.create_context()
         dpg.create_viewport(title="Reefcraft", width=1280, height=1080)
@@ -47,7 +49,9 @@ class Window:
                 self.canvas_width,
                 self.canvas_height,
                 self._checkerboard_pattern(
-                    self.canvas_width, self.canvas_height
+                    self.canvas_width,
+                    self.canvas_height,
+                    self.checkerboard_square,
                 ),
                 tag=self.canvas_texture,
             )
@@ -79,7 +83,7 @@ class Window:
         dpg.show_viewport()
 
     def _checkerboard_pattern(
-        self, width: int, height: int, square: int = 8
+        self, width: int, height: int, square: int = 16
     ) -> list[float]:
         """Return RGBA data for a checkerboard texture."""
         data: list[float] = []

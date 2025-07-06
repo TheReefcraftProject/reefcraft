@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Callable
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:  # pragma: no cover - type hints only
+    from collections.abc import Callable
 
 import dearpygui.dearpygui as dpg
 
@@ -24,7 +27,7 @@ class Section:
     def draw(self) -> None:
         """Render this section using Dear PyGui."""
         header = dpg.collapsing_header(label=self.title, default_open=self.open)
-        self.open = dpg.is_item_open(header)
+        self.open = dpg.get_item_state(header).open
         if self.open:
             self.builder()
 

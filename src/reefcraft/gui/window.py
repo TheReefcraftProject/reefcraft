@@ -52,14 +52,44 @@ class Window:
         """Register example sections for demonstration."""
 
         def coral_growth() -> None:
-            dpg.add_slider_float(label="Growth Rate", default_value=self.growth_rate, min_value=0.0, max_value=2.0, callback=lambda s, a: setattr(self, "growth_rate", a))
-            dpg.add_slider_float(label="Complexity", default_value=self.complexity, min_value=0.0, max_value=1.0, callback=lambda s, a: setattr(self, "complexity", a))
-            dpg.add_button(label="Apply", callback=lambda: print("[DEBUG] Apply coral growth"))
+            dpg.add_slider_float(
+                label="Growth Rate",
+                default_value=self.growth_rate,
+                min_value=0.0,
+                max_value=2.0,
+                callback=lambda s, a: setattr(self, "growth_rate", a),
+            )
+            dpg.add_slider_float(
+                label="Complexity",
+                default_value=self.complexity,
+                min_value=0.0,
+                max_value=1.0,
+                callback=lambda s, a: setattr(self, "complexity", a),
+            )
+            dpg.add_button(
+                label="Apply",
+                callback=lambda: print("[DEBUG] Apply coral growth"),
+            )
 
         def environment() -> None:
-            dpg.add_slider_float(label="Water Temp", default_value=self.temperature, min_value=10.0, max_value=30.0, callback=lambda s, a: setattr(self, "temperature", a))
-            dpg.add_slider_float(label="Light", default_value=self.light, min_value=0.0, max_value=1.0, callback=lambda s, a: setattr(self, "light", a))
-            dpg.add_button(label="Reset Environment", callback=lambda: print("[DEBUG] Reset environment"))
+            dpg.add_slider_float(
+                label="Water Temp",
+                default_value=self.temperature,
+                min_value=10.0,
+                max_value=30.0,
+                callback=lambda s, a: setattr(self, "temperature", a),
+            )
+            dpg.add_slider_float(
+                label="Light",
+                default_value=self.light,
+                min_value=0.0,
+                max_value=1.0,
+                callback=lambda s, a: setattr(self, "light", a),
+            )
+            dpg.add_button(
+                label="Reset Environment",
+                callback=lambda: print("[DEBUG] Reset environment"),
+            )
 
         self.panel.register(Section("Coral Growth", coral_growth))
         self.panel.register(Section("Environment", environment))

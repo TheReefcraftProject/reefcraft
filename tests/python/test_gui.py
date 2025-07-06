@@ -1,5 +1,7 @@
 import sys
+from collections.abc import Iterator
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 sys.path.append(str(Path(__file__).resolve().parents[2] / "src"))
@@ -17,13 +19,13 @@ def test_section_builder_called_when_open() -> None:
 
     with patch("reefcraft.gui.panel.dpg") as mdpg:
         mdpg.collapsing_header.return_value = "hdr"
-        mdpg.is_item_open.return_value = True
+        mdpg.get_item_state.return_value = SimpleNamespace(open=True)
         sec = Section("Test", builder)
         sec.draw()
         assert sec.open is True
         assert called == [True]
 
-        mdpg.is_item_open.return_value = False
+        mdpg.get_item_state.return_value = SimpleNamespace(open=False)
         sec.draw()
         assert sec.open is False
         assert called == [True]
@@ -38,12 +40,12 @@ def test_panel_draw_calls_sections() -> None:
         from contextlib import contextmanager
 
         @contextmanager
-        def dummy_window(**kwargs):
+        def dummy_window(**kwargs: object) -> Iterator[None]:
             mdpg.window_calls.append(kwargs)
             yield
         mdpg.window.side_effect = dummy_window
         mdpg.collapsing_header.return_value = "hdr"
-        mdpg.is_item_open.return_value = True
+        mdpg.get_item_state.return_value = SimpleNamespace(open=True)
 
         panel = Panel(width=300, margin=10)
 
@@ -86,11 +88,11 @@ def test_window_update_renders_panel() -> None:
         from contextlib import contextmanager
 
         @contextmanager
-        def dummy_window(**kwargs):
+        def dummy_window(**kwargs: object) -> Iterator[None]:
             yield
         mdpg.window.side_effect = dummy_window
         mdpg.collapsing_header.return_value = "hdr"
-        mdpg.is_item_open.return_value = True
+        mdpg.get_item_state.return_value = SimpleNamespace(open=True)
 
         win = Window(engine, Path())
         assert len(win.panel.sections) == 2

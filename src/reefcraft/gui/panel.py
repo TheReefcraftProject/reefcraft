@@ -22,15 +22,20 @@ class Section:
         """
         self.title = title
         self.builder = builder
+        self.header: int | str | None = None
         self.open = True
 
-    def draw(self) -> None:
-        """Render this section using Dear PyGui."""
-        header = dpg.add_collapsing_header(label=self.title, default_open=self.open)
-        self.open = bool(dpg.get_item_state(header).get("open"))
-        if self.open:
-            with dpg.group(parent=header):
+    def build(self, parent: int | str) -> None:
+        """Create widgets for this section."""
+        with dpg.collapsing_header(label=self.title, default_open=self.open, parent=parent) as header:
+            self.header = header
+            with dpg.group():
                 self.builder()
+
+    def update(self) -> None:
+        """Refresh internal open state."""
+        if self.header is not None:
+            self.open = bool(dpg.get_item_state(self.header).get("open"))
 
 
 class Panel:
@@ -41,18 +46,24 @@ class Panel:
         self.width = width
         self.margin = margin
         self.sections: list[Section] = []
+        self.window_id = dpg.add_window(
+            label="",
+            no_title_bar=True,
+            no_move=True,
+            no_resize=True,
+        )
 
     def register(self, section: Section) -> None:
         """Add a section to the panel."""
+        section.build(self.window_id)
         self.sections.append(section)
 
     def draw(self) -> None:
-        """Render the panel and its sections."""
+        """Update the panel layout."""
         win_w, win_h = dpg.get_viewport_width(), dpg.get_viewport_height()
         x = win_w - self.margin - self.width
         y = self.margin
-        w = self.width
         h = win_h - 2 * self.margin
-        with dpg.window(label="Panel", pos=(x, y), width=w, height=h, no_resize=True, no_move=True):
-            for section in self.sections:
-                section.draw()
+        dpg.configure_item(self.window_id, pos=(x, y), width=self.width, height=h)
+        for section in self.sections:
+            section.update()

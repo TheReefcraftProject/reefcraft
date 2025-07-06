@@ -22,54 +22,43 @@ def test_section_builder_called_when_open() -> None:
         mdpg.group.return_value.__enter__.return_value = None
         mdpg.get_item_state.return_value = {"open": True}
         sec = Section("Test", builder)
-        sec.draw()
-        assert sec.open is True
+        sec.build("parent")
         assert called == [True]
+
+        sec.update()
+        assert sec.open is True
 
         mdpg.get_item_state.return_value = {"open": False}
-        sec.draw()
+        sec.update()
         assert sec.open is False
-        assert called == [True]
 
 
-def test_panel_draw_calls_sections() -> None:
+def test_panel_draw_updates_position() -> None:
     with patch("reefcraft.gui.panel.dpg") as mdpg:
         mdpg.get_viewport_width.return_value = 800
         mdpg.get_viewport_height.return_value = 600
-
-        mdpg.window_calls = []
-        from contextlib import contextmanager
-
-        @contextmanager
-        def dummy_window(**kwargs: object) -> Iterator[None]:
-            mdpg.window_calls.append(kwargs)
-            yield
-        mdpg.window.side_effect = dummy_window
+        mdpg.add_window.return_value = "panel_win"
+        mdpg.configure_item = MagicMock()
         mdpg.add_collapsing_header.return_value = "hdr"
         mdpg.group.return_value.__enter__.return_value = None
         mdpg.get_item_state.return_value = {"open": True}
 
         panel = Panel(width=300, margin=10)
 
-        class DummySection:
-            def __init__(self) -> None:
-                self.calls = 0
+        called = []
 
-            def draw(self) -> None:
-                self.calls += 1
+        def builder() -> None:
+            called.append(True)
 
-        sec = DummySection()
-        panel.register(sec)
+        panel.register(Section("Test", builder))
+
+        assert called == [True]
+
         panel.draw()
 
-        assert sec.calls == 1
-        assert len(mdpg.window_calls) == 1
-        kw = mdpg.window_calls[0]
-        x, y = kw["pos"]
-        assert x == 800 - 10 - 300
-        assert y == 10
-        assert kw["width"] == 300
-        assert kw["height"] == 600 - 20
+        mdpg.configure_item.assert_called_with(
+            "panel_win", pos=(800 - 10 - 300, 10), width=300, height=600 - 20
+        )
 
 
 def test_window_update_renders_panel() -> None:
@@ -96,12 +85,20 @@ def test_window_update_renders_panel() -> None:
         mdpg.add_collapsing_header.return_value = "hdr"
         mdpg.group.return_value.__enter__.return_value = None
         mdpg.get_item_state.return_value = {"open": True}
+        mdpg.add_window.side_effect = ["panel_win", "canvas_win"]
+        mdpg.configure_item.return_value = None
+        mdpg.generate_uuid.return_value = "uuid"
+        mdpg.add_dynamic_texture.return_value = None
+        mdpg.add_image.return_value = None
 
         win = Window(engine, Path())
         assert len(win.panel.sections) == 2
 
-        win.panel = MagicMock()
+        win.panel.draw = MagicMock()
         win.update()
         win.panel.draw.assert_called_once()
+        mdpg.configure_item.assert_any_call(
+            "canvas_win", pos=(10, 10), width=1280 - 300 - 30, height=1080 - 20
+        )
         mdpg.render_dearpygui_frame.assert_called_once()
 

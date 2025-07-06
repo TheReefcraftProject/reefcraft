@@ -48,6 +48,7 @@ class Window:
             no_move=True,
             no_resize=True,
             no_scrollbar=True,
+            no_background=True,
         )
         self.panel = Panel(width=300, margin=10, side=panel_side)
 

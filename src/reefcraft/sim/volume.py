@@ -32,7 +32,7 @@ class Volume:
         self._fill_test_pattern()
 
     @ti.kernel
-    def _fill_test_pattern(self) -> ti.types.void:
+    def _fill_test_pattern(self) -> None:
         for i, j, k in ti.ndrange(self.active, self.active, self.active):
             idx = i * self.active * self.active + j * self.active + k
             self.data[i, j, k] = ti.Vector([1.0, 1.0, 1.0])

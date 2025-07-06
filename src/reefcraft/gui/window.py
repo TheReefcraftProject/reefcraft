@@ -45,7 +45,8 @@ class Window:
             no_resize=True,
         )
         self.canvas_texture = dpg.generate_uuid()
-        dpg.add_dynamic_texture(1, 1, [255, 255, 255, 255], tag=self.canvas_texture)
+        with dpg.texture_registry(show=False):
+            dpg.add_dynamic_texture(1, 1, [255, 255, 255, 255], tag=self.canvas_texture)
         self.canvas_image = dpg.add_image(self.canvas_texture, parent=self.canvas_window)
 
         # Default values for demo section widgets

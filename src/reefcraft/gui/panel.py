@@ -27,10 +27,9 @@ class Section:
 
     def build(self, parent: int | str) -> None:
         """Create widgets for this section."""
-        with dpg.collapsing_header(label=self.title, default_open=self.open, parent=parent) as header:
-            self.header = header
-            with dpg.group():
-                self.builder()
+        self.header = dpg.add_collapsing_header(label=self.title, default_open=self.open, parent=parent)
+        with dpg.group(parent=self.header):
+            self.builder()
 
     def update(self) -> None:
         """Refresh internal open state."""

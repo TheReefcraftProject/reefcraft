@@ -1,12 +1,6 @@
 import sys
-import types
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-
-if "taichi" not in sys.modules:
-    ui_stub = types.SimpleNamespace(Window=object, Gui=object)
-    ti_stub = types.SimpleNamespace(ui=ui_stub, vulkan="vulkan", init=lambda arch=None: None)
-    sys.modules["taichi"] = ti_stub
 
 sys.path.append(str(Path(__file__).resolve().parents[2] / "src"))
 
@@ -18,95 +12,91 @@ from reefcraft.sim.engine import Engine
 def test_section_builder_called_when_open() -> None:
     called = []
 
-    def builder(gui: object) -> None:
+    def builder() -> None:
         called.append(True)
 
-    class DummyGui:
-        def __init__(self, checked: bool) -> None:
-            self.checked = checked
+    with patch("reefcraft.gui.panel.dpg") as mdpg:
+        mdpg.collapsing_header.return_value = "hdr"
+        mdpg.is_item_open.return_value = True
+        sec = Section("Test", builder)
+        sec.draw()
+        assert sec.open is True
+        assert called == [True]
 
-        def checkbox(self, title: str, state: bool) -> bool:  # noqa: D401 - simple stub
-            return self.checked
-
-    gui = DummyGui(True)
-    sec = Section("Test", builder)
-    sec.draw(gui)
-    assert sec.open is True
-    assert called == [True]
-
-    gui.checked = False
-    sec.draw(gui)
-    assert sec.open is False
-    assert called == [True]
+        mdpg.is_item_open.return_value = False
+        sec.draw()
+        assert sec.open is False
+        assert called == [True]
 
 
 def test_panel_draw_calls_sections() -> None:
-    class DummyWindow:
-        def get_window_shape(self) -> tuple[int, int]:
-            return (800, 600)
+    with patch("reefcraft.gui.panel.dpg") as mdpg:
+        mdpg.get_viewport_width.return_value = 800
+        mdpg.get_viewport_height.return_value = 600
 
-    class DummyGui:
-        def __init__(self) -> None:
-            self.sub_windows: list[tuple[str, float, float, float, float]] = []
-
-        def __call__(self) -> "DummyGui":  # type: ignore[override]
-            return self
-
-        def checkbox(self, title: str, value: bool) -> bool:
-            return value
-
-        from contextlib import AbstractContextManager, contextmanager
+        mdpg.window_calls = []
+        from contextlib import contextmanager
 
         @contextmanager
-        def sub_window(self, title: str, x: float, y: float, w: float, h: float) -> AbstractContextManager["DummyGui"]:
-            self.sub_windows.append((title, x, y, w, h))
-            yield self
+        def dummy_window(**kwargs):
+            mdpg.window_calls.append(kwargs)
+            yield
+        mdpg.window.side_effect = dummy_window
+        mdpg.collapsing_header.return_value = "hdr"
+        mdpg.is_item_open.return_value = True
 
-    gui = DummyGui()
-    window = DummyWindow()
-    panel = Panel(width=300, margin=10)
+        panel = Panel(width=300, margin=10)
 
-    class DummySection:
-        def __init__(self) -> None:
-            self.calls = 0
+        class DummySection:
+            def __init__(self) -> None:
+                self.calls = 0
 
-        def draw(self, g: DummyGui) -> None:
-            self.calls += 1
+            def draw(self) -> None:
+                self.calls += 1
 
-    sec = DummySection()
-    panel.register(sec)
-    panel.draw(window, gui)
+        sec = DummySection()
+        panel.register(sec)
+        panel.draw()
 
-    assert sec.calls == 1
-    assert len(gui.sub_windows) == 1
-    _, x, y, w, h = gui.sub_windows[0]
-    assert x == (800 - 10 - 300) / 800
-    assert y == 10 / 600
-    assert w == 300 / 800
-    assert h == (600 - 20) / 600
+        assert sec.calls == 1
+        assert len(mdpg.window_calls) == 1
+        kw = mdpg.window_calls[0]
+        x, y = kw["pos"]
+        assert x == 800 - 10 - 300
+        assert y == 10
+        assert kw["width"] == 300
+        assert kw["height"] == 600 - 20
 
 
 def test_window_update_renders_panel() -> None:
     engine = Engine()
 
-    with patch("reefcraft.gui.window.ti") as mti, patch(
-        "reefcraft.utils.window_style.apply_dark_titlebar_and_icon"
-    ):
-        dummy_window = MagicMock()
-        dummy_canvas = MagicMock()
-        dummy_gui = MagicMock()
-        mti.vulkan = "vulkan"
-        mti.init.return_value = None
-        mti.ui.Window.return_value = dummy_window
-        dummy_window.get_canvas.return_value = dummy_canvas
-        dummy_window.get_gui.return_value = dummy_gui
+    with patch("reefcraft.gui.window.dpg") as mdpg, patch(
+        "reefcraft.gui.panel.dpg", mdpg
+    ), patch("reefcraft.utils.window_style.apply_dark_titlebar_and_icon"):
+        mdpg.create_context.return_value = None
+        mdpg.create_viewport.return_value = None
+        mdpg.setup_dearpygui.return_value = None
+        mdpg.show_viewport.return_value = None
+        mdpg.render_dearpygui_frame.return_value = None
+        mdpg.get_viewport_width.return_value = 1280
+        mdpg.get_viewport_height.return_value = 1080
+        mdpg.is_dearpygui_running.return_value = True
+
+        from contextlib import contextmanager
+
+        @contextmanager
+        def dummy_window(**kwargs):
+            yield
+        mdpg.window.side_effect = dummy_window
+        mdpg.collapsing_header.return_value = "hdr"
+        mdpg.is_item_open.return_value = True
 
         win = Window(engine, Path())
         assert len(win.panel.sections) == 2
 
         win.panel = MagicMock()
         win.update()
-        dummy_canvas.set_background_color.assert_called_once_with((0.0, 0.0, 0.0))
-        win.panel.draw.assert_called_once_with(dummy_window, dummy_gui)
-        dummy_window.show.assert_called_once()
+        win.panel.draw.assert_called_once()
+        mdpg.render_dearpygui_frame.assert_called_once()
 

@@ -4,13 +4,13 @@
 # Licensed under the MIT License. See the LICENSE file for details.
 # -----------------------------------------------------------------------------
 
-"""Defines the main GUI layout using Taichi's GGUI."""
+"""Defines the main GUI layout using Dear PyGui."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import taichi as ti
+import dearpygui.dearpygui as dpg
 
 from .panel import Panel, Section
 
@@ -21,16 +21,15 @@ if TYPE_CHECKING:
 
 
 class Window:
-    """Encapsulate the Taichi window and overlay UI panel."""
+    """Encapsulate the Dear PyGui viewport and overlay UI panel."""
 
     def __init__(self, engine: Engine, app_root: Path) -> None:
         """Initialize the window and GUI state."""
         self.engine = engine
 
-        ti.init(arch=ti.vulkan)
-        self.window = ti.ui.Window("Reefcraft", res=(1280, 1080), vsync=True)
-        self.canvas = self.window.get_canvas()
-        self.gui = self.window.get_gui()
+        dpg.create_context()
+        dpg.create_viewport(title="Reefcraft", width=1280, height=1080)
+        dpg.setup_dearpygui()
 
         from ..utils.window_style import apply_dark_titlebar_and_icon
 
@@ -39,7 +38,7 @@ class Window:
 
         self.panel = Panel(width=300, margin=10)
 
-        # Default values for demo section sliders
+        # Default values for demo section widgets
         self.growth_rate = 1.0
         self.complexity = 0.5
         self.temperature = 24.0
@@ -47,38 +46,30 @@ class Window:
 
         self._register_demo_sections()
 
+        dpg.show_viewport()
+
     def _register_demo_sections(self) -> None:
         """Register example sections for demonstration."""
 
-        def coral_growth(gui: ti.ui.Gui) -> None:
-            self.growth_rate = gui.slider_float(
-                "Growth Rate", self.growth_rate, 0.0, 2.0
-            )
-            self.complexity = gui.slider_float(
-                "Complexity", self.complexity, 0.0, 1.0
-            )
-            if gui.button("Apply"):
-                print("[DEBUG] Apply coral growth")
+        def coral_growth() -> None:
+            dpg.add_slider_float(label="Growth Rate", default_value=self.growth_rate, min_value=0.0, max_value=2.0, callback=lambda s, a: setattr(self, "growth_rate", a))
+            dpg.add_slider_float(label="Complexity", default_value=self.complexity, min_value=0.0, max_value=1.0, callback=lambda s, a: setattr(self, "complexity", a))
+            dpg.add_button(label="Apply", callback=lambda: print("[DEBUG] Apply coral growth"))
 
-        def environment(gui: ti.ui.Gui) -> None:
-            self.temperature = gui.slider_float(
-                "Water Temp", self.temperature, 10.0, 30.0
-            )
-            self.light = gui.slider_float("Light", self.light, 0.0, 1.0)
-            if gui.button("Reset Environment"):
-                print("[DEBUG] Reset environment")
+        def environment() -> None:
+            dpg.add_slider_float(label="Water Temp", default_value=self.temperature, min_value=10.0, max_value=30.0, callback=lambda s, a: setattr(self, "temperature", a))
+            dpg.add_slider_float(label="Light", default_value=self.light, min_value=0.0, max_value=1.0, callback=lambda s, a: setattr(self, "light", a))
+            dpg.add_button(label="Reset Environment", callback=lambda: print("[DEBUG] Reset environment"))
 
         self.panel.register(Section("Coral Growth", coral_growth))
         self.panel.register(Section("Environment", environment))
 
     @property
     def running(self) -> bool:
-        """Return ``True`` if the underlying Taichi window is still open."""
-        return self.window.running
+        """Return ``True`` if the Dear PyGui viewport is still running."""
+        return dpg.is_dearpygui_running()
 
     def update(self) -> None:
         """Render one frame of the simulation and overlay UI."""
-        self.canvas.set_background_color((0.0, 0.0, 0.0))
-        # Simulation visualization would be drawn to the canvas here
-        self.panel.draw(self.window, self.gui)
-        self.window.show()
+        self.panel.draw()
+        dpg.render_dearpygui_frame()

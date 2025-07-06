@@ -1,19 +1,16 @@
-"""UI Panel overlay using Taichi GGUI."""
+"""UI Panel overlay using Dear PyGui."""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import Callable
 
-if TYPE_CHECKING:  # pragma: no cover - imported for type hints
-    from collections.abc import Callable
-
-    import taichi as ti
+import dearpygui.dearpygui as dpg
 
 
 class Section:
     """A collapsible section inside a :class:`Panel`."""
 
-    def __init__(self, title: str, builder: Callable[[ti.ui.Gui], None]) -> None:
+    def __init__(self, title: str, builder: Callable[[], None]) -> None:
         """Create a new section.
 
         Args:
@@ -24,11 +21,12 @@ class Section:
         self.builder = builder
         self.open = True
 
-    def draw(self, gui: ti.ui.Gui) -> None:
-        """Render this section using ``gui``."""
-        self.open = gui.checkbox(self.title, self.open)
+    def draw(self) -> None:
+        """Render this section using Dear PyGui."""
+        header = dpg.collapsing_header(label=self.title, default_open=self.open)
+        self.open = dpg.is_item_open(header)
         if self.open:
-            self.builder(gui)
+            self.builder()
 
 
 class Panel:
@@ -44,13 +42,13 @@ class Panel:
         """Add a section to the panel."""
         self.sections.append(section)
 
-    def draw(self, window: ti.ui.Window, gui: ti.ui.Gui) -> None:
+    def draw(self) -> None:
         """Render the panel and its sections."""
-        win_w, win_h = window.get_window_shape()
-        x = (win_w - self.margin - self.width) / win_w
-        y = self.margin / win_h
-        w = self.width / win_w
-        h = (win_h - 2 * self.margin) / win_h
-        with gui.sub_window("Panel", x, y, w, h):
+        win_w, win_h = dpg.get_viewport_width(), dpg.get_viewport_height()
+        x = win_w - self.margin - self.width
+        y = self.margin
+        w = self.width
+        h = win_h - 2 * self.margin
+        with dpg.window(label="Panel", pos=(x, y), width=w, height=h, no_resize=True, no_move=True):
             for section in self.sections:
-                section.draw(gui)
+                section.draw()

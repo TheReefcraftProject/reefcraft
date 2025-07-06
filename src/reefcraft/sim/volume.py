@@ -19,14 +19,13 @@ class Volume:
 
         Args:
             active_region: Size of the region to initialize with test data.
-                The full volume is ``1000^3`` voxels but only a small region is
-                allocated for visualization during testing.
+                The logical volume is ``1000^3`` voxels, but only an
+                ``active_region`` cube is allocated for this preview to avoid
+                excessive memory use.
         """
         self.resolution = 1000
         self.active = active_region
-        self.data = ti.Vector.field(3, dtype=ti.f32)
-        block = 8
-        ti.root.pointer(ti.ijk, self.resolution // block).dense(ti.ijk, block).place(self.data)
+        self.data = ti.Vector.field(3, dtype=ti.f32, shape=(self.active, self.active, self.active))
         self.coords = ti.Vector.field(3, dtype=ti.f32, shape=self.active ** 3)
         self.colors = ti.Vector.field(3, dtype=ti.f32, shape=self.active ** 3)
         self._fill_test_pattern()

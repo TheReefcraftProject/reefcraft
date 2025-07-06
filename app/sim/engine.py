@@ -6,8 +6,9 @@
 
 from __future__ import annotations
 
+from .llabres_growth import LlabresSurface
 from .timer import Timer
-from llabres_growth import LlabresSurface
+
 
 class Engine:
     """A thin wrapper that controls a :class:`Timer`."""

@@ -14,6 +14,9 @@ import taichi as ti
 from sim.engine import Engine
 from utils.settings import load_settings
 
+ti.init(arch=ti.gpu)  # needs to happen before any felds are constructed
+
+
 if TYPE_CHECKING:
     from pathlib import Path
 
@@ -23,7 +26,6 @@ def launch_app(app_root: Path) -> None:
     load_settings()
     engine = Engine()
 
-    ti.init(arch=ti.gpu)
     window = ti.ui.Window("Reefcraft", res=(1280, 1080))
     gui = window.get_gui()
 

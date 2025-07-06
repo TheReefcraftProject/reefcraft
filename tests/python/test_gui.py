@@ -93,7 +93,7 @@ def test_window_update_renders_panel() -> None:
         mdpg.group.return_value.__enter__.return_value = None
         mdpg.get_item_state.return_value = {"open": True}
         mdpg.add_window.return_value = "panel_win"
-        mdpg.get_viewport_drawlist.return_value = "drawlist"
+        mdpg.add_viewport_drawlist.return_value = "drawlist"
         mdpg.configure_item.return_value = None
         mdpg.generate_uuid.return_value = "uuid"
         mdpg.add_dynamic_texture.return_value = None

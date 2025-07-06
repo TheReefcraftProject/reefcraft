@@ -41,11 +41,12 @@ class Window:
         self.canvas_texture = dpg.generate_uuid()
         with dpg.texture_registry(show=False):
             dpg.add_dynamic_texture(1, 1, [255, 255, 255, 255], tag=self.canvas_texture)
+        self.canvas_drawlist = dpg.add_viewport_drawlist()
         self.canvas_image = dpg.draw_image(
             self.canvas_texture,
             (0, 0),
             (1, 1),
-            parent=dpg.get_viewport_drawlist(),
+            parent=self.canvas_drawlist,
         )
 
         # Default values for demo section widgets

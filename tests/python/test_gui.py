@@ -90,9 +90,8 @@ def test_window_update_renders_panel() -> None:
         mdpg.group.return_value.__enter__.return_value = None
         mdpg.get_item_state.return_value = {"open": True}
         mdpg.configure_item.return_value = None
-        mdpg.generate_uuid.side_effect = ["uuid_init", "uuid_resize"]
+        mdpg.generate_uuid.return_value = "uuid_init"
         mdpg.add_dynamic_texture.return_value = None
-        mdpg.delete_item.return_value = None
 
         win = Window(engine, Path())
         assert len(win.panel.sections) == 2
@@ -101,15 +100,16 @@ def test_window_update_renders_panel() -> None:
         win.update()
 
         win.panel.draw.assert_called_once()
-        mdpg.configure_item.assert_any_call(
-            "canvas_image", pmin=(0, 0), pmax=(1280, 1080)
-        )
-        mdpg.add_dynamic_texture.assert_any_call(
-            1280,
-            1080,
+        mdpg.add_dynamic_texture.assert_called_once_with(
+            1024,
+            768,
             ANY,
-            tag="uuid_resize",
+            tag="uuid_init",
         )
-        mdpg.delete_item.assert_called_once_with("uuid_init")
+        mdpg.configure_item.assert_any_call(
+            "canvas_image",
+            pmin=((1280 - 1024) / 2, (1080 - 768) / 2),
+            pmax=((1280 - 1024) / 2 + 1024, (1080 - 768) / 2 + 768),
+        )
         mdpg.render_dearpygui_frame.assert_called_once()
 

@@ -23,9 +23,18 @@ if TYPE_CHECKING:
 class Window:
     """Encapsulate the Dear PyGui viewport and overlay UI panel."""
 
-    def __init__(self, engine: Engine, app_root: Path) -> None:
+    def __init__(
+        self,
+        engine: Engine,
+        app_root: Path,
+        *,
+        canvas_size: tuple[int, int] = (1024, 768),
+        border_color: tuple[int, int, int, int] = (0, 0, 0, 255),
+    ) -> None:
         """Initialize the window and GUI state."""
         self.engine = engine
+
+        self.canvas_width, self.canvas_height = canvas_size
 
         dpg.create_context()
         dpg.create_viewport(title="Reefcraft", width=1280, height=1080)
@@ -35,18 +44,17 @@ class Window:
         self.canvas_texture = dpg.generate_uuid()
         with dpg.texture_registry(show=False):
             dpg.add_dynamic_texture(
-                1,
-                1,
-                [255, 255, 255, 255],
+                self.canvas_width,
+                self.canvas_height,
+                self._checkerboard_pattern(self.canvas_width, self.canvas_height),
                 tag=self.canvas_texture,
             )
-        self.canvas_width = 1
-        self.canvas_height = 1
+        dpg.set_viewport_clear_color(border_color)
         self.canvas_drawlist = dpg.add_viewport_drawlist()
         self.canvas_image = dpg.draw_image(
             self.canvas_texture,
             (0, 0),
-            (1, 1),
+            (self.canvas_width, self.canvas_height),
             parent=self.canvas_drawlist,
         )
         dpg.set_primary_window(self.panel.window_id, True)
@@ -68,16 +76,15 @@ class Window:
 
         dpg.show_viewport()
 
-    def _resize_canvas_texture(self, width: int, height: int) -> None:
-        """Recreate the dynamic texture to match the viewport size."""
-        dpg.delete_item(self.canvas_texture)
-        self.canvas_texture = dpg.generate_uuid()
-        blank = [255, 255, 255, 255] * (width * height)
-        with dpg.texture_registry(show=False):
-            dpg.add_dynamic_texture(width, height, blank, tag=self.canvas_texture)
-        dpg.configure_item(self.canvas_image, texture_tag=self.canvas_texture)
-        self.canvas_width = width
-        self.canvas_height = height
+    def _checkerboard_pattern(self, width: int, height: int, square: int = 8) -> list[int]:
+        """Return RGBA data for a checkerboard texture."""
+        data: list[int] = []
+        for y in range(height):
+            for x in range(width):
+                val = 200 if ((x // square + y // square) % 2 == 0) else 255
+                data.extend([val, val, val, 255])
+        return data
+
 
     def _register_demo_sections(self) -> None:
         """Register example sections for demonstration."""
@@ -134,10 +141,13 @@ class Window:
         """Render one frame of the simulation and overlay UI."""
         win_w, win_h = dpg.get_viewport_width(), dpg.get_viewport_height()
 
-        if (win_w != self.canvas_width) or (win_h != self.canvas_height):
-            self._resize_canvas_texture(win_w, win_h)
-
-        dpg.configure_item(self.canvas_image, pmin=(0, 0), pmax=(win_w, win_h))
+        x = (win_w - self.canvas_width) / 2
+        y = (win_h - self.canvas_height) / 2
+        dpg.configure_item(
+            self.canvas_image,
+            pmin=(x, y),
+            pmax=(x + self.canvas_width, y + self.canvas_height),
+        )
 
         self.panel.draw()
         dpg.render_dearpygui_frame()

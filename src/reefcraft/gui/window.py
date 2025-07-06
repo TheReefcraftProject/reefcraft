@@ -41,20 +41,14 @@ class Window:
         self.canvas_texture = dpg.generate_uuid()
         with dpg.texture_registry(show=False):
             dpg.add_dynamic_texture(1, 1, [255, 255, 255, 255], tag=self.canvas_texture)
-        self.canvas_window = dpg.add_window(
-            label="",
-            no_title_bar=True,
-            no_move=True,
-            no_resize=True,
-            no_scrollbar=True,
-        )
-        self.canvas_image = dpg.add_image(
+        self.canvas_drawlist = dpg.add_viewport_drawlist()
+        self.canvas_image = dpg.draw_image(
             self.canvas_texture,
-            width=1,
-            height=1,
-            parent=self.canvas_window,
+            (0, 0),
+            (1, 1),
+            parent=self.canvas_drawlist,
         )
-        dpg.set_primary_window(self.canvas_window, True)
+        dpg.set_primary_window(self.panel.window_id, True)
 
         # Default values for demo section widgets
         self.growth_rate = 1.0
@@ -121,10 +115,7 @@ class Window:
         """Render one frame of the simulation and overlay UI."""
         win_w, win_h = dpg.get_viewport_width(), dpg.get_viewport_height()
 
-        dpg.configure_item(
-            self.canvas_window, pos=(0, 0), width=win_w, height=win_h
-        )
-        dpg.configure_item(self.canvas_image, width=win_w, height=win_h)
+        dpg.configure_item(self.canvas_image, pmin=(0, 0), pmax=(win_w, win_h))
 
         self.panel.draw()
         dpg.render_dearpygui_frame()

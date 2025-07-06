@@ -82,15 +82,16 @@ def test_window_update_renders_panel() -> None:
         mdpg.get_viewport_height.return_value = 1080
         mdpg.is_dearpygui_running.return_value = True
 
-        mdpg.add_window.side_effect = ["panel_win", "canvas_window"]
+        mdpg.add_window.return_value = "panel_win"
         mdpg.set_primary_window.return_value = None
+        mdpg.add_viewport_drawlist.return_value = "drawlist"
+        mdpg.draw_image.return_value = "canvas_image"
         mdpg.add_collapsing_header.return_value = "hdr"
         mdpg.group.return_value.__enter__.return_value = None
         mdpg.get_item_state.return_value = {"open": True}
         mdpg.configure_item.return_value = None
         mdpg.generate_uuid.return_value = "uuid"
         mdpg.add_dynamic_texture.return_value = None
-        mdpg.add_image.return_value = "canvas_image"
 
         win = Window(engine, Path())
         assert len(win.panel.sections) == 2
@@ -99,10 +100,7 @@ def test_window_update_renders_panel() -> None:
         win.update()
         win.panel.draw.assert_called_once()
         mdpg.configure_item.assert_any_call(
-            "canvas_window", pos=(0, 0), width=1280, height=1080
-        )
-        mdpg.configure_item.assert_any_call(
-            "canvas_image", width=1280, height=1080
+            "canvas_image", pmin=(0, 0), pmax=(1280, 1080)
         )
         mdpg.render_dearpygui_frame.assert_called_once()
 

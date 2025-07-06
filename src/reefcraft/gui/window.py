@@ -4,13 +4,13 @@
 # Licensed under the MIT License. See the LICENSE file for details.
 # -----------------------------------------------------------------------------
 
-"""Defines the main GUI layout using Dear PyGui."""
+"""Defines the main GUI layout using Taichi's GGUI."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import dearpygui.dearpygui as dpg
+import taichi as ti
 
 from .panel import Panel, Section
 
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
 
 class Window:
-    """Encapsulate the Dear PyGui viewport and overlay UI panel."""
+    """Encapsulate the Taichi window and overlay UI panel."""
 
     def __init__(
         self,
@@ -29,52 +29,33 @@ class Window:
         app_root: Path,
         *,
         canvas_size: tuple[int, int] = (1024, 768),
-        border_color: tuple[int, int, int, int] = (32, 32, 32, 255),
         checkerboard_square: int = 16,
-        panel_side: str = "right",
+        border_color: tuple[float, float, float] = (0.0, 0.0, 0.0),
     ) -> None:
         """Initialize the window and GUI state."""
         self.engine = engine
 
         self.canvas_width, self.canvas_height = canvas_size
-        self.checkerboard_square = checkerboard_square
 
-        dpg.create_context()
-        dpg.create_viewport(title="Reefcraft", width=1280, height=1080)
+        ti.init(arch=ti.vulkan)
+        self.window = ti.ui.Window("Reefcraft", res=(1280, 1080), vsync=True)
+        self.canvas = self.window.get_canvas()
+        self.gui = self.window.get_gui()
 
-        self.main_window = dpg.add_window(
-            label="",
-            no_title_bar=True,
-            no_move=True,
-            no_resize=True,
-            no_scrollbar=True,
-            no_background=True,
+        self.canvas_img = ti.Vector.field(
+            3, dtype=ti.f32, shape=(self.canvas_height, self.canvas_width)
         )
-        self.panel = Panel(width=300, margin=10, side=panel_side)
+        self._checkerboard_pattern(checkerboard_square)
+        self.border_color = border_color
 
-        self.canvas_texture = dpg.generate_uuid()
-        with dpg.texture_registry(show=False):
-            dpg.add_dynamic_texture(
-                self.canvas_width,
-                self.canvas_height,
-                self._checkerboard_pattern(
-                    self.canvas_width,
-                    self.canvas_height,
-                    self.checkerboard_square,
-                ),
-                tag=self.canvas_texture,
-            )
-        dpg.set_viewport_clear_color(list(border_color))
-        self.canvas_drawlist = dpg.add_viewport_drawlist(front=False)
-        self.canvas_image = dpg.draw_image(
-            self.canvas_texture,
-            (0, 0),
-            (self.canvas_width, self.canvas_height),
-            parent=self.canvas_drawlist,
-        )
-        dpg.set_primary_window(self.main_window, True)
+        from ..utils.window_style import apply_dark_titlebar_and_icon
 
-        # Default values for demo section widgets
+        icon_path = (app_root / "resources" / "icon" / "reefcraft.ico").resolve()
+        apply_dark_titlebar_and_icon("Reefcraft", icon_path)
+
+        self.panel = Panel(width=300, margin=10)
+
+        # Default values for demo section sliders
         self.growth_rate = 1.0
         self.complexity = 0.5
         self.temperature = 24.0
@@ -82,90 +63,45 @@ class Window:
 
         self._register_demo_sections()
 
-        dpg.setup_dearpygui()
-
-        from ..utils.window_style import apply_dark_titlebar_and_icon
-
-        icon_path = (app_root / "resources" / "icon" / "reefcraft.ico").resolve()
-        apply_dark_titlebar_and_icon("Reefcraft", icon_path)
-
-        dpg.show_viewport()
-
-    def _checkerboard_pattern(
-        self, width: int, height: int, square: int = 16
-    ) -> list[float]:
-        """Return RGBA data for a checkerboard texture."""
-        data: list[float] = []
-        for y in range(height):
-            for x in range(width):
-                val = 200 if ((x // square + y // square) % 2 == 0) else 255
-                f = val / 255.0
-                data.extend([f, f, f, 1.0])
-        return data
-
-
     def _register_demo_sections(self) -> None:
         """Register example sections for demonstration."""
 
-        def coral_growth() -> None:
-            dpg.add_slider_float(
-                label="Growth Rate",
-                default_value=self.growth_rate,
-                min_value=0.0,
-                max_value=2.0,
-                callback=lambda s, a: setattr(self, "growth_rate", a),
+        def coral_growth(gui: ti.ui.Gui) -> None:
+            self.growth_rate = gui.slider_float(
+                "Growth Rate", self.growth_rate, 0.0, 2.0
             )
-            dpg.add_slider_float(
-                label="Complexity",
-                default_value=self.complexity,
-                min_value=0.0,
-                max_value=1.0,
-                callback=lambda s, a: setattr(self, "complexity", a),
+            self.complexity = gui.slider_float(
+                "Complexity", self.complexity, 0.0, 1.0
             )
-            dpg.add_button(
-                label="Apply",
-                callback=lambda: print("[DEBUG] Apply coral growth"),
-            )
+            if gui.button("Apply"):
+                print("[DEBUG] Apply coral growth")
 
-        def environment() -> None:
-            dpg.add_slider_float(
-                label="Water Temp",
-                default_value=self.temperature,
-                min_value=10.0,
-                max_value=30.0,
-                callback=lambda s, a: setattr(self, "temperature", a),
+        def environment(gui: ti.ui.Gui) -> None:
+            self.temperature = gui.slider_float(
+                "Water Temp", self.temperature, 10.0, 30.0
             )
-            dpg.add_slider_float(
-                label="Light",
-                default_value=self.light,
-                min_value=0.0,
-                max_value=1.0,
-                callback=lambda s, a: setattr(self, "light", a),
-            )
-            dpg.add_button(
-                label="Reset Environment",
-                callback=lambda: print("[DEBUG] Reset environment"),
-            )
+            self.light = gui.slider_float("Light", self.light, 0.0, 1.0)
+            if gui.button("Reset Environment"):
+                print("[DEBUG] Reset environment")
 
         self.panel.register(Section("Coral Growth", coral_growth))
         self.panel.register(Section("Environment", environment))
 
+    def _checkerboard_pattern(self, square: int) -> None:
+        """Fill :attr:`canvas_img` with a checkerboard."""
+        for i, j in self.canvas_img:
+            val = 0.78 if ((i // square + j // square) % 2 == 0) else 1.0
+            self.canvas_img[i, j] = (val, val, val)
+
     @property
     def running(self) -> bool:
-        """Return ``True`` if the Dear PyGui viewport is still running."""
-        return dpg.is_dearpygui_running()
+        """Return ``True`` if the underlying Taichi window is still open."""
+        return self.window.running
 
     def update(self) -> None:
         """Render one frame of the simulation and overlay UI."""
-        win_w, win_h = dpg.get_viewport_width(), dpg.get_viewport_height()
-
-        x = (win_w - self.canvas_width) / 2
-        y = (win_h - self.canvas_height) / 2
-        dpg.configure_item(
-            self.canvas_image,
-            pmin=(x, y),
-            pmax=(x + self.canvas_width, y + self.canvas_height),
-        )
-
-        self.panel.draw()
-        dpg.render_dearpygui_frame()
+        self.canvas.set_background_color(self.border_color)
+        self.canvas.set_image(self.canvas_img)
+        # Simulation visualization would be drawn to the canvas here
+        self.panel.draw(self.window, self.gui)
+        self.window.show()

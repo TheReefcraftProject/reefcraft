@@ -46,11 +46,13 @@ class Window:
             dpg.add_dynamic_texture(
                 self.canvas_width,
                 self.canvas_height,
-                self._checkerboard_pattern(self.canvas_width, self.canvas_height),
+                self._checkerboard_pattern(
+                    self.canvas_width, self.canvas_height
+                ),
                 tag=self.canvas_texture,
             )
-        dpg.set_viewport_clear_color(border_color)
-        self.canvas_drawlist = dpg.add_viewport_drawlist()
+        dpg.set_viewport_clear_color(list(border_color))
+        self.canvas_drawlist = dpg.add_viewport_drawlist(front=False)
         self.canvas_image = dpg.draw_image(
             self.canvas_texture,
             (0, 0),
@@ -76,13 +78,16 @@ class Window:
 
         dpg.show_viewport()
 
-    def _checkerboard_pattern(self, width: int, height: int, square: int = 8) -> list[int]:
+    def _checkerboard_pattern(
+        self, width: int, height: int, square: int = 8
+    ) -> list[float]:
         """Return RGBA data for a checkerboard texture."""
-        data: list[int] = []
+        data: list[float] = []
         for y in range(height):
             for x in range(width):
                 val = 200 if ((x // square + y // square) % 2 == 0) else 255
-                data.extend([val, val, val, 255])
+                f = val / 255.0
+                data.extend([f, f, f, 1.0])
         return data
 
 

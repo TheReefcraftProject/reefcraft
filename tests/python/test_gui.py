@@ -106,6 +106,7 @@ def test_window_update_renders_panel() -> None:
             ANY,
             tag="uuid_init",
         )
+        mdpg.add_viewport_drawlist.assert_called_once_with(front=False)
         mdpg.configure_item.assert_any_call(
             "canvas_image",
             pmin=((1280 - 1024) / 2, (1080 - 768) / 2),

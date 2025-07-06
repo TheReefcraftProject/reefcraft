@@ -26,10 +26,11 @@ class Section:
 
     def draw(self) -> None:
         """Render this section using Dear PyGui."""
-        header = dpg.collapsing_header(label=self.title, default_open=self.open)
-        self.open = dpg.get_item_state(header).open
+        header = dpg.add_collapsing_header(label=self.title, default_open=self.open)
+        self.open = bool(dpg.get_item_state(header).get("open"))
         if self.open:
-            self.builder()
+            with dpg.group(parent=header):
+                self.builder()
 
 
 class Panel:

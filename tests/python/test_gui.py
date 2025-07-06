@@ -18,14 +18,15 @@ def test_section_builder_called_when_open() -> None:
         called.append(True)
 
     with patch("reefcraft.gui.panel.dpg") as mdpg:
-        mdpg.collapsing_header.return_value = "hdr"
-        mdpg.get_item_state.return_value = SimpleNamespace(open=True)
+        mdpg.add_collapsing_header.return_value = "hdr"
+        mdpg.group.return_value.__enter__.return_value = None
+        mdpg.get_item_state.return_value = {"open": True}
         sec = Section("Test", builder)
         sec.draw()
         assert sec.open is True
         assert called == [True]
 
-        mdpg.get_item_state.return_value = SimpleNamespace(open=False)
+        mdpg.get_item_state.return_value = {"open": False}
         sec.draw()
         assert sec.open is False
         assert called == [True]
@@ -44,8 +45,9 @@ def test_panel_draw_calls_sections() -> None:
             mdpg.window_calls.append(kwargs)
             yield
         mdpg.window.side_effect = dummy_window
-        mdpg.collapsing_header.return_value = "hdr"
-        mdpg.get_item_state.return_value = SimpleNamespace(open=True)
+        mdpg.add_collapsing_header.return_value = "hdr"
+        mdpg.group.return_value.__enter__.return_value = None
+        mdpg.get_item_state.return_value = {"open": True}
 
         panel = Panel(width=300, margin=10)
 
@@ -91,8 +93,9 @@ def test_window_update_renders_panel() -> None:
         def dummy_window(**kwargs: object) -> Iterator[None]:
             yield
         mdpg.window.side_effect = dummy_window
-        mdpg.collapsing_header.return_value = "hdr"
-        mdpg.get_item_state.return_value = SimpleNamespace(open=True)
+        mdpg.add_collapsing_header.return_value = "hdr"
+        mdpg.group.return_value.__enter__.return_value = None
+        mdpg.get_item_state.return_value = {"open": True}
 
         win = Window(engine, Path())
         assert len(win.panel.sections) == 2

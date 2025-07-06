@@ -89,9 +89,10 @@ class Window:
 
     def _checkerboard_pattern(self, square: int) -> None:
         """Fill :attr:`canvas_img` with a checkerboard."""
-        for i, j in self.canvas_img:
-            val = 0.78 if ((i // square + j // square) % 2 == 0) else 1.0
-            self.canvas_img[i, j] = (val, val, val)
+        for i in range(self.canvas_height):
+            for j in range(self.canvas_width):
+                val = 0.78 if ((i // square + j // square) % 2 == 0) else 1.0
+                self.canvas_img[i, j] = (val, val, val)
 
     @property
     def running(self) -> bool:

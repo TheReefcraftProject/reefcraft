@@ -370,7 +370,6 @@ dependencies = [
     { name = "pytest-cov" },
     { name = "rich" },
     { name = "ruff" },
-    { name = "taichi" },
     { name = "wheel" },
 ]
 
@@ -387,7 +386,6 @@ requires-dist = [
     { name = "pytest-cov", specifier = ">=6.2.1" },
     { name = "rich", specifier = ">=14.0.0" },
     { name = "ruff", specifier = ">=0.11.6" },
-    { name = "taichi", specifier = ">=1.7.3" },
     { name = "wheel", specifier = ">=0.45.1" },
 ]
 
@@ -429,24 +427,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/68/ca/69d7c7752bce162d1516e5592b1cc6b6668e9328c0d270609ddbeeadd7cf/ruff-0.11.7-py3-none-win_arm64.whl", hash = "sha256:778c1e5d6f9e91034142dfd06110534ca13220bfaad5c3735f6cb844654f6177", size = 10677936, upload_time = "2025-04-24T18:49:34.392Z" },
 ]
 
-[[package]]
-name = "taichi"
-version = "1.7.3"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "colorama" },
-    { name = "dill" },
-    { name = "numpy" },
-    { name = "rich" },
-]
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/0f/f4/459cab267b63cb5633623a1e14be311d114c03bae7024b874d21a7e1127c/taichi-1.7.3-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:9d855c4c4dfc51183fac1e6335076526eceb354eb6a5e0122c89aa59d555586f", size = 50323695, upload_time = "2024-12-23T07:49:39.065Z" },
-    { url = "https://files.pythonhosted.org/packages/f5/4f/febddea17a122dc933b74ce512ee81b4bc00577f0940bd920925f1c30d48/taichi-1.7.3-cp311-cp311-manylinux_2_27_x86_64.whl", hash = "sha256:017fe653bdacda6d8bc98e520c7ba812beac9c0687b3426e043d44e7a928a941", size = 54977629, upload_time = "2024-12-23T07:50:31.959Z" },
-    { url = "https://files.pythonhosted.org/packages/25/a1/19eb48729df2cac0b5ae7d636485683cb4dab7af76e47977987ac1f7349d/taichi-1.7.3-cp311-cp311-win_amd64.whl", hash = "sha256:589539b43fc45ff473c5a355d0da59f66fc87996b487d2e0de81cddab232b065", size = 83123423, upload_time = "2024-12-23T07:50:02.314Z" },
-    { url = "https://files.pythonhosted.org/packages/e3/c3/cffb1a58fdf4073ea3559e3661252bfd0aae22caeefda9212705e89d73ca/taichi-1.7.3-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:bf069db8ad159e8f0775b9478399ea8a120a9b4cff3f8b385a6e68fd84295917", size = 50323461, upload_time = "2024-12-23T07:49:16.651Z" },
-    { url = "https://files.pythonhosted.org/packages/a0/29/401598d7ccb0af91d63a7e191bab70e8dc82921bad9dd475a9b8ef462cb4/taichi-1.7.3-cp312-cp312-manylinux_2_27_x86_64.whl", hash = "sha256:c5cdbd39b4b54a667a1c7aeba5214542e6ad87ad4c5c87c3efaf78876950903e", size = 54983356, upload_time = "2024-12-23T07:51:43.597Z" },
-    { url = "https://files.pythonhosted.org/packages/76/d7/3e77c37fb59703b23fa9a4285eb79cbdebf85588ade4baad536549f1496a/taichi-1.7.3-cp312-cp312-win_amd64.whl", hash = "sha256:b7d86a147ad7347c7ab9badd5f2b0c9abec1649fea819cc87870ca5d68ce9930", size = 83181828, upload_time = "2024-12-23T07:51:26.108Z" },
-]
 
 [[package]]
 name = "toml-fmt-common"

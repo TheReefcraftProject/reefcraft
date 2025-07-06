@@ -24,7 +24,7 @@ Follow these steps to install and start using Reefcraft:
 Requirements:
 1) **Python 3.11+**
 2) **[UV](https://docs.astral.sh/uv/getting-started/installation/)** for Python package management
-3) **[Taichi](https://github.com/taichi-dev/taichi)** (installed with `uv sync`)
+3) **[Dear PyGui](https://github.com/hoffstadt/DearPyGui)** (installed with `uv sync`)
 4) **Visual Studio Code** *(optional)*
 
 Steps:

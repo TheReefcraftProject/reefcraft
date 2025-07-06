@@ -27,7 +27,6 @@ class Window:
         """Initialize the window and GUI state."""
         self.engine = engine
 
-        ti.init(arch=ti.vulkan)
         self.window = ti.ui.Window("Reefcraft", res=(1280, 1080), vsync=True)
         self.canvas = self.window.get_canvas()
         self.gui = self.window.get_gui()

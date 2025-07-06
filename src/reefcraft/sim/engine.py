@@ -8,6 +8,8 @@
 
 from __future__ import annotations
 
+import taichi as ti
+
 from .timer import Timer
 from .volume import Volume
 
@@ -17,6 +19,8 @@ class Engine:
 
     def __init__(self) -> None:
         """Initialize the engine state."""
+        if not getattr(ti, "is_initialized", lambda: False)():
+            ti.init(arch=ti.vulkan)
         self.timer = Timer()
         self.volume = Volume()
 

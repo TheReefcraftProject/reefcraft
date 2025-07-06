@@ -27,10 +27,11 @@ class Window:
         """Initialize the window and GUI state."""
         self.engine = engine
 
-        ti.init(arch=ti.vulkan)
         self.window = ti.ui.Window("Reefcraft", res=(1280, 1080), vsync=True)
         self.canvas = self.window.get_canvas()
         self.gui = self.window.get_gui()
+        self.scene = ti.ui.Scene()
+        self.camera = ti.ui.make_camera()
 
         from ..utils.window_style import apply_dark_titlebar_and_icon
 
@@ -79,6 +80,13 @@ class Window:
     def update(self) -> None:
         """Render one frame of the simulation and overlay UI."""
         self.canvas.set_background_color((0.0, 0.0, 0.0))
-        # Simulation visualization would be drawn to the canvas here
+
+        self.camera.position(0.5, 0.5, 2.0)
+        self.camera.lookat(0.5, 0.5, 0.5)
+        self.scene.set_camera(self.camera)
+        self.scene.ambient_light((0.5, 0.5, 0.5))
+        self.engine.volume.render(self.scene)
+        self.canvas.scene(self.scene)
+
         self.panel.draw(self.window, self.gui)
         self.window.show()

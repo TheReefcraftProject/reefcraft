@@ -29,18 +29,17 @@ class Window:
 
         dpg.create_context()
         dpg.create_viewport(title="Reefcraft", width=1280, height=1080)
-        dpg.setup_dearpygui()
-
-        from ..utils.window_style import apply_dark_titlebar_and_icon
-
-        icon_path = (app_root / "resources" / "icon" / "reefcraft.ico").resolve()
-        apply_dark_titlebar_and_icon("Reefcraft", icon_path)
 
         self.panel = Panel(width=300, margin=10)
 
         self.canvas_texture = dpg.generate_uuid()
         with dpg.texture_registry(show=False):
-            dpg.add_dynamic_texture(1, 1, [255, 255, 255, 255], tag=self.canvas_texture)
+            dpg.add_dynamic_texture(
+                1,
+                1,
+                [255, 255, 255, 255],
+                tag=self.canvas_texture,
+            )
         self.canvas_drawlist = dpg.add_viewport_drawlist()
         self.canvas_image = dpg.draw_image(
             self.canvas_texture,
@@ -57,6 +56,13 @@ class Window:
         self.light = 0.8
 
         self._register_demo_sections()
+
+        dpg.setup_dearpygui()
+
+        from ..utils.window_style import apply_dark_titlebar_and_icon
+
+        icon_path = (app_root / "resources" / "icon" / "reefcraft.ico").resolve()
+        apply_dark_titlebar_and_icon("Reefcraft", icon_path)
 
         dpg.show_viewport()
 

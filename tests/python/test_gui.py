@@ -103,7 +103,7 @@ def test_window_update_renders_panel() -> None:
         mdpg.get_viewport_height.return_value = 1080
         mdpg.is_dearpygui_running.return_value = True
 
-        mdpg.add_window.return_value = "panel_win"
+        mdpg.add_window.side_effect = ["main_win", "panel_win"]
         mdpg.set_primary_window.return_value = None
         mdpg.add_viewport_drawlist.return_value = "drawlist"
         mdpg.draw_image.return_value = "canvas_image"
@@ -122,6 +122,7 @@ def test_window_update_renders_panel() -> None:
         win.update()
 
         win.panel.draw.assert_called_once()
+        mdpg.set_primary_window.assert_called_once_with("main_win", True)
         mdpg.add_dynamic_texture.assert_called_once_with(
             1024,
             768,

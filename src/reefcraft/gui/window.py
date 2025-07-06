@@ -42,6 +42,13 @@ class Window:
         dpg.create_context()
         dpg.create_viewport(title="Reefcraft", width=1280, height=1080)
 
+        self.main_window = dpg.add_window(
+            label="",
+            no_title_bar=True,
+            no_move=True,
+            no_resize=True,
+            no_scrollbar=True,
+        )
         self.panel = Panel(width=300, margin=10, side=panel_side)
 
         self.canvas_texture = dpg.generate_uuid()
@@ -64,7 +71,7 @@ class Window:
             (self.canvas_width, self.canvas_height),
             parent=self.canvas_drawlist,
         )
-        dpg.set_primary_window(self.panel.window_id, True)
+        dpg.set_primary_window(self.main_window, True)
 
         # Default values for demo section widgets
         self.growth_rate = 1.0

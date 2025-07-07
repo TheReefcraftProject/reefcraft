@@ -50,6 +50,7 @@ class SettingsPanel:
             )
             dpg.add_button(
                 label="Apply",
+                width=300,
                 callback=lambda: print("[DEBUG] Apply coral growth"),
             )
 
@@ -70,6 +71,7 @@ class SettingsPanel:
             )
             dpg.add_button(
                 label="Reset Environment",
+                width=300,
                 callback=lambda: print("[DEBUG] Reset environment"),
             )
 

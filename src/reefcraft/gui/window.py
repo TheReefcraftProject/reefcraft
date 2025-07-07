@@ -31,7 +31,7 @@ class Window:
         self.engine = engine
 
         dpg.create_context()
-        dpg.create_viewport(title="Reefcraft", width=1280, height=1080)
+        dpg.create_viewport(title="Reefcraft", width=1920, height=1080)
         dpg.set_viewport_clear_color(list(viewport_color))
 
         with dpg.font_registry():
@@ -43,7 +43,7 @@ class Window:
                 print(f"⚠️ Font not loaded: {e}")
 
         self.canvas = Canvas()
-        self._panel = Panel(width=300, margin=10, side=panel_side)
+        self._panel = Panel(width=300, margin=0, side=panel_side)
 
         dpg.setup_dearpygui()
 

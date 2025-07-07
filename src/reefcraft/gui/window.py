@@ -27,14 +27,12 @@ class Window:
     def __init__(self, engine: Engine, app_root: Path) -> None:
         """Initialize the window and GUI state."""
         viewport_color: tuple[int, int, int, int] = (20, 20, 22, 255)
-        panel_side: str = "right"
+        panel_side: str = "left"
         self.engine = engine
 
         dpg.create_context()
         dpg.create_viewport(title="Reefcraft", width=1280, height=1080)
         dpg.set_viewport_clear_color(list(viewport_color))
-
-        dpg.show_debug()
 
         with dpg.font_registry():
             try:

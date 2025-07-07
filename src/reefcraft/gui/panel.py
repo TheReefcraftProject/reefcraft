@@ -40,9 +40,7 @@ class Section:
 class Panel:
     """Fixed side panel that holds collapsible sections."""
 
-    def __init__(
-        self, width: int = 300, margin: int = 10, *, side: str = "right"
-    ) -> None:
+    def __init__(self, width: int = 300, margin: int = 10, *, side: str = "right") -> None:
         """Initialize the panel with width, margin, and pinned side."""
         self.width = width
         self.margin = margin

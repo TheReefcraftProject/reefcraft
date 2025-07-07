@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 
 import dearpygui.dearpygui as dpg
 
+from .canvas import Canvas
 from .panel import Panel, Section
 
 if TYPE_CHECKING:
@@ -28,43 +29,18 @@ class Window:
         engine: Engine,
         app_root: Path,
         *,
-        canvas_size: tuple[int, int] = (1024, 768),
         border_color: tuple[int, int, int, int] = (32, 32, 32, 255),
-        checkerboard_square: int = 16,
         panel_side: str = "right",
     ) -> None:
         """Initialize the window and GUI state."""
         self.engine = engine
 
-        self.canvas_width, self.canvas_height = canvas_size
-        self.checkerboard_square = checkerboard_square
-
         dpg.create_context()
         dpg.create_viewport(title="Reefcraft", width=1280, height=1080)
 
+        self.canvas = Canvas()
         self.panel = Panel(width=300, margin=10, side=panel_side)
-
-        self.canvas_texture = dpg.generate_uuid()
-        with dpg.texture_registry(show=False):
-            dpg.add_dynamic_texture(
-                self.canvas_width,
-                self.canvas_height,
-                self._checkerboard_pattern(
-                    self.canvas_width,
-                    self.canvas_height,
-                    self.checkerboard_square,
-                ),
-                tag=self.canvas_texture,
-            )
         dpg.set_viewport_clear_color(list(border_color))
-        self.canvas_drawlist = dpg.add_viewport_drawlist(front=False)
-        self.canvas_image = dpg.draw_image(
-            self.canvas_texture,
-            (0, 0),
-            (self.canvas_width, self.canvas_height),
-            parent=self.canvas_drawlist,
-        )
-        dpg.set_primary_window(self.panel.window_id, True)
 
         # Default values for demo section widgets
         self.growth_rate = 1.0
@@ -82,19 +58,6 @@ class Window:
         apply_dark_titlebar_and_icon("Reefcraft", icon_path)
 
         dpg.show_viewport()
-
-    def _checkerboard_pattern(
-        self, width: int, height: int, square: int = 16
-    ) -> list[float]:
-        """Return RGBA data for a checkerboard texture."""
-        data: list[float] = []
-        for y in range(height):
-            for x in range(width):
-                val = 200 if ((x // square + y // square) % 2 == 0) else 255
-                f = val / 255.0
-                data.extend([f, f, f, 1.0])
-        return data
-
 
     def _register_demo_sections(self) -> None:
         """Register example sections for demonstration."""
@@ -149,15 +112,6 @@ class Window:
 
     def update(self) -> None:
         """Render one frame of the simulation and overlay UI."""
-        win_w, win_h = dpg.get_viewport_width(), dpg.get_viewport_height()
-
-        x = (win_w - self.canvas_width) / 2
-        y = (win_h - self.canvas_height) / 2
-        dpg.configure_item(
-            self.canvas_image,
-            pmin=(x, y),
-            pmax=(x + self.canvas_width, y + self.canvas_height),
-        )
-
+        self.canvas.draw()
         self.panel.draw()
         dpg.render_dearpygui_frame()

@@ -24,19 +24,17 @@ if TYPE_CHECKING:
 class Window:
     """Encapsulate the Dear PyGui viewport and overlay UI panel."""
 
-    def __init__(
-        self,
-        engine: Engine,
-        app_root: Path,
-        *,
-        border_color: tuple[int, int, int, int] = (32, 32, 32, 255),
-        panel_side: str = "right",
-    ) -> None:
+    def __init__(self, engine: Engine, app_root: Path) -> None:
         """Initialize the window and GUI state."""
+        viewport_color: tuple[int, int, int, int] = (20, 20, 22, 255)
+        panel_side: str = "right"
         self.engine = engine
 
         dpg.create_context()
         dpg.create_viewport(title="Reefcraft", width=1280, height=1080)
+        dpg.set_viewport_clear_color(list(viewport_color))
+
+        dpg.show_style_editor()
 
         with dpg.font_registry():
             try:
@@ -48,7 +46,6 @@ class Window:
 
         self.canvas = Canvas()
         self.panel = Panel(width=300, margin=10, side=panel_side)
-        dpg.set_viewport_clear_color(list(border_color))
 
         # Default values for demo section widgets
         self.growth_rate = 1.0

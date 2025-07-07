@@ -4,19 +4,10 @@ import dearpygui.dearpygui as dpg
 
 
 class Canvas:
-    """Fixed side panel that holds collapsible sections."""
+    """Offscreen image management and display."""
 
     def __init__(self, canvas_size: tuple[int, int] = (1024, 768)) -> None:
-        """Initialize the panel with width, margin, and pinned side."""
-        self.window_id = dpg.add_window(
-            label="Canvas",
-            no_title_bar=True,
-            no_move=True,
-            no_resize=True,
-            no_scrollbar=True,
-        )
-        dpg.set_primary_window(self.window_id, True)
-
+        """Initialize the canvas for the 3d scene in the viewport."""
         self.canvas_width, self.canvas_height = canvas_size
         self.checkerboard_square = 16
 
@@ -32,22 +23,30 @@ class Canvas:
                 ),
                 tag=self.canvas_texture,
             )
-
-        dpg.add_image(self.canvas_texture, parent=self.window_id, tag="offscreen_tex")
+        self.canvas_drawlist = dpg.add_viewport_drawlist(front=False)
+        self.canvas_image = dpg.draw_image(
+            self.canvas_texture,
+            (0, 0),
+            (self.canvas_width, self.canvas_height),
+            parent=self.canvas_drawlist,
+        )
 
     def _checkerboard_pattern(self, width: int, height: int, square: int = 16) -> list[float]:
         """Return RGBA data for a checkerboard texture."""
         data: list[float] = []
         for y in range(height):
             for x in range(width):
-                val = 24 if ((x // square + y // square) % 2 == 0) else 16
+                val = 32 if ((x // square + y // square) % 2 == 0) else 16
                 f = val / 255.0
-                data.extend([f, f, f, 1.0])
+                data.extend([f, f, f * 1.05, 1.0])
         return data
 
     def draw(self) -> None:
         """Render the background canvas and 3d scene."""
-        window_width, window_height = dpg.get_item_rect_size(self.window_id)
-        x = int((window_width - self.canvas_width) / 2)
-        y = int((window_height - self.canvas_height) / 2)
-        dpg.configure_item("offscreen_tex", pos=(x, y))
+        x = (dpg.get_viewport_width() - self.canvas_width) / 2
+        y = (dpg.get_viewport_height() - self.canvas_height) / 2
+        dpg.configure_item(
+            self.canvas_image,
+            pmin=(x, y),
+            pmax=(x + self.canvas_width, y + self.canvas_height),
+        )

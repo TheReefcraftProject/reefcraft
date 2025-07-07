@@ -5,6 +5,7 @@
 # -----------------------------------------------------------------------------
 import taichi as ti
 import numpy as np
+import matplotlib as plt
 
 # Initialize Taichi
 ti.init(arch=ti.gpu)
@@ -96,15 +97,16 @@ class LBM:
         self.stream()
         self.compute_macroscopic()
 
-# Usage
-grid_size = 64  # Example grid size for 3D simulation
-tau = 1.0  # Relaxation time for viscosity
 
-lbm = LBM(grid_size, tau)
+# Usage
+#grid_size = 64  # Example grid size for 3D simulation
+#tau = 1.0  # Relaxation time for viscosity
+
+#lbm = LBM(grid_size, tau)
 
 # Main simulation loop
-for _ in range(1000):  # Run for 1000 iterations
-    lbm.update()
+#for _ in range(1000):  # Run for 1000 iterations
+#    lbm.update()
 
     # Optionally, you can access the macroscopic variables like:
     # lbm.rho  # Density

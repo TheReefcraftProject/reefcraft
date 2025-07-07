@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 import dearpygui.dearpygui as dpg
 
 from .canvas import Canvas
-from .panel import Panel, Section
+from .panel import Panel
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -34,7 +34,7 @@ class Window:
         dpg.create_viewport(title="Reefcraft", width=1280, height=1080)
         dpg.set_viewport_clear_color(list(viewport_color))
 
-        dpg.show_style_editor()
+        dpg.show_debug()
 
         with dpg.font_registry():
             try:
@@ -45,15 +45,7 @@ class Window:
                 print(f"⚠️ Font not loaded: {e}")
 
         self.canvas = Canvas()
-        self.panel = Panel(width=300, margin=10, side=panel_side)
-
-        # Default values for demo section widgets
-        self.growth_rate = 1.0
-        self.complexity = 0.5
-        self.temperature = 24.0
-        self.light = 0.8
-
-        self._register_demo_sections()
+        self._panel = Panel(width=300, margin=10, side=panel_side)
 
         dpg.setup_dearpygui()
 
@@ -64,56 +56,15 @@ class Window:
 
         dpg.show_viewport()
 
-    def _register_demo_sections(self) -> None:
-        """Register example sections for demonstration."""
-
-        def coral_growth() -> None:
-            dpg.add_slider_float(
-                label="Growth Rate",
-                default_value=self.growth_rate,
-                min_value=0.0,
-                max_value=2.0,
-                callback=lambda s, a: setattr(self, "growth_rate", a),
-            )
-            dpg.add_slider_float(
-                label="Complexity",
-                default_value=self.complexity,
-                min_value=0.0,
-                max_value=1.0,
-                callback=lambda s, a: setattr(self, "complexity", a),
-            )
-            dpg.add_button(
-                label="Apply",
-                callback=lambda: print("[DEBUG] Apply coral growth"),
-            )
-
-        def environment() -> None:
-            dpg.add_slider_float(
-                label="Water Temp",
-                default_value=self.temperature,
-                min_value=10.0,
-                max_value=30.0,
-                callback=lambda s, a: setattr(self, "temperature", a),
-            )
-            dpg.add_slider_float(
-                label="Light",
-                default_value=self.light,
-                min_value=0.0,
-                max_value=1.0,
-                callback=lambda s, a: setattr(self, "light", a),
-            )
-            dpg.add_button(
-                label="Reset Environment",
-                callback=lambda: print("[DEBUG] Reset environment"),
-            )
-
-        self.panel.register(Section("Coral Growth", coral_growth))
-        self.panel.register(Section("Environment", environment))
-
     @property
     def running(self) -> bool:
         """Return ``True`` if the Dear PyGui viewport is still running."""
         return dpg.is_dearpygui_running()
+
+    @property
+    def panel(self) -> Panel:
+        """Return the panel class for others to register sections."""
+        return self._panel
 
     def update(self) -> None:
         """Render one frame of the simulation and overlay UI."""

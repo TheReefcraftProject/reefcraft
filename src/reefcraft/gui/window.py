@@ -34,14 +34,6 @@ class Window:
         dpg.create_viewport(title="Reefcraft", width=1920, height=1080)
         dpg.set_viewport_clear_color(list(viewport_color))
 
-        with dpg.font_registry():
-            try:
-                font_path = (app_root / "resources" / "fonts" / "Archivo-Regular.ttf").resolve()
-                default_font = dpg.add_font(str(font_path.resolve()), 13)
-                dpg.bind_font(default_font)
-            except Exception as e:
-                print(f"⚠️ Font not loaded: {e}")
-
         self.canvas = Canvas()
         self._panel = Panel(width=300, margin=0, side=panel_side)
 
@@ -53,6 +45,22 @@ class Window:
         apply_dark_titlebar_and_icon("Reefcraft", icon_path)
 
         dpg.show_viewport()
+
+        # Initialize the theme system.
+        # TODO: Move this to its own class
+        with dpg.theme() as reefcraft_theme, dpg.theme_component(dpg.mvAll):
+            dpg.add_theme_color(dpg.mvThemeCol_FrameBg, (100, 100, 200, 255), category=dpg.mvThemeCat_Core)
+            dpg.add_theme_style(dpg.mvStyleVar_FrameRounding, 5, category=dpg.mvThemeCat_Core)
+            dpg.add_theme_style(dpg.mvStyleVar_WindowBorderSize, 0, category=dpg.mvThemeCat_Core)
+        dpg.bind_theme(reefcraft_theme)
+        with dpg.font_registry():
+            try:
+                font_path = (app_root / "resources" / "fonts" / "Archivo-Regular.ttf").resolve()
+                default_font = dpg.add_font(str(font_path.resolve()), 13)
+                dpg.bind_font(default_font)
+            except Exception as e:
+                print(f"⚠️ Font not loaded: {e}")
+        # dpg.show_style_editor()
 
     @property
     def running(self) -> bool:

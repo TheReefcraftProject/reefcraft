@@ -38,6 +38,14 @@ class Window:
         dpg.create_context()
         dpg.create_viewport(title="Reefcraft", width=1280, height=1080)
 
+        with dpg.font_registry():
+            try:
+                font_path = (app_root / "resources" / "fonts" / "Archivo-Regular.ttf").resolve()
+                default_font = dpg.add_font(str(font_path.resolve()), 13)
+                dpg.bind_font(default_font)
+            except Exception as e:
+                print(f"⚠️ Font not loaded: {e}")
+
         self.canvas = Canvas()
         self.panel = Panel(width=300, margin=10, side=panel_side)
         dpg.set_viewport_clear_color(list(border_color))

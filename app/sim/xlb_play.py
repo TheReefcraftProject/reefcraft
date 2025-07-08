@@ -83,10 +83,13 @@ def visualize_flow(u, step, grid_shape):
     """
     Visualize the flow by plotting the velocity magnitude in the x-y plane.
     """
-    # Take the magnitude of the velocity vector at each point in the grid
-    u_magnitude = jnp.sqrt(u[0]**2 + u[1]**2 + u[2]**2)
+    # Convert Warp tensor to NumPy array (assuming Warp tensors support `.numpy()`)
+    u_numpy = u.numpy()  # Convert Warp tensor to NumPy array
 
-    # Plot the flow as a 2D slice at the middle of the z-axis
+    # Compute the velocity magnitude using JAX's jnp.sqrt
+    u_magnitude = jnp.sqrt(u_numpy[0] ** 2 + u_numpy[1] ** 2 + u_numpy[2] ** 2)
+
+    # Visualize the magnitude in the x-y plane
     mid_z = grid_shape[2] // 2
     plt.imshow(u_magnitude[:, :, mid_z], cmap='viridis', origin='lower')
     plt.colorbar(label="Velocity Magnitude")
@@ -95,16 +98,22 @@ def visualize_flow(u, step, grid_shape):
     plt.ylabel('Y')
     plt.show()
 
-
 # -------------------------- Simulation Loop --------------------------
 
 start_time = time.time()
 for step in range(num_steps):
     # Call stepper with the correct arguments
-    f_0, f_1 = stepper(f_0, f_1, bc_mask, missing_mask, omega, step)
+    f_0, f_1 = stepper(f_0, f_1, bc_mask, missing_mask, step)
 
     # Swap the buffers
     f_0, f_1 = f_1, f_0
+
+    # Create pre-allocated fields
+    rho_field = grid.create_field(cardinality=1)  # 1D density field
+    u_field = grid.create_field(cardinality=velocity_set.d)  # 3D velocity field
+
+    # Compute macroscopic quantities like density and velocity
+    rho_field, u_field = macro(f_0, rho_field, u_field)  # Now passing pre-allocated fields
 
     # Print progress at intervals
     if step % print_interval == 0:
@@ -114,10 +123,7 @@ for step in range(num_steps):
 
     # Post-process at intervals and final step
     if step % post_process_interval == 0 or step == num_steps - 1:
-        # Compute macroscopic quantities like velocity and density
-        rho, u = macro(f_0)
-
         # Visualize the flow by plotting a 2D slice of velocity magnitude
-        visualize_flow(u, step, grid_shape)
+        visualize_flow(u_field, step, grid_shape)
 
 print("Simulation completed successfully.")

@@ -28,6 +28,7 @@ def launch_app(app_root: Path) -> None:
 
     window = ti.ui.Window("Reefcraft", res=(1280, 1080))
     gui = window.get_gui()
+    canvas = window.get_canvas()
 
     from app.utils.window_style import apply_dark_titlebar_and_icon
 
@@ -46,4 +47,12 @@ def launch_app(app_root: Path) -> None:
             engine.reset()
 
         gui.text(f"Time: {engine.get_time():.3f}")
+        canvas.set_background_color((0.05, 0.05, 0.1))
+
+        window_w, window_h = window.get_window_shape()
+        aspect_ratio = window_w / window_h
+        engine.surface.update_render_verts(aspect_ratio)
+        canvas.triangles(engine.surface.render_verts, indices=engine.surface.faces, color=(0.6, 0.8, 0.5))
+        engine.surface.draw_edges(canvas, color=(0.0, 1.0, 0.0), thickness=0.001)
+
         window.show()

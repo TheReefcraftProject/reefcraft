@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 from .llabres_growth import LlabresSurface
+from .mesh_seed import gen_llabres_seed
 from .timer import Timer
 
 
@@ -15,8 +16,8 @@ class Engine:
 
     def __init__(self) -> None:
         self.timer = Timer()
-        self.surface = LlabresSurface(grid_size=20)
-        self.surface.reset()
+        verts, faces, edges = gen_llabres_seed(radius=1.0, height=0.1)
+        self.surface = LlabresSurface(verts, faces, edges)
 
     def start(self) -> None:
         self.timer.start()
@@ -26,12 +27,13 @@ class Engine:
 
     def reset(self) -> None:
         self.timer.reset()
-        self.surface.reset()
+        # self.surface.reset()
 
     def update(self) -> None:
         """Advance the simulation state."""
         if not self.timer._paused:
-            self.surface.step(threshold=0.8, amount=0.001)
+            self.surface.compute_norms()
+            self.surface.grow(threshold=0.8, amount=0.001)
 
     def get_time(self) -> float:
         return self.timer.time

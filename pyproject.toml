@@ -9,7 +9,7 @@ name = "reefcraft"
 version = "0.1"
 description = "Photorealistic Coral Simulations with Physically Based Accuracy"
 readme = "README.md"
-requires-python = ">=3.11, <=3.12"
+requires-python = ">=3.11, <3.13"
 classifiers = [
   "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3.11",

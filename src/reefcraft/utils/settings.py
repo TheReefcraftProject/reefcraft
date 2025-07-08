@@ -8,6 +8,7 @@
 
 
 def load_settings() -> dict:
+    """Return default configuration values for the application."""
     return {
         "theme": "dark",
         "default_growth_rate": 1.0,

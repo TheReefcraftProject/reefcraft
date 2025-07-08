@@ -4,26 +4,17 @@
 # file. It replaces the older requirements.txt as well as many smaller files
 # previously cluttering the root directory.
 
-[build-system]
-build-backend = "hatchling.build"
-
-requires = [ "hatchling" ]
-
 [project]
 name = "reefcraft"
 version = "0.1"
-description = "reefcraft DESCRIPTION"
+description = "Photorealistic Coral Simulations with Physically Based Accuracy"
 readme = "README.md"
-requires-python = ">=3.11,<=3.12"
+requires-python = ">=3.11, <=3.12"
 classifiers = [
-  "Development Status :: 3 - Alpha",
   "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
 ]
-
-#scripts.reefcraft-sample = "reefcraft.sample:main"
-
 dependencies = [
   "attrs>=25.3.0",
   "cattrs>=24.1.3",
@@ -36,13 +27,17 @@ dependencies = [
   "pytest-cov>=6.2.1",    # Coverage tracking for pytest
   "rich>=14.0.0",
   "ruff>=0.11.6",
+  "dearpygui>=2.0.0",
   "taichi>=1.7.3",
   "wheel>=0.45.1",
 ]
 
-[tool.hatch.build.targets.wheel]
-packages = ["app"]
+[build-system]
+build-backend = "hatchling.build"
+requires = [ "hatchling" ]
 
+[tool.hatch.build.targets.wheel]
+packages = [ "src/reefcraft" ]
 
 [tool.ruff]
 line-length = 160 # Allow longer source lines than the default 88 chars
@@ -88,10 +83,8 @@ testpaths = [
 # Add coverage configuration for pytest and coverage tools
 
 [tool.coverage.run]
-branch = true # Enable branch coverage analysis
-source = [
-  "app",
-]
+branch = true            # Enable branch coverage analysis
+source = [ "reefcraft" ]
 
 [tool.coverage.report]
 show_missing = true # Show missing lines in the coverage report

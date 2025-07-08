@@ -4,6 +4,8 @@
 # Licensed under the MIT License. See the LICENSE file for details.
 # -----------------------------------------------------------------------------
 
+"""Utility class for tracking elapsed simulation time."""
+
 from __future__ import annotations
 
 import time
@@ -13,6 +15,7 @@ class Timer:
     """A simple wrapper around ``time.perf_counter``."""
 
     def __init__(self) -> None:
+        """Create a new timer in the paused state."""
         self._start = time.perf_counter()
         self._elapsed = 0.0
         self._paused = True

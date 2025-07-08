@@ -6,11 +6,18 @@
 
 """Entrypoint for the Reefcraft GUI application."""
 
+from __future__ import annotations
+
 from pathlib import Path
 
-from gui.main_window import launch_app
+from .app import ReefcraftApp
 
-APP_ROOT = Path(__file__).resolve().parent  # → reefcraft/app
+
+def main() -> None:
+    """Launch the application and block until closed."""
+    app = ReefcraftApp(app_root=Path(__file__).resolve().parent)
+    app.run()
+
 
 if __name__ == "__main__":
-    launch_app(app_root=APP_ROOT)
+    main()

@@ -4,17 +4,19 @@
 # Licensed under the MIT License. See the LICENSE file for details.
 # -----------------------------------------------------------------------------
 
+"""Helpers for customizing window appearance on different platforms."""
+
 import sys
 
 if sys.platform == "win32":
     import ctypes
     from ctypes import wintypes
     from pathlib import Path
-    from typing import Union
 
     import dearpygui.dearpygui as gui
 
     def apply_dark_titlebar_and_icon(window_title: str, icon_path: str | Path) -> None:
+        """Force the window to honor darkmode and set the icon."""
         icon_path = Path(icon_path)
 
         def _apply() -> None:
@@ -54,4 +56,5 @@ if sys.platform == "win32":
 else:
 
     def apply_dark_titlebar_and_icon(window_title: str, icon_path: str) -> None:
+        """Stub out for non-Windows platforms."""
         pass

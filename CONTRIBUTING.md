@@ -5,7 +5,7 @@ Welcome to the Reefcraft Project! This document outlines our coding standards, d
 ---
 
 ## 🌊 Project Overview
-Reefcraft is a scientific simulation platform that models coral growth and marine ecosystems using physically-based methods. The core logic is in Python with performance-critical components in C++.
+Reefcraft is a scientific simulation platform that models coral growth and marine ecosystems using physically-based methods. The core logic is implemented in Python using Taichi for high-performance kernels.
 
 We value:
 - Scientific accuracy
@@ -83,11 +83,6 @@ As a contributor, I want to integrate logging into the simulation loop so that w
 - Follow [PEP8](https://peps.python.org/pep-0008/) and [PEP257](https://peps.python.org/pep-0257/) (docstrings)
 - We use [`ruff`](https://docs.astral.sh/ruff/) for automatic linting and formatting
 
-### C++ (for extensions)
-- Use camelCase for functions and variables
-- Use PascalCase for types and classes
-- Favor `constexpr` and `enum class` where possible
-- Follow C++17/20 standards (as determined by CMake)
 
 ### Git
 - Use descriptive branch names: `feat/<feature>`, `fix/<bug>`, `test/<module>`
@@ -146,9 +141,6 @@ We support using **Codex via ChatGPT Pro** for feature development and bug fixin
 - Parametrize tests where useful (`@pytest.mark.parametrize`)
 - Include edge cases and regression scenarios
 
-### C++ Extensions
-- Use Python-level tests to validate bindings
-- Consider minimal C++-side unit tests for logic-heavy components
 
 ## 💡 Contributor Tips
 - Always link work to issues

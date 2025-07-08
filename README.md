@@ -22,38 +22,20 @@ This repository contains the source code, documentation, and examples for the Re
 Follow these steps to install and start using Reefcraft:
 
 Requirements:
-1) **Visual Studio Community Edition (or better) INCLUDING vcpkg**  
-https://visualstudio.microsoft.com/vs/community/  
-Be sure to check the box to install vcpkg for C++ package management  
-Ideally set the environment var to reach vcpkg but it will fallback to the default vs community location  
-   - ```bash
-     setx VCPKG_ROOT "<path_to_your_vcpkg_installation>"  
-   - ```bash
-     setx VCPKG_ROOT "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/vcpkg"
-
-2) **UV  Python Package Manager**  
-https://docs.astral.sh/uv/getting-started/installation/  
-3) **Visual Studio Code**  
-https://code.visualstudio.com/download
+1) **Python 3.11+**
+2) **[UV](https://docs.astral.sh/uv/getting-started/installation/)** for Python package management
+3) **[Taichi](https://github.com/taichi-dev/taichi)** (installed with `uv sync`)
+4) **Visual Studio Code** *(optional)*
 
 Steps:
 
-4) git clone https://github.com/TheReefcraftProject/reefcraft
-5) uv sync from terminal while in the cloned directory
-   - ```bash
-     uv sync  
-6) Open the workspace in Visual Code
-7) Build desired target  
-
-Currently the workflow is through a wheel so this takes much longer
-than desired.  Need to implement an in-situ dev cycle for the extension.
-
-Build the full wheel in powershell terminal with active venv:
-> pip install -e .
-
-The execute python tests with:
-> pytest
-
-Run the app from
-> main.py
-in the app directory (Open this file in vscode and hit the play button)
+4) `git clone https://github.com/TheReefcraftProject/reefcraft`
+5) `cd reefcraft` and run `uv sync`
+6) Execute the Python tests:
+   ```bash
+   pytest
+   ```
+7) Launch the example app:
+   ```bash
+   python app/main.py
+   ```

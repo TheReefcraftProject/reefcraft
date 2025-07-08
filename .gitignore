@@ -186,3 +186,6 @@ tmp*
 
 # SECRETS* files should NOT be checked in.  Ask Roger for innards of this file.
 SECRETS*
+
+# UI user file from Taichi/imgui
+imgui.ini

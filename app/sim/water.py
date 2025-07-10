@@ -28,7 +28,10 @@ lbm_sim = ComputeLBM(
     post_process_interval=post_process_interval
 )
 
-# Run the simulation
-lbm_sim.run()
+# Run Simulation - No visual
+#lbm_sim.run()
+
+# Run the simulation with save vtk
+lbm_sim.run_vtk()
 
 

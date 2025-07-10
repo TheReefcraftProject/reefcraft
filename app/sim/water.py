@@ -7,7 +7,7 @@
 Here we use the ComputeLBM class to run the water simulation.
 
 IDEA/GOAL: Have this return specified fields (e.g. Density, Velocity) 
-in specified formats (numpy, jnp, warp) at specified points in loop to be used in reefcraft.
+in specified formats (numpy, jnp, warp array) at specified points in loop to be used in reefcraft.
 """
 # Import LBM 
 from compute_lbm import ComputeLBM
@@ -28,7 +28,7 @@ lbm_sim = ComputeLBM(
     post_process_interval=post_process_interval
 )
 
-# Run Simulation - No visual
+# Run Simulation - No post processing
 #lbm_sim.run()
 
 # Run the simulation with save vtk

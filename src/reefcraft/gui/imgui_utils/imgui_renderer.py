@@ -86,26 +86,24 @@ class ImguiRenderer:
 
         self._update_gui_function = None
 
-    def set_gui(self, gui_updater: callable):
-        """
-        Set the gui update function that is called on every render cycle to update the GUI
+    def set_gui(self, gui_updater: callable) -> None:
+        """Set the function used to update the ImGui interface each frame.
 
         Arguments
         ---------
         gui_updater: callable
-            GUI update function, must return imgui.ImDrawData: the draw data to
-            render, this is usually obtained by calling ``imgui.get_draw_data()``
+            Function that returns ``imgui.core._DrawData`` from
+            ``imgui.get_draw_data()``.
 
         Returns
         -------
         None
-
         """
         self._update_gui_function = gui_updater
 
     @property
-    def imgui_context(self) -> imgui.internal.Context:
-        """imgui context for this renderer"""
+    def imgui_context(self) -> "imgui.core._ImGuiContext":
+        """imgui context for this renderer."""
         return self._imgui_context
 
     @property

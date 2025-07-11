@@ -287,7 +287,7 @@ class ImguiWgpuBackend:
             },
         )
 
-    def _set_render_state(self, draw_data: imgui.ImDrawData):
+    def _set_render_state(self, draw_data: "imgui.core._DrawData"):
         # update the uniform buffer (mvp and gamma)
 
         l = draw_data.display_pos.x  # noqa: E741
@@ -315,7 +315,7 @@ class ImguiWgpuBackend:
             self._uniform_buffer, 0, self._uniform_data, 0, self._uniform_data.nbytes
         )
 
-    def _update_vertex_buffer(self, draw_data: imgui.ImDrawData):
+    def _update_vertex_buffer(self, draw_data: "imgui.core._DrawData"):
         # check if we need to recreate the vertex buffer and index buffer
         vtx_count = draw_data.total_vtx_count
         if self._vertex_buffer is None or self._vertex_buffer_size < vtx_count:
@@ -380,7 +380,7 @@ class ImguiWgpuBackend:
 
     def render(
         self,
-        draw_data: imgui.ImDrawData,
+        draw_data: "imgui.core._DrawData",
         render_pass: wgpu.GPURenderPassEncoder,
     ):
         """
@@ -388,7 +388,7 @@ class ImguiWgpuBackend:
 
         Arguments
         ---------
-        draw_data : imgui.ImDrawData
+        draw_data : imgui.core._DrawData
             The draw data to render, this is usually obtained by calling ``imgui.get_draw_data()``
         render_pass : wgpu.GPURenderPassEncoder
             The render pass to render the imgui draw data with

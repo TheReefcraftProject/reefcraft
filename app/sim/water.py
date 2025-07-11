@@ -13,11 +13,12 @@ in specified formats (numpy, jnp, warp array) at specified points in loop to be 
 from compute_lbm import ComputeLBM
 
 # Simulation parameters
-grid_shape = (128, 128, 128)  # Grid size
-num_steps = 1000              # Total number of simulation steps
+# Reduced parameters for testing
+grid_shape = (32, 32, 32)  # Grid size
+num_steps = 2              # Total number of simulation steps
 fluid_speed = 0.02           # Fluid speed (m/s)
 stl_filename = "app/resources/stl/coral.stl"  # Path to the coral mesh (for boundary conditions)
-post_process_interval = 100  # Interval for post-processing (e.g., saving VTK or images)
+post_process_interval = 1  # Interval for post-processing (e.g., saving VTK or images)
 
 # Create an instance of LatticeBoltzmannMethod
 lbm_sim = ComputeLBM(

@@ -18,13 +18,16 @@ from .panel import Panel
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from reefcraft.render.context import RenderContext
+    from reefcraft.render.scene import Scene
+
     from ..sim.engine import Engine
 
 
 class Window:
     """Encapsulate the Dear PyGui viewport and overlay UI panel."""
 
-    def __init__(self, engine: Engine, app_root: Path) -> None:
+    def __init__(self, engine: Engine, app_root: Path, context: RenderContext, scene: Scene) -> None:
         """Initialize the window and GUI state."""
         viewport_color: tuple[int, int, int, int] = (20, 20, 22, 255)
         panel_side: str = "left"
@@ -34,7 +37,7 @@ class Window:
         dpg.create_viewport(title="Reefcraft", width=1920, height=1080)
         dpg.set_viewport_clear_color(list(viewport_color))
 
-        self.canvas = Canvas()
+        self.canvas = Canvas(context, scene)
         self._panel = Panel(width=300, margin=0, side=panel_side)
 
         dpg.setup_dearpygui()

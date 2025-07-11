@@ -28,12 +28,13 @@ dependencies = [
   "pytest-cov>=6.2.1", # Coverage tracking for pytest
   "rich>=14.0.0",
   "ruff>=0.11.6",
-  "dearpygui>=2.0.0",
   "taichi>=1.7.3",
   "wheel>=0.45.1",
   "pygfx>=0.12.0",
   "xlb>=0.2.1",
   "warp-lang>=1.8.0",
+  "imgui>=2.0.0",
+  "glfw>=2.9.0",
 ]
 
 [build-system]

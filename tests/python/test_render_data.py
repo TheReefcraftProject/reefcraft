@@ -1,10 +1,10 @@
 import numpy as np
 
-from reefcraft.render.scene import TriangleScene
+from reefcraft.render.scene import Scene
 
 
 def test_triangle_geometry_shapes() -> None:
-    scene = TriangleScene()
+    scene = Scene()
     geo = scene.mesh.geometry
     assert geo.positions.data.shape == (3, 3)
     assert geo.indices.data.shape == (3,)
@@ -13,7 +13,7 @@ def test_triangle_geometry_shapes() -> None:
 
 
 def test_triangle_material_color() -> None:
-    scene = TriangleScene()
+    scene = Scene()
     r, g, b, a = scene.material.color
     for v in (r, g, b, a):
         assert 0.0 <= v <= 1.0

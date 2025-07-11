@@ -10,7 +10,7 @@ from pygfx.renderers.wgpu import enable_wgpu_features
 from wgpu.gui.offscreen import WgpuCanvas
 
 if TYPE_CHECKING:  # pragma: no cover - type hints only
-    from .scene import TriangleScene
+    from .scene import Scene
 
 
 class RenderContext:
@@ -18,19 +18,14 @@ class RenderContext:
 
     def __init__(self, size: tuple[int, int] = (1024, 768)) -> None:
         """Create the rendering context."""
-        # Disable advanced features that may not be supported on all devices.
-        # This keeps Pygfx compatible with headless or low capability drivers.
-        enable_wgpu_features("!float32-filterable")
         self.size = size
         self.canvas = WgpuCanvas(size=size)
-        self.renderer = gfx.renderers.WgpuRenderer(self.canvas)
-        self.camera = gfx.PerspectiveCamera(45, size[0] / size[1])
-        # The camera's position attribute moved under ``local`` in recent pygfx
-        # versions, so use that API to position the camera 3 units away.
-        self.camera.local.position = (0, 0, 3)
+        self.renderer = gfx.renderers.WgpuRenderer(self.canvas, pixel_ratio=1)
+        self.camera = gfx.PerspectiveCamera(70, 16 / 9)
+        self.camera.local.z = 400
         self.scene: gfx.Scene | None = None
 
-    def set_scene(self, scene: TriangleScene) -> None:
+    def set_scene(self, scene: Scene) -> None:
         """Attach a scene to render."""
         self.scene = scene
 

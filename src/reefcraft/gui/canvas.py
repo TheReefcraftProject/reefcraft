@@ -5,16 +5,17 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import dearpygui.dearpygui as dpg
+import numpy as np
 
 if TYPE_CHECKING:  # pragma: no cover - used for type hints only
     from reefcraft.render.context import RenderContext
-    from reefcraft.render.scene import TriangleScene
+    from reefcraft.render.scene import Scene
 
 
 class Canvas:
     """Offscreen image management and display."""
 
-    def __init__(self, context: RenderContext, scene: TriangleScene, canvas_size: tuple[int, int] = (1024, 768)) -> None:
+    def __init__(self, context: RenderContext, scene: Scene, canvas_size: tuple[int, int] = (1024, 768)) -> None:
         """Initialize the canvas for the 3d scene in the viewport."""
         self.context = context
         self.scene = scene
@@ -22,14 +23,15 @@ class Canvas:
         self.context.resize(self.canvas_width, self.canvas_height)
         self.context.set_scene(self.scene)
 
-        initial_data = self.context.render().ravel().tolist()
+        # 1) Get a contiguous float32 ndarray [h, w, 4] in [0,1]
+        img = np.ascontiguousarray(self.context.render(), dtype=np.float32)
 
         self.canvas_texture = dpg.generate_uuid()
         with dpg.texture_registry(show=False):
             dpg.add_dynamic_texture(
                 self.canvas_width,
                 self.canvas_height,
-                initial_data,
+                img,
                 tag=self.canvas_texture,
             )
         self.canvas_drawlist = dpg.add_viewport_drawlist(front=False)
@@ -42,8 +44,9 @@ class Canvas:
 
     def draw(self) -> None:
         """Render the background canvas and 3d scene."""
-        image = self.context.render().ravel().tolist()
-        dpg.set_value(self.canvas_texture, image)
+        img = np.ascontiguousarray(self.context.render(), dtype=np.float32)
+
+        dpg.set_value(self.canvas_texture, img)  # <-- pass ndarray
 
         x = (dpg.get_viewport_width() - self.canvas_width) / 2
         y = (dpg.get_viewport_height() - self.canvas_height) / 2

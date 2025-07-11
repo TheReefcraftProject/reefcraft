@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from reefcraft.render.context import RenderContext
-    from reefcraft.render.scene import TriangleScene
+    from reefcraft.render.scene import Scene
 
     from ..sim.engine import Engine
 
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 class Window:
     """Encapsulate the Dear PyGui viewport and overlay UI panel."""
 
-    def __init__(self, engine: Engine, app_root: Path, context: RenderContext, scene: TriangleScene) -> None:
+    def __init__(self, engine: Engine, app_root: Path, context: RenderContext, scene: Scene) -> None:
         """Initialize the window and GUI state."""
         viewport_color: tuple[int, int, int, int] = (20, 20, 22, 255)
         panel_side: str = "left"

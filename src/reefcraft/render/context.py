@@ -25,7 +25,6 @@ class RenderContext:
         # versions, so use that API to position the camera 3 units away.
         self.camera.local.position = (0, 0, 3)
         self.scene: gfx.Scene | None = None
-        self.render_target = gfx.RenderTarget(*size)
 
     def set_scene(self, scene: TriangleScene) -> None:
         """Attach a scene to render."""
@@ -36,7 +35,6 @@ class RenderContext:
         if (width, height) != self.size:
             self.size = (width, height)
             self.canvas.set_logical_size(width, height)
-            self.render_target = gfx.RenderTarget(width, height)
             self.camera.aspect = width / height
 
     def render(self) -> np.ndarray:
@@ -44,6 +42,6 @@ class RenderContext:
         if self.scene is None:
             return np.zeros((self.size[1], self.size[0], 4), dtype=np.float32)
         self.scene.update()
-        self.renderer.render(self.scene.scene, self.camera, self.render_target)
-        tex = self.render_target.color[0]
-        return tex.data.astype(np.float32) / 255.0
+        self.renderer.render(self.scene.scene, self.camera)
+        image = self.renderer.snapshot()
+        return image.astype(np.float32) / 255.0

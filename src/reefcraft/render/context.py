@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import pygfx as gfx
+from pygfx.renderers.wgpu import enable_wgpu_features
 from wgpu.gui.offscreen import WgpuCanvas
 
 if TYPE_CHECKING:  # pragma: no cover - type hints only
@@ -17,6 +18,9 @@ class RenderContext:
 
     def __init__(self, size: tuple[int, int] = (1024, 768)) -> None:
         """Create the rendering context."""
+        # Disable advanced features that may not be supported on all devices.
+        # This keeps Pygfx compatible with headless or low capability drivers.
+        enable_wgpu_features("!float32-filterable")
         self.size = size
         self.canvas = WgpuCanvas(size=size)
         self.renderer = gfx.renderers.WgpuRenderer(self.canvas)

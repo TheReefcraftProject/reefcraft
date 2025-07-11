@@ -14,7 +14,7 @@ import taichi as ti
 from sim.engine import Engine
 from utils.settings import load_settings
 
-ti.init(arch=ti.gpu)  # needs to happen before any felds are constructed
+ti.init(debug=True, arch=ti.gpu)  # needs to happen before any felds are constructed
 
 
 if TYPE_CHECKING:
@@ -54,6 +54,6 @@ def launch_app(app_root: Path) -> None:
         engine.surface.update_render_verts(aspect_ratio)
         # print(f"[DEBUG] triangles count: {engine.surface.num_faces}")
         canvas.triangles(engine.surface.render_verts, indices=engine.surface.faces, color=(0.6, 0.8, 0.5))
-        engine.surface.draw_edges(canvas, color=(0.3, 1.0, 0.3), thickness=0.001)
+        engine.surface.draw_edges(canvas, color=(0.0, 0.8, 0.0), thickness=0.001)
 
         window.show()

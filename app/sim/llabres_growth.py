@@ -4,6 +4,12 @@
 # Licensed under the MIT License. See the LICENSE file for details.
 # -----------------------------------------------------------------------------
 
+"""
+Implements a triangle-mesh-based coral surface with growth and edge-based subdivision.
+Growth occurs along surface normals based on curvature thresholding.
+Subdivision splits long edges to simulate coral branching/expansion.
+"""
+
 import numpy as np
 import taichi as ti
 
@@ -71,15 +77,6 @@ class LlabresSurface:
         for i in self.norms:
             self.norms[i] = self.norms[i].normalized()
 
-    # @ti.kernel
-    # def update_render_verts(self):
-    #     for i in self.verts:
-    #         v = self.verts[i]
-    #         # Project x, y from [-1, 1] → [0, 1]
-    #         norm_x = (v[0] + 1.0) * 0.5
-    #         norm_y = (v[1] + 1.0) * 0.5
-    #         self.render_verts[i] = ti.Vector([norm_x, norm_y])
-
     @ti.kernel
     def update_render_verts(self, aspect_ratio: float):  # projects 3D verts to 2D screen space
         angle = ti.math.radians(-60.0)  # rotate to visualize growth from angle, will revisit once user cam is implemented
@@ -144,11 +141,12 @@ class LlabresSurface:
         if len(edges_to_split) == 0:
             return
 
-        # Limit to one edge per frame for stability
-        edges_to_split = edges_to_split[:1]
+        # Limit number of edges to split at once -- methods avail for 1, 2, 3
+        MAX_SPLIT_PER_FRAME = 1  # move to class attribute in future?
+        edges_to_split = edges_to_split[:MAX_SPLIT_PER_FRAME]
 
-        print(f"Splitting {len(edges_to_split)} edges")
-        print(f"Current mesh: {len(verts)} verts, {len(faces)} faces")
+        print(f"[DEBUG] Splitting {len(edges_to_split)} edges")
+        print(f"[DEBUG] Current mesh: {len(verts)} verts, {len(faces)} faces")
 
         # Perform edge-based subdivision
         new_verts, new_faces, new_edges = self.subdivide_edges(edges_to_split, verts, faces, edges)
@@ -157,13 +155,23 @@ class LlabresSurface:
             print("Subdivision failed")
             return
 
-        print(f"After subdivision: {len(new_verts)} verts, {len(new_faces)} faces")
+        print(f"[DEBUG] After subdivision: {len(new_verts)} verts, {len(new_faces)} faces")
+        # print("[DEBUG] Verts preview:\n", new_verts)
+        # print("[DEBUG] Faces preview:\n", new_faces)
+
+        # Ensure GPU kernels are finished before reallocating fields
+        ti.sync()
+
+        # check for invalid indices
+        # for f in new_faces:
+        #     for idx in f:
+        #         if idx < 0 or idx >= len(new_verts):
+        #             print(f"Invalid face index {idx} in face {f} (verts count = {len(new_verts)})")
 
         # Update mesh
         self.rebuild_mesh(new_verts, new_faces, new_edges)
 
     def find_edges_to_split(self, verts, edges, split_thresh):
-        """Find edges that should be split based on vertex displacement."""
         edges_to_split = []
 
         for i, edge in enumerate(edges):
@@ -215,17 +223,25 @@ class LlabresSurface:
             elif len(split_edges_in_face) == 1:
                 # One edge split - create 2 triangles
                 new_faces.extend(self.split_face_one_edge(face, split_edges_in_face[0], edges, edge_midpoints))
+            elif len(split_edges_in_face) == 2:
+                # two edge split
+                split_keys = [tuple(sorted(edges[e])) for e in split_edges_in_face]
+                new_faces.extend(self.split_face_two_edges(face, split_keys, edges, edge_midpoints))
+            elif len(split_edges_in_face) == 3:
+                # three edge split
+                new_faces.extend(self.split_face_three_edges(face, edge_midpoints))
             else:
-                # Multiple edges split - more complex subdivision
-                new_faces.extend(self.split_face_multiple_edges(face, split_edges_in_face, edges, edge_midpoints))
+                print(f"Unexpected number of split edges in face {face}: {split_edges_in_face}")
+                continue
 
         # Rebuild edge list
         new_edges = self.rebuild_edges(new_faces)
 
-        max_index = len(new_verts) - 1
-        for edge in new_edges:
-            if edge[0] > max_index or edge[1] > max_index:
-                print(f"Invalid edge: {edge}, max index: {max_index}")
+        # [DEBUG] check for invalid edges
+        # max_index = len(new_verts) - 1
+        # for edge in new_edges:
+        #     if edge[0] > max_index or edge[1] > max_index:
+        #         print(f"Invalid edge: {edge}, max index: {max_index}")
 
         return new_verts, np.array(new_faces, dtype=np.int32), new_edges
 
@@ -239,6 +255,12 @@ class LlabresSurface:
 
     def split_face_one_edge(self, face, split_edge_idx, edges, edge_midpoints):
         """Split a triangle when one edge is subdivided."""
+        """       o           o
+                 / \         /|\
+                /   \  ---> / | \
+               /     \     /  |  \
+              o---x---o   o---o---o"""
+
         v1, v2 = edges[split_edge_idx]
         midpoint = edge_midpoints[split_edge_idx]
 
@@ -253,11 +275,59 @@ class LlabresSurface:
         # Create two new triangles
         return [[v1, midpoint, third_vertex], [midpoint, v2, third_vertex]]
 
-    def split_face_multiple_edges(self, face, split_edges, edges, edge_midpoints):
-        """Handle faces with multiple split edges (more complex case)."""
-        # For now, just create a simple subdivision
-        # This could be improved with more sophisticated mesh topology
-        return [face]  # Keep original face for now
+    def split_face_two_edges(self, face, split_edges, edge_midpoints, verts):
+        """        o           o
+                  / \         /|\
+                 x   \  ---> o | \
+                /     \     / \|  \
+               o---x---o   o---o---o"""
+        i0, i1, i2 = face
+
+        midpoints = {}
+        for key in split_edges:
+            if key in edge_midpoints:
+                midpoints[key] = edge_midpoints[key]
+
+        if len(midpoints) != 2:
+            print(f"Unexpected number of midpoints in split_face_two_edges: {midpoints}")
+            return [face]  # fallback
+
+        # Identify which two midpoints we have
+        m_keys = list(midpoints.keys())
+        m0_key, m1_key = m_keys[0], m_keys[1]
+        m0 = midpoints[m0_key]
+        m1 = midpoints[m1_key]
+
+        # Identify third vertex not involved in those two edges
+        edge_verts = set(m0_key + m1_key)
+        third_vert = list({i0, i1, i2} - edge_verts)[0]
+
+        # Triangle ordering depends on which edges are split
+        vA, vB = list(edge_verts - {third_vert})
+        new_faces = [[vA, m0, third_vert], [m0, m1, third_vert], [m1, vB, third_vert]]
+        return new_faces
+
+    def split_face_three_edges(self, face, edge_midpoints):
+        """        o           o
+                  / \         / \
+                 x   x  ---> o---o
+                /     \     / \ / \
+               o---x---o   o---o---o"""
+        i0, i1, i2 = face
+
+        e01 = (min(i0, i1), max(i0, i1))
+        e12 = (min(i1, i2), max(i1, i2))
+        e20 = (min(i2, i0), max(i2, i0))
+
+        m01 = edge_midpoints.get(e01)
+        m12 = edge_midpoints.get(e12)
+        m20 = edge_midpoints.get(e20)
+
+        if None in (m01, m12, m20):
+            print(f"Missing midpoint in split_face_three_edges: {[m01, m12, m20]}")
+            return [face]
+
+        return [[i0, m20, m01], [i1, m01, m12], [i2, m12, m20], [m01, m20, m12]]
 
     def rebuild_edges(self, faces):
         """Rebuild edge list from face list."""
@@ -274,6 +344,7 @@ class LlabresSurface:
         self.num_faces = new_faces.shape[0]
 
         # Recreate all fields
+        # TODO: Consider preallocating and reusing fields to avoid per-frame rebuild
         self.verts = ti.Vector.field(3, dtype=ti.f32, shape=self.num_verts)
         self.norms = ti.Vector.field(3, dtype=ti.f32, shape=self.num_verts)
         self.faces = ti.Vector.field(3, dtype=ti.i32, shape=self.num_faces)
@@ -295,6 +366,6 @@ class LlabresSurface:
 
         self.compute_norms()
 
-        # flat_faces = new_faces.flatten()
-        # if np.any(flat_faces >= new_verts.shape[0]):
-        #     print("One or more faces reference an invalid vertex index!")
+    # flat_faces = new_faces.flatten()
+    # if np.any(flat_faces >= new_verts.shape[0]):
+    #     print("One or more faces reference an invalid vertex index!")

@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING
 import dearpygui.dearpygui as dpg
 
 if TYPE_CHECKING:  # pragma: no cover - used for type hints only
-    from render.context import RenderContext
-    from render.scene import TriangleScene
+    from reefcraft.render.context import RenderContext
+    from reefcraft.render.scene import TriangleScene
 
 
 class Canvas:

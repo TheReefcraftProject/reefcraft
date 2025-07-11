@@ -18,8 +18,8 @@ from .panel import Panel
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from render.context import RenderContext
-    from render.scene import TriangleScene
+    from reefcraft.render.context import RenderContext
+    from reefcraft.render.scene import TriangleScene
 
     from ..sim.engine import Engine
 

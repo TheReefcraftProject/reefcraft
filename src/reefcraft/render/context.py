@@ -21,7 +21,9 @@ class RenderContext:
         self.canvas = WgpuCanvas(size=size)
         self.renderer = gfx.renderers.WgpuRenderer(self.canvas)
         self.camera = gfx.PerspectiveCamera(45, size[0] / size[1])
-        self.camera.position.z = 3
+        # The camera's position attribute moved under ``local`` in recent pygfx
+        # versions, so use that API to position the camera 3 units away.
+        self.camera.local.position = (0, 0, 3)
         self.scene: gfx.Scene | None = None
         self.render_target = gfx.RenderTarget(*size)
 

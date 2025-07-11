@@ -66,6 +66,9 @@ class ComputeLBM:
         # Load the mesh
         self.load_mesh()
 
+        # Save coral mesh for visualization
+        self.save_coral_mesh()
+
         # Boundary conditions
         self.setup_boundary_conditions()
 
@@ -89,6 +92,7 @@ class ComputeLBM:
         # Load and process mesh for the simulation
         mesh = trimesh.load_mesh(self.stl_filename, process=False)
         mesh_vertices = mesh.vertices
+        self.coral_faces = mesh.faces
 
         # Transform mesh points to align with grid
         mesh_vertices -= mesh_vertices.min(axis=0)
@@ -102,6 +106,16 @@ class ComputeLBM:
 
         # Cross-sectional area for the coral mesh (just for boundary condition purposes)
         self.coral_cross_section = np.prod(mesh_extents[1:]) / dx**2
+
+    def save_coral_mesh(self):
+        """Save the coral mesh to the output directory for visualization."""
+        import pyvista as pv
+        os.makedirs("./output", exist_ok=True)
+        faces = np.hstack(
+            [np.full((self.coral_faces.shape[0], 1), 3, dtype=np.int32), self.coral_faces.astype(np.int32)]
+        ).ravel()
+        mesh = pv.PolyData(self.coral_vertices, faces)
+        mesh.save(os.path.join("./output", "coral_mesh.vtk"))
 
     def setup_boundary_conditions(self):
         # Boundary conditions
@@ -128,15 +142,31 @@ class ComputeLBM:
         u_field = self.grid.create_field(cardinality=self.velocity_set.d)  # 3D velocity field (3 channels)
 
         # Compute macroscopic quantities like density and velocity
-        rho_field, u_field = self.macro(self.f_0, rho_field, u_field)  # Now passing pre-allocated fields
+        rho_field, u_field = self.macro(self.f_0, rho_field, u_field)
 
-        # Prepare fields dictionary
+        # Convert Warp arrays to NumPy for saving
+        rho_np = rho_field.numpy()[0].astype(np.float32)  # (nx, ny, nz)
+        u_np = u_field.numpy().astype(np.float32)  # (3, nx, ny, nz)
+
+        # Reorder velocity components to (nx, ny, nz, 3)
+        u_np = np.moveaxis(u_np, 0, -1)
+
+        # Compute pressure and velocity magnitude for visualization
+        pressure_np = (rho_np - 1.0) / 3.0
+        vel_mag_np = np.linalg.norm(u_np, axis=-1)
+
+        # Prepare fields dictionary with scalar components
         fields = {
-            "density": rho_field.astype(np.float32),  # Convert density to float32
-            "velocity": u_field.astype(np.float32)    # Convert velocity to float32
+            "density": rho_np,
+            "pressure": pressure_np.astype(np.float32),
+            "velocity_x": u_np[..., 0],
+            "velocity_y": u_np[..., 1],
+            "velocity_z": u_np[..., 2],
+            "velocity_magnitude": vel_mag_np.astype(np.float32),
         }
 
         # Save the fields as VTK files
+        os.makedirs("./output", exist_ok=True)
         save_fields_vtk(fields, timestep=step, output_dir="./output", prefix="simulation")
         print(f"VTK files saved for timestep {step}")
 

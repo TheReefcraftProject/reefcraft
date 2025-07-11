@@ -1,72 +1,50 @@
+"""ImGui renderer for pygfx using pyimgui."""
+
 import imgui
 import wgpu
+
 from .imgui_backend import ImguiWgpuBackend
 
 
 class ImguiRenderer:
+    """Render a pyimgui UI on top of a pygfx canvas."""
     KEY_MAP = {
-        "ArrowDown": imgui.Key.down_arrow,
-        "ArrowUp": imgui.Key.up_arrow,
-        "ArrowLeft": imgui.Key.left_arrow,
-        "ArrowRight": imgui.Key.right_arrow,
-        "Backspace": imgui.Key.backspace,
-        "CapsLock": imgui.Key.caps_lock,
-        "Delete": imgui.Key.delete,
-        "End": imgui.Key.end,
-        "Enter": imgui.Key.enter,
-        "Escape": imgui.Key.escape,
-        "F1": imgui.Key.f1,
-        "F2": imgui.Key.f2,
-        "F3": imgui.Key.f3,
-        "F4": imgui.Key.f4,
-        "F5": imgui.Key.f5,
-        "F6": imgui.Key.f6,
-        "F7": imgui.Key.f7,
-        "F8": imgui.Key.f8,
-        "F9": imgui.Key.f9,
-        "F10": imgui.Key.f10,
-        "F11": imgui.Key.f11,
-        "F12": imgui.Key.f12,
-        "Home": imgui.Key.home,
-        "Insert": imgui.Key.insert,
-        # we don't know if it's left or right from wgpu-py, so we just use left
-        "Alt": imgui.Key.left_alt,
-        "Control": imgui.Key.left_ctrl,
-        "Shift": imgui.Key.left_shift,
-        "Meta": imgui.Key.left_super,
-        "NumLock": imgui.Key.num_lock,
-        "PageDown": imgui.Key.page_down,
-        "PageUp": imgui.Key.page_up,
-        "Pause": imgui.Key.pause,
-        "PrintScreen": imgui.Key.print_screen,
-        "ScrollLock": imgui.Key.scroll_lock,
-        "Tab": imgui.Key.tab,
+        "ArrowDown": imgui.KEY_DOWN_ARROW,
+        "ArrowUp": imgui.KEY_UP_ARROW,
+        "ArrowLeft": imgui.KEY_LEFT_ARROW,
+        "ArrowRight": imgui.KEY_RIGHT_ARROW,
+        "Backspace": imgui.KEY_BACKSPACE,
+        "Delete": imgui.KEY_DELETE,
+        "End": imgui.KEY_END,
+        "Enter": imgui.KEY_ENTER,
+        "Escape": imgui.KEY_ESCAPE,
+        "Home": imgui.KEY_HOME,
+        "Insert": imgui.KEY_INSERT,
+        "PageDown": imgui.KEY_PAGE_DOWN,
+        "PageUp": imgui.KEY_PAGE_UP,
+        "Tab": imgui.KEY_TAB,
+        "A": imgui.KEY_A,
+        "C": imgui.KEY_C,
+        "V": imgui.KEY_V,
+        "X": imgui.KEY_X,
+        "Y": imgui.KEY_Y,
+        "Z": imgui.KEY_Z,
     }
 
-    # imgui changed its API between 1.5.2 and 1.6.0
-    # But as of Dec 1, 2024, it is too early for us to force
-    # users to use one specific version.
-    # So we will support both versions for now with this small shim
-    try:
-        # Version 1.6.0 and above
-        KEY_MAP_MOD = {
-            "Shift": imgui.Key.mod_shift,
-            "Control": imgui.Key.mod_ctrl,
-            "Alt": imgui.Key.mod_alt,
-            "Meta": imgui.Key.mod_super,
-        }
-    except AttributeError:
-        # Version 1.2.1 to 1.5.2
-        KEY_MAP_MOD = {
-            "Shift": imgui.Key.im_gui_mod_shift,
-            "Control": imgui.Key.im_gui_mod_ctrl,
-            "Alt": imgui.Key.im_gui_mod_alt,
-            "Meta": imgui.Key.im_gui_mod_super,
-        }
+    KEY_MAP_MOD = {
+        "Shift": imgui.KEY_MOD_SHIFT,
+        "Control": imgui.KEY_MOD_CTRL,
+        "Alt": imgui.KEY_MOD_ALT,
+        "Meta": imgui.KEY_MOD_SUPER,
+    }
 
     def __init__(
-        self, device, canvas: wgpu.gui.WgpuCanvasBase, render_target_format=None
-    ):
+        self,
+        device: wgpu.GPUDevice,
+        canvas: wgpu.gui.WgpuCanvasBase,
+        render_target_format: str | None = None,
+    ) -> None:
+        """Create the renderer and bind event handlers."""
         # Prepare present context
         self._canvas_context = canvas.get_context("wgpu")
 
@@ -196,15 +174,14 @@ class ImguiRenderer:
             key = self.KEY_MAP[key_name]
         else:
             try:
-                key = ord(key_name.lower())
-                if key >= 48 and key <= 57:  # numbers 0-9
-                    key = imgui.Key(imgui.Key._0.value + (key - 48))
-                elif key >= 97 and key <= 122:  # letters a-z
-                    key = imgui.Key(imgui.Key.a.value + (key - 97))
+                code = ord(key_name.lower())
+                if 97 <= code <= 122:  # letters a-z
+                    key_const = f"KEY_{key_name.upper()}"
+                    key = getattr(imgui, key_const)
                 else:
-                    return  # Unknown key: {key_name}
-            except ValueError:
-                return  # Probably a special key that we don't have in our KEY_MAP
+                    return
+            except (ValueError, AttributeError):
+                return  # Unknown key
 
         self._backend.io.add_key_event(key, down)
 

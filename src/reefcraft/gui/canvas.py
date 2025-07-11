@@ -13,6 +13,7 @@ class Canvas:
     """Onscreen canvas that delegates rendering to :class:`RenderContext`."""
 
     def __init__(self, context: RenderContext, scene: Scene) -> None:
+        """Create a new onscreen canvas."""
         self.context = context
         self.scene = scene
         self.context.set_scene(scene)

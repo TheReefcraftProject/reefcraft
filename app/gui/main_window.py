@@ -52,7 +52,8 @@ def launch_app(app_root: Path) -> None:
         window_w, window_h = window.get_window_shape()
         aspect_ratio = window_w / window_h
         engine.surface.update_render_verts(aspect_ratio)
+        # print(f"[DEBUG] triangles count: {engine.surface.num_faces}")
         canvas.triangles(engine.surface.render_verts, indices=engine.surface.faces, color=(0.6, 0.8, 0.5))
-        engine.surface.draw_edges(canvas, color=(0.0, 1.0, 0.0), thickness=0.001)
+        engine.surface.draw_edges(canvas, color=(0.3, 1.0, 0.3), thickness=0.001)
 
         window.show()

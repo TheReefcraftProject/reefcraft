@@ -1,3 +1,10 @@
+# -----------------------------------------------------------------------------
+# Copyright (c) 2025 The Reefcraft Project.
+#
+# Licensed under the MIT License. See the LICENSE file for details.
+# -----------------------------------------------------------------------------
+
+
 import numpy as np
 
 
@@ -36,7 +43,7 @@ def gen_llabres_seed(radius=1.0, height=0.1):
     return np.array(verts, dtype=np.float32), np.array(faces, dtype=np.int32), edges
 
 
-# first attempt, very dense mesh
+# first attempt, very dense mesh - not structured like llabres seed
 def gen_hemisphere(radius=1.0, n_lat=10, n_lon=20):
     verts = []
     faces = []

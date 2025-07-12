@@ -5,12 +5,16 @@ from __future__ import annotations
 import math
 import time
 
+import numpy as np
 import pygfx as gfx
 import pylinalg as la  # pip install pylinalg
 
 
 class Scene:
-    def __init__(self):
+    """Animated triangle scene for rendering demos."""
+
+    def __init__(self) -> None:
+        """Initialize the triangle mesh and lighting."""
         self.scene = gfx.Scene()
         self.scene.add(gfx.AmbientLight())
         self.scene.add(gfx.DirectionalLight())
@@ -18,14 +22,25 @@ class Scene:
         # camera = gfx.PerspectiveCamera(70, 16 / 9)
         # camera.local.z = 400
 
-        geometry = gfx.box_geometry(200, 200, 200)
+        positions = np.array(
+            [
+                [0.0, 100.0, 0.0],
+                [-100.0, -100.0, 0.0],
+                [100.0, -100.0, 0.0],
+            ],
+            dtype=np.float32,
+        )
+        indices = np.array([0, 1, 2], dtype=np.uint32)
+
+        geometry = gfx.Geometry(positions=positions, indices=indices)
         self.material = gfx.MeshPhongMaterial(color="#336699")
         self.mesh = gfx.Mesh(geometry, self.material)
         self.scene.add(self.mesh)
 
         self.start = time.perf_counter()
 
-    def update(self):
+    def update(self) -> None:
+        """Advance animation state for the mesh."""
         t = time.perf_counter() - self.start
 
         # animate color as before

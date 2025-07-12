@@ -55,6 +55,7 @@ class Panel:
             no_resize=True,
             no_scrollbar=True,
         )
+        self._fps_text_id = dpg.add_text("", parent=self.window_id)
 
     def register(self, section: Section) -> None:
         """Add a section to the panel."""
@@ -68,5 +69,6 @@ class Panel:
         y = self.margin
         h = win_h - 2 * self.margin
         dpg.configure_item(self.window_id, pos=(x, y), width=self.width, height=h)
+        dpg.set_value(self._fps_text_id, f"FPS: {dpg.get_frame_rate():.1f}")
         for section in self.sections:
             section.update()

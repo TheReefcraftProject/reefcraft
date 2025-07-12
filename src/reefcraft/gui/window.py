@@ -8,7 +8,7 @@ import imgui
 from wgpu.gui.auto import run
 
 from .panel import Panel
-from .imgui_utils.imgui_renderer import ImguiRenderer
+from wgpu.utils.imgui import ImguiRenderer
 
 from ..render.context import RenderContext
 from ..render.scene import Scene

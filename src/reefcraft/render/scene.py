@@ -10,7 +10,10 @@ import pylinalg as la  # pip install pylinalg
 
 
 class Scene:
-    def __init__(self):
+    """Simple animated 3D scene."""
+
+    def __init__(self) -> None:
+        """Create geometry and lights."""
         self.scene = gfx.Scene()
         self.scene.add(gfx.AmbientLight())
         self.scene.add(gfx.DirectionalLight())
@@ -25,7 +28,8 @@ class Scene:
 
         self.start = time.perf_counter()
 
-    def update(self):
+    def update(self) -> None:
+        """Update animation state each frame."""
         t = time.perf_counter() - self.start
 
         # animate color as before

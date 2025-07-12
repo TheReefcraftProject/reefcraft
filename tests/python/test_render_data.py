@@ -3,16 +3,16 @@ import numpy as np
 from reefcraft.render.scene import Scene
 
 
-def test_triangle_geometry_shapes() -> None:
+def test_cube_geometry_shapes() -> None:
     scene = Scene()
     geo = scene.mesh.geometry
-    assert geo.positions.data.shape == (3, 3)
-    assert geo.indices.data.shape == (3,)
+    assert geo.positions.data.shape == (24, 3)
+    assert geo.indices.data.shape[0] > 0
     assert geo.positions.data.dtype == np.float32
     assert geo.indices.data.dtype == np.uint32
 
 
-def test_triangle_material_color() -> None:
+def test_cube_material_color() -> None:
     scene = Scene()
     r, g, b, a = scene.material.color
     for v in (r, g, b, a):

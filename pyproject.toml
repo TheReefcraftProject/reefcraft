@@ -33,7 +33,7 @@ dependencies = [
   "pygfx>=0.12.0",
   "xlb>=0.2.1",
   "warp-lang>=1.8.0",
-  "imgui>=2.0.0",
+  "imgui[full]>=2.0.0",
   "glfw>=2.9.0",
 ]
 
@@ -42,7 +42,7 @@ build-backend = "hatchling.build"
 requires = [ "hatchling" ]
 
 [tool.hatch.build.targets.wheel]
-packages = [ "src/reefcraft", "src/imgui_bundle" ]
+packages = [ "src/reefcraft" ]
 
 [tool.ruff]
 line-length = 160 # Allow longer source lines than the default 88 chars

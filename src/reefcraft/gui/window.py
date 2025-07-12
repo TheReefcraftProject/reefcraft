@@ -5,8 +5,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import imgui
+from pygfx.gui.imgui import ImGuiRenderer
 from wgpu.gui.auto import run
-from wgpu.utils.imgui import ImguiRenderer
 
 from .panel import Panel
 
@@ -28,7 +28,7 @@ class Window:
         self.canvas = context.canvas
         self.renderer = context.renderer
         self.canvas.request_draw(self._draw)
-        self.imgui = ImguiRenderer(self.renderer.device, self.canvas)
+        self.imgui = ImGuiRenderer(self.renderer, self.canvas, pixel_ratio=1.0)
         self._panel = Panel(width=300, margin=0, side="left")
         self.imgui.set_gui(self._draw_gui)
 

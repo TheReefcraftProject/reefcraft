@@ -2,21 +2,21 @@
 
 from __future__ import annotations
 
-import imgui
-
 from typing import TYPE_CHECKING
 
+import imgui
+
 from ..gui.panel import Panel, Section
+from ..utils.settings import load_settings
 
 if TYPE_CHECKING:  # pragma: no cover - only for type hints
     from ..sim.engine import Engine
-from ..utils.settings import load_settings
 
 
 class SettingsPanel:
     """Encapsulate the pyimgui overlay panel."""
 
-    def __init__(self, panel: Panel, engine: "Engine") -> None:
+    def __init__(self, panel: Panel, engine: Engine) -> None:
         """Initialize the settings panel."""
         self.panel = panel
         self.engine = engine

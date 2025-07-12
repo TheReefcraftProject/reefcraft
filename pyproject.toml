@@ -42,7 +42,7 @@ build-backend = "hatchling.build"
 requires = [ "hatchling" ]
 
 [tool.hatch.build.targets.wheel]
-packages = [ "src/reefcraft" ]
+packages = [ "src/reefcraft", "src/imgui_bundle" ]
 
 [tool.ruff]
 line-length = 160 # Allow longer source lines than the default 88 chars

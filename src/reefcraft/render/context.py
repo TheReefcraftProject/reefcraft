@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pygfx as gfx
-from wgpu.gui.auto import WgpuCanvas
+from wgpu.gui.glfw import WgpuCanvas
 
 if TYPE_CHECKING:  # pragma: no cover - type hints only
     from .scene import Scene

@@ -12,9 +12,8 @@ from pathlib import Path
 
 from rendercanvas.auto import loop
 
-from reefcraft.gui.window import Window
-from reefcraft.render.renderer import Renderer
 from reefcraft.sim.engine import Engine
+from reefcraft.views.window import Window
 
 
 class ReefcraftApp:
@@ -25,7 +24,6 @@ class ReefcraftApp:
         self.app_root = Path(app_root) if app_root else Path(__file__).resolve().parents[1]
         self.engine = Engine()
         self.window = Window(self.engine, self.app_root)
-        self.renderer = Renderer(self.window.canvas)
 
     def run(self) -> None:
         """Start the application."""

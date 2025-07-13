@@ -4,17 +4,16 @@
 # Licensed under the MIT License. See the LICENSE file for details.
 # -----------------------------------------------------------------------------
 
-"""Defines the main GUI layout using Dear PyGui."""
+"""The geometric scene for the reef."""
 
 import pygfx as gfx
-from rendercanvas.auto import RenderCanvas
 
 
-class Renderer:
-    """Encapsulate the Dear PyGui viewport and overlay UI panel."""
+class Reef:
+    """The geometry, lighting, camera, and draw routines for the reef."""
 
-    def __init__(self, canvas: RenderCanvas) -> None:
-        self.renderer = gfx.WgpuRenderer(canvas)
+    def __init__(self, renderer):
+        self.renderer = renderer
         self.scene = gfx.Scene()
 
         self.scene.add(gfx.Mesh(gfx.box_geometry(1, 1, 1), gfx.MeshPhongMaterial(color="#0040ff")))
@@ -28,13 +27,6 @@ class Renderer:
         self.controller = gfx.OrbitController(self.camera, register_events=self.renderer)
         self.camera.show_object(self.scene)
 
-        self.stats = gfx.Stats(viewport=self.renderer)
-
-        self.renderer.request_draw(self.update)
-
-    def update(self) -> None:
-        """Render one frame of the simulation and overlay UI."""
-        # print("[DEBUG] self.renderer.render")
-        with self.stats:
-            self.renderer.render(self.scene, self.camera, flush=False)
-        self.stats.render()
+    def draw(self):
+        """Draw a solid rectangle on the left side of the UI scene."""
+        self.renderer.render(self.scene, self.camera, flush=False)

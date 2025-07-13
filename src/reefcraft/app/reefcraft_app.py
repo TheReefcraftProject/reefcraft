@@ -29,6 +29,6 @@ class ReefcraftApp:
         window = Window(self.engine, self.app_root, self.render_context, self.scene)
         SettingsPanel(window.panel, self.engine)
 
-        while window.running:
+        while window.running and not window.canvas.closed:
             self.engine.update()
             window.update()

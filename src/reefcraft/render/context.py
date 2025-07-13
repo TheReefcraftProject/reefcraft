@@ -1,20 +1,18 @@
-"""Offscreen rendering context using pygfx."""
+"""Onscreen rendering context using pygfx."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import numpy as np
 import pygfx as gfx
-from pygfx.renderers.wgpu import enable_wgpu_features
-from wgpu.gui.offscreen import WgpuCanvas
+from wgpu.gui.auto import WgpuCanvas
 
 if TYPE_CHECKING:  # pragma: no cover - type hints only
     from .scene import Scene
 
 
 class RenderContext:
-    """Manage an offscreen pygfx renderer."""
+    """Manage a pygfx renderer in its own window."""
 
     def __init__(self, size: tuple[int, int] = (1024, 768)) -> None:
         """Create the rendering context."""
@@ -36,11 +34,9 @@ class RenderContext:
             self.canvas.set_logical_size(width, height)
             self.camera.aspect = width / height
 
-    def render(self) -> np.ndarray:
-        """Render the current scene and return an RGBA image array."""
+    def render(self) -> None:
+        """Render the current scene to the window."""
         if self.scene is None:
-            return np.zeros((self.size[1], self.size[0], 4), dtype=np.float32)
+            return
         self.scene.update()
         self.renderer.render(self.scene.scene, self.camera)
-        image = self.renderer.snapshot()
-        return image.astype(np.float32) / 255.0

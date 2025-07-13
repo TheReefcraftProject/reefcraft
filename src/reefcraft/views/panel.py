@@ -9,6 +9,134 @@
 import pygfx as gfx
 
 
+class Slider:
+    """A simple retained-mode slider widget."""
+
+    def __init__(
+        self,
+        panel: "Panel",
+        *,
+        left: int,
+        upper: int,
+        width: int,
+        height: int,
+        min_value: float = 0.0,
+        max_value: float = 1.0,
+        value: float | None = None,
+        background_color: str = "#333333",
+        foreground_color: str = "#AAAAAA",
+        text_color: str = "#FFFFFF",
+    ) -> None:
+        """Create the slider and add it to the given ``panel`` scene."""
+        self.panel = panel
+        self.left = left
+        self.upper = upper
+        self.width = width
+        self.height = height
+        self.min = min_value
+        self.max = max_value
+        self.value = value if value is not None else min_value
+        self.background_color = background_color
+        self.foreground_color = foreground_color
+        self.text_color = text_color
+
+        self._dragging = False
+
+        # Background mesh
+        self._bg_mesh = gfx.Mesh(
+            gfx.plane_geometry(width=width, height=height),
+            gfx.MeshBasicMaterial(color=background_color),
+        )
+        self._bg_mesh.material.pick_write = True
+
+        # Foreground mesh showing the filled portion
+        self._fg_mesh = gfx.Mesh(
+            gfx.plane_geometry(width=1, height=height),
+            gfx.MeshBasicMaterial(color=foreground_color),
+        )
+
+        # Text overlay (transparent background)
+        text_geom = gfx.TextGeometry(str(self.value), anchor="middle-center")
+        text_mat = gfx.TextMaterial(color=text_color)
+        self._text = gfx.Text(text_geom, text_mat)
+
+        self.panel.scene.add(self._bg_mesh)
+        self.panel.scene.add(self._fg_mesh)
+        self.panel.scene.add(self._text)
+
+        self._bg_mesh.add_event_handler(self._on_pointer_down, "pointer_down")
+        self._bg_mesh.add_event_handler(self._on_pointer_move, "pointer_move")
+        self._bg_mesh.add_event_handler(self._on_pointer_up, "pointer_up")
+
+        self._fg_mesh.add_event_handler(self._on_pointer_down, "pointer_down")
+        self._fg_mesh.add_event_handler(self._on_pointer_move, "pointer_move")
+        self._fg_mesh.add_event_handler(self._on_pointer_up, "pointer_up")
+
+        self._update_visuals()
+
+    # ------------------------------------------------------------------
+    # Utility helpers
+    # ------------------------------------------------------------------
+    def _screen_to_world(self, x: float, y: float) -> tuple[float, float, float]:
+        """Convert screen-space coordinates to panel's world space."""
+        return (
+            x - 1920 / 2,
+            1080 / 2 - y,
+            0,
+        )
+
+    @property
+    def _percent(self) -> float:
+        return (self.value - self.min) / (self.max - self.min)
+
+    def _set_from_screen_x(self, x: float) -> None:
+        t = (x - self.left) / self.width
+        t = max(0.0, min(1.0, t))
+        self.value = self.min + t * (self.max - self.min)
+        self._update_visuals()
+
+    def _update_visuals(self) -> None:
+        filled = max(0.0, min(1.0, self._percent))
+        # Background
+        self._bg_mesh.geometry = gfx.plane_geometry(width=self.width, height=self.height)
+        self._bg_mesh.local.position = self._screen_to_world(
+            self.left + self.width / 2,
+            self.upper + self.height / 2,
+        )
+
+        # Foreground
+        self._fg_mesh.geometry = gfx.plane_geometry(width=self.width * filled, height=self.height)
+        self._fg_mesh.local.position = self._screen_to_world(
+            self.left + (self.width * filled) / 2,
+            self.upper + self.height / 2,
+        )
+
+        # Text overlay
+        self._text.geometry.text = f"{self.value:.2f}"
+        self._text.local.position = self._screen_to_world(
+            self.left + self.width / 2,
+            self.upper + self.height / 2,
+        )
+
+    # ------------------------------------------------------------------
+    # Event handlers
+    # ------------------------------------------------------------------
+    def _on_pointer_down(self, event: gfx.PointerEvent) -> None:
+        self._dragging = True
+        event.target.set_pointer_capture(event.pointer_id, self.panel.renderer)
+        self._set_from_screen_x(event.x)
+
+    def _on_pointer_move(self, event: gfx.PointerEvent) -> None:
+        if self._dragging:
+            self._set_from_screen_x(event.x)
+
+    def _on_pointer_up(self, event: gfx.PointerEvent) -> None:
+        if self._dragging:
+            self._dragging = False
+            event.target.release_pointer_capture(event.pointer_id)
+            self._set_from_screen_x(event.x)
+
+
 class Section:
     """A sub-section of the UI to show/hide."""
 
@@ -20,7 +148,7 @@ class Section:
 class Panel:
     """A left-docked panel: covers left 300px of canvas height."""
 
-    def __init__(self, renderer, width=300, height=1080) -> None:
+    def __init__(self, renderer: gfx.WgpuRenderer, width: int = 300, height: int = 1080) -> None:
         """Initialize the panel and its correstponding 3D scene and ortho cameras."""
         self.renderer = renderer
 

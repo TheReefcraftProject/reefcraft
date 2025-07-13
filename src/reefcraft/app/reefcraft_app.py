@@ -1,3 +1,9 @@
+# -----------------------------------------------------------------------------
+# Copyright (c) 2025 The Reefcraft Project.
+#
+# Licensed under the MIT License. See the LICENSE file for details.
+# -----------------------------------------------------------------------------
+
 """Application management for Reefcraft."""
 
 from __future__ import annotations
@@ -24,18 +30,3 @@ class ReefcraftApp:
     def run(self) -> None:
         """Start the application."""
         loop.run()
-        # while not self.window.is_closed:
-        # self.renderer.update()
-        # self.window.update()
-        # Process events (important for window management and responsiveness)
-        # wgpu.gui.handle_events()
-
-        # Render your scene (optional, if you're not continuously rendering)
-        # renderer.render(scene, window.camera)
-
-        # Request a draw and present the frame
-        # window.request_draw()
-        # window.present()
-
-        # Add a small delay to prevent busy-waiting and reduce CPU usage
-        # sleep(0.01)

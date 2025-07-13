@@ -23,9 +23,9 @@ class Slider:
         min_value: float = 0.0,
         max_value: float = 1.0,
         value: float | None = None,
-        background_color: str = "#333333",
-        foreground_color: str = "#AAAAAA",
-        text_color: str = "#FFFFFF",
+        background_color: str = "#1E182B",
+        foreground_color: str = "#4343EC",
+        text_color: str = "#D8D8D8",
     ) -> None:
         """Create the slider and add it to the given ``panel`` scene."""
         self.panel = panel
@@ -56,9 +56,8 @@ class Slider:
         )
 
         # Text overlay (transparent background)
-        text_geom = gfx.TextGeometry(str(self.value), anchor="middle-center")
         text_mat = gfx.TextMaterial(color=text_color)
-        self._text = gfx.Text(text_geom, text_mat)
+        self._text = gfx.Text(str(self.value), text_mat)
 
         self.panel.scene.add(self._bg_mesh)
         self.panel.scene.add(self._fg_mesh)
@@ -77,12 +76,12 @@ class Slider:
     # ------------------------------------------------------------------
     # Utility helpers
     # ------------------------------------------------------------------
-    def _screen_to_world(self, x: float, y: float) -> tuple[float, float, float]:
+    def _screen_to_world(self, x: float, y: float, z: float = 0) -> tuple[float, float, float]:
         """Convert screen-space coordinates to panel's world space."""
         return (
             x - 1920 / 2,
             1080 / 2 - y,
-            0,
+            z,
         )
 
     @property
@@ -99,24 +98,15 @@ class Slider:
         filled = max(0.0, min(1.0, self._percent))
         # Background
         self._bg_mesh.geometry = gfx.plane_geometry(width=self.width, height=self.height)
-        self._bg_mesh.local.position = self._screen_to_world(
-            self.left + self.width / 2,
-            self.upper + self.height / 2,
-        )
+        self._bg_mesh.local.position = self._screen_to_world(self.left + self.width / 2, self.upper + self.height / 2, -1)
 
         # Foreground
         self._fg_mesh.geometry = gfx.plane_geometry(width=self.width * filled, height=self.height)
-        self._fg_mesh.local.position = self._screen_to_world(
-            self.left + (self.width * filled) / 2,
-            self.upper + self.height / 2,
-        )
+        self._fg_mesh.local.position = self._screen_to_world(self.left + (self.width * filled) / 2, self.upper + self.height / 2, 0)
 
         # Text overlay
-        self._text.geometry.text = f"{self.value:.2f}"
-        self._text.local.position = self._screen_to_world(
-            self.left + self.width / 2,
-            self.upper + self.height / 2,
-        )
+        self._text.set_text(f"{self.value:.2f}")
+        self._text.local.position = self._screen_to_world(self.left + self.width / 2, self.upper + self.height / 2, -2)
 
     # ------------------------------------------------------------------
     # Event handlers
@@ -155,11 +145,15 @@ class Panel:
         geom = gfx.plane_geometry(width=width, height=height, width_segments=1, height_segments=1)
         mat = gfx.MeshBasicMaterial(color="#08080A")
         mesh = gfx.Mesh(geom, mat)
-        mesh.local.position = (-((1920 / 2) - (300 / 2)), 0, 0)
+        mesh.local.position = (-((1920 / 2) - (300 / 2)), 0, -100)
 
         self.scene = gfx.Scene()
         self.camera = gfx.OrthographicCamera(width=1920, height=1080)
         self.scene.add(mesh)
+
+        Slider(self, left=20, upper=20, width=250, height=20, min_value=0, max_value=100, value=10)
+        Slider(self, left=20, upper=50, width=250, height=20, min_value=0, max_value=100, value=70)
+        Slider(self, left=20, upper=80, width=250, height=20, min_value=0, max_value=100, value=15)
 
     def draw(self) -> None:
         """Draw a solid rectangle on the left side of the UI scene."""

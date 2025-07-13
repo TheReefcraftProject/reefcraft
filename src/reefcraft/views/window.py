@@ -13,8 +13,8 @@ from rendercanvas.auto import RenderCanvas
 
 from reefcraft.sim.engine import Engine
 from reefcraft.utils.window_style import apply_dark_titlebar_and_icon
-from reefcraft.views.panel import Panel
 from reefcraft.views.reef import Reef
+from reefcraft.views.ui import Panel
 
 
 class Window:

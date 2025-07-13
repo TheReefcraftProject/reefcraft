@@ -17,12 +17,12 @@ class Renderer:
         self.renderer = gfx.WgpuRenderer(canvas)
         self.scene = gfx.Scene()
 
-        self.scene.add(gfx.Mesh(gfx.box_geometry(200, 200, 200), gfx.MeshPhongMaterial(color="#336699")))
+        self.scene.add(gfx.Mesh(gfx.box_geometry(1, 1, 1), gfx.MeshPhongMaterial(color="#0040ff")))
 
-        light = gfx.DirectionalLight("#0040ff", 3)
-        light.local.position = (15, 20, 50)
-        self.scene.add(light.add(gfx.DirectionalLightHelper(10)))
-        self.scene.add(gfx.AmbientLight("#fff", 0.2))
+        light = gfx.DirectionalLight("#fff", 1)
+        light.local.position = (1.5, 2.0, 4.0)
+        self.scene.add(light)
+        self.scene.add(gfx.AmbientLight("#fff", 0.3))
 
         self.camera = gfx.PerspectiveCamera()
         self.controller = gfx.OrbitController(self.camera, register_events=self.renderer)

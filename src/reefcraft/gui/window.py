@@ -24,19 +24,3 @@ class Window:
         self.canvas = RenderCanvas(size=(1920, 1080), title="Reefcraft", update_mode="continuous", max_fps=60)
         icon_path = (app_root / "resources" / "icon" / "reefcraft.ico").resolve()
         apply_dark_titlebar_and_icon("Reefcraft", icon_path)
-
-        # self._panel = Panel(width=300, margin=0)
-
-    @property
-    def is_closed(self) -> bool:
-        """State of the canvas/window."""
-        return self.canvas.get_closed()
-
-        # @property
-        # def panel(self) -> Panel:
-        #    """Return the panel class for others to register sections."""
-        #    return self._panel
-
-        # def update(self) -> None:
-        """Render one frame of the simulation and overlay UI."""
-        # self.canvas.request_draw()

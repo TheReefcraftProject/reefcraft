@@ -69,6 +69,7 @@ class Panel:
         y = self.margin
         h = win_h - 2 * self.margin
         dpg.configure_item(self.window_id, pos=(x, y), width=self.width, height=h)
+        dpg.configure_item(self._fps_text_id, pos=(10, h - 65))
         dpg.set_value(self._fps_text_id, f"FPS: {dpg.get_frame_rate():.1f}")
         for section in self.sections:
             section.update()

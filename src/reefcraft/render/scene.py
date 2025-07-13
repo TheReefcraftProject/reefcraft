@@ -22,17 +22,7 @@ class Scene:
         # camera = gfx.PerspectiveCamera(70, 16 / 9)
         # camera.local.z = 400
 
-        positions = np.array(
-            [
-                [0.0, 100.0, 0.0],
-                [-100.0, -100.0, 0.0],
-                [100.0, -100.0, 0.0],
-            ],
-            dtype=np.float32,
-        )
-        indices = np.array([0, 1, 2], dtype=np.uint32)
-
-        geometry = gfx.Geometry(positions=positions, indices=indices)
+        geometry = gfx.box_geometry(200, 200, 200)
         self.material = gfx.MeshPhongMaterial(color="#336699")
         self.mesh = gfx.Mesh(geometry, self.material)
         self.scene.add(self.mesh)

@@ -24,12 +24,14 @@ dependencies = [
   "pre-commit>=3.5.0",
   "pyproject-fmt>=2.2.4",
   "pytest>=8.3.5",
-  "pytest-cov>=6.2.1",    # Coverage tracking for pytest
+  "pytest-cov>=6.2.1", # Coverage tracking for pytest
   "rich>=14.0.0",
   "ruff>=0.11.6",
   "dearpygui>=2.0.0",
   "taichi>=1.7.3",
   "wheel>=0.45.1",
+  "pygfx>=0.12.0",
+  "glfw>=2.9.0",
 ]
 
 [build-system]

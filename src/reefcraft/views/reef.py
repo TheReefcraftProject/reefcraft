@@ -12,7 +12,7 @@ import pygfx as gfx
 class Reef:
     """The geometry, lighting, camera, and draw routines for the reef."""
 
-    def __init__(self, renderer):
+    def __init__(self, renderer) -> None:
         self.renderer = renderer
         self.scene = gfx.Scene()
 
@@ -27,6 +27,6 @@ class Reef:
         self.controller = gfx.OrbitController(self.camera, register_events=self.renderer)
         self.camera.show_object(self.scene)
 
-    def draw(self):
+    def draw(self) -> None:
         """Draw a solid rectangle on the left side of the UI scene."""
         self.renderer.render(self.scene, self.camera, flush=False)

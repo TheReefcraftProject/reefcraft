@@ -89,9 +89,9 @@ class Slider(Widget):
         self.panel.scene.add(self._fg_mesh)
         self.panel.scene.add(self._text)
 
-        self._bg_mesh.add_event_handler(self._on_pointer_down, "pointer_down")
-        self._bg_mesh.add_event_handler(self._on_pointer_move, "pointer_move")
-        self._bg_mesh.add_event_handler(self._on_pointer_up, "pointer_up")
+        self._bg_mesh.add_event_handler(self._on_mouse_down, "pointer_down")
+        self._bg_mesh.add_event_handler(self._on_mouse_move, "pointer_move")
+        self._bg_mesh.add_event_handler(self._on_mouse_up, "pointer_up")
 
         self._update_visuals()
 
@@ -133,18 +133,18 @@ class Slider(Widget):
     # ------------------------------------------------------------------
     # Event handlers
     # ------------------------------------------------------------------
-    def _on_pointer_down(self, event: gfx.PointerEvent) -> None:
+    def _on_mouse_down(self, event: gfx.PointerEvent) -> None:
         """Capture the mouse for slider control."""
         self._dragging = True
         event.target.set_pointer_capture(event.pointer_id, self.panel.renderer)
         self._set_from_screen_x(event.x)
 
-    def _on_pointer_move(self, event: gfx.PointerEvent) -> None:
+    def _on_mouse_move(self, event: gfx.PointerEvent) -> None:
         """Update the dragging on the slider."""
         if self._dragging:
             self._set_from_screen_x(event.x)
 
-    def _on_pointer_up(self, event: gfx.PointerEvent) -> None:
+    def _on_mouse_up(self, event: gfx.PointerEvent) -> None:
         """Release the mouse on mouse up."""
         if self._dragging:
             self._dragging = False
@@ -174,8 +174,8 @@ class Panel:
 
         # Block the picking for the background of the panel
         mesh.material.pick_write = True
-        mesh.add_event_handler(self._on_pointer_down, "pointer_down")
-        mesh.add_event_handler(self._on_pointer_up, "pointer_up")
+        mesh.add_event_handler(self._on_mouse_down, "pointer_down")
+        mesh.add_event_handler(self._on_mouse_up, "pointer_up")
 
         self.scene = gfx.Scene()
         self.camera = gfx.OrthographicCamera(width=1920, height=1080)
@@ -185,12 +185,12 @@ class Panel:
         Slider(self, left=20, top=50, width=250, height=20, min_value=0, max_value=100, value=70)
         Slider(self, left=20, top=80, width=250, height=20, min_value=0, max_value=100, value=15)
 
-    def _on_pointer_down(self, event: gfx.PointerEvent) -> None:
+    def _on_mouse_down(self, event: gfx.PointerEvent) -> None:
         """When the mouse is clicked in background of the panel, capture the mouse and block others."""
         event.target.set_pointer_capture(event.pointer_id, self.renderer)
         pass
 
-    def _on_pointer_up(self, event: gfx.PointerEvent) -> None:
+    def _on_mouse_up(self, event: gfx.PointerEvent) -> None:
         """Release the mouse on mouse up."""
         event.target.set_pointer_capture(event.pointer_id, self.renderer)
         pass

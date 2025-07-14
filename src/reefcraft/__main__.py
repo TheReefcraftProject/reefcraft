@@ -6,8 +6,6 @@
 
 """Entrypoint for the Reefcraft GUI application."""
 
-from __future__ import annotations
-
 from pathlib import Path
 
 from .app import ReefcraftApp

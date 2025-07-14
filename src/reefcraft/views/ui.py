@@ -9,7 +9,36 @@
 import pygfx as gfx
 
 
-class Slider:
+class Widget:
+    """A base cass for all widget types."""
+
+    def __init__(self, top: int, left: int, width: int, height: int) -> None:
+        """Create the slider and add it to the given ``panel`` scene."""
+        self.top = top
+        self.left = left
+        self.width = width
+        self.height = height
+
+
+class ListLayout:
+    """A simple retained-mode slider widget."""
+
+    def __init__(self) -> None:
+        """Create the slider and add it to the given ``panel`` scene."""
+        self.widgets = []
+        self.line_spacing = 10
+
+    def add_widget(self, widget) -> None:
+        """Append another widget to the list."""
+        self.widgets += widget
+
+    @property
+    def height(self) -> int:
+        """Sum the heights of all the widgets plus the line spacing."""
+        return 100
+
+
+class Slider(Widget):
     """A simple retained-mode slider widget."""
 
     def __init__(
@@ -17,7 +46,7 @@ class Slider:
         panel: "Panel",
         *,
         left: int,
-        upper: int,
+        top: int,
         width: int,
         height: int,
         min_value: float = 0.0,
@@ -28,11 +57,8 @@ class Slider:
         text_color: str = "#D8D8D8",
     ) -> None:
         """Create the slider and add it to the given ``panel`` scene."""
+        super().__init__(top, left, width, height)
         self.panel = panel
-        self.left = left
-        self.upper = upper
-        self.width = width
-        self.height = height
         self.min = min_value
         self.max = max_value
         self.value = value if value is not None else min_value
@@ -94,15 +120,15 @@ class Slider:
         filled = max(0.0, min(1.0, self._percent))
         # Background
         self._bg_mesh.geometry = gfx.plane_geometry(width=self.width, height=self.height)
-        self._bg_mesh.local.position = self._screen_to_world(self.left + self.width / 2, self.upper + self.height / 2, -1)
+        self._bg_mesh.local.position = self._screen_to_world(self.left + self.width / 2, self.top + self.height / 2, -1)
 
         # Foreground
         self._fg_mesh.geometry = gfx.plane_geometry(width=self.width * filled, height=self.height)
-        self._fg_mesh.local.position = self._screen_to_world(self.left + (self.width * filled) / 2, self.upper + self.height / 2, 0)
+        self._fg_mesh.local.position = self._screen_to_world(self.left + (self.width * filled) / 2, self.top + self.height / 2, 0)
 
         # Text overlay
         self._text.set_text(f"{self.value:.2f}")
-        self._text.local.position = self._screen_to_world(self.left + self.width / 2, self.upper + self.height / 2, -2)
+        self._text.local.position = self._screen_to_world(self.left + self.width / 2, self.top + self.height / 2, -2)
 
     # ------------------------------------------------------------------
     # Event handlers
@@ -155,9 +181,9 @@ class Panel:
         self.camera = gfx.OrthographicCamera(width=1920, height=1080)
         self.scene.add(mesh)
 
-        Slider(self, left=20, upper=20, width=250, height=20, min_value=0, max_value=100, value=10)
-        Slider(self, left=20, upper=50, width=250, height=20, min_value=0, max_value=100, value=70)
-        Slider(self, left=20, upper=80, width=250, height=20, min_value=0, max_value=100, value=15)
+        Slider(self, left=20, top=20, width=250, height=20, min_value=0, max_value=100, value=10)
+        Slider(self, left=20, top=50, width=250, height=20, min_value=0, max_value=100, value=70)
+        Slider(self, left=20, top=80, width=250, height=20, min_value=0, max_value=100, value=15)
 
     def _on_pointer_down(self, event: gfx.PointerEvent) -> None:
         """When the mouse is clicked in background of the panel, capture the mouse and block others."""

@@ -18,17 +18,10 @@ from xlb.operator.macroscopic import Macroscopic
 from xlb.utils import save_image, save_fields_vtk  
 import trimesh 
 
-"""
-Here we define a LBM class that utilizes XLB to handle computations of fluid fields.
-
-Purpose: An instance of this will be utilized to compute and return the state of fields (e.g. velcity, 
-pressure, chemical concentrations) for use in simulating water.
-
-"""
 # ----- LBM Class ----- #
 class ComputeLBM:
     """
-    A class to simulate fluid dynamics using Lattice Boltzmann Method (LBM).
+    A class to compute Lattice Boltzmann Method (LBM) for water.
     
     Attributes:
         grid_shape (tuple): The shape of the grid (x, y, z).
@@ -121,6 +114,7 @@ class ComputeLBM:
         # Boundary conditions
         box = self.grid.bounding_box_indices()
         box_no_edge = self.grid.bounding_box_indices(remove_edges=True)
+        
         inlet = box_no_edge["left"]
         outlet = box_no_edge["right"]
         walls = [box["bottom"][i] + box["top"][i] + box["front"][i] + box["back"][i] for i in range(self.velocity_set.d)]
@@ -180,7 +174,7 @@ class ComputeLBM:
             "velocity"
             "velocity_magnitude"
         """
-         # Create pre-allocated fields
+        # Create pre-allocated fields
         rho_field = self.grid.create_field(cardinality=1)  # 3D density field (1 channel)
         u_field = self.grid.create_field(cardinality=self.velocity_set.d)  # 3D velocity field (3 channels)
 
@@ -213,10 +207,9 @@ class ComputeLBM:
         """
         start_time = time.time()
         for step in range(self.num_steps):
-            # Call stepper with the correct arguments
+
             self.f_0, self.f_1 = self.stepper(self.f_0, self.f_1, self.bc_mask, self.missing_mask, step)
 
-            # Swap the buffers
             self.f_0, self.f_1 = self.f_1, self.f_0
 
             # Save VTK files at the specified intervals
@@ -235,13 +228,17 @@ class ComputeLBM:
         """
         Run one iteration, return fields as numpy arrays (uses get_field_numpy())
         """
+        start_time = time.time()
 
         step = step
 
         self.f_0, self.f_1 = self.stepper(self.f_0, self.f_1, self.bc_mask, self.missing_mask, step)
 
-        # Swap the buffers
+        
         self.f_0, self.f_1 = self.f_1, self.f_0
+
+        elapsed_time = time.time() - start_time
+        print(f"Iteration: {step}/{self.num_steps} | Time elapsed: {elapsed_time:.2f}s")
 
         return self.get_field_numpy()
     
@@ -251,10 +248,10 @@ class ComputeLBM:
         """
         start_time = time.time()
         for step in range(self.num_steps):
-            # Call stepper with the correct arguments
+            
             self.f_0, self.f_1 = self.stepper(self.f_0, self.f_1, self.bc_mask, self.missing_mask, step)
 
-            # Swap the buffers
+            
             self.f_0, self.f_1 = self.f_1, self.f_0
 
 

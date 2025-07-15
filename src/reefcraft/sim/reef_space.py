@@ -21,18 +21,21 @@ class ReefSpace():
         # Initialize a 3D field (grid) to store distance values
         self.field = wp.empty(shape=grid_size, dtype=wp.float32, device="cuda")
 
+        # Launch the kernel for field creation (now using self.field, which is already initialized)
+        wp.launch(kernel=self.make_field,  # kernel to launch
+                  dim=self.grid_size[0] * self.grid_size[1] * self.grid_size[2],  # number of threads (should be number of grid points)
+                  inputs=[self.field, self.center, self.radius],  # pass the required arguments (field, center, radius)
+                  device="cuda")  # CUDA device
+        
         # Initialize mesh (can be an array of vertices or some other structure)
         self.mesh = np.zeros((grid_size[0], grid_size[1], grid_size[2]))
 
-        # Launch the kernel to create the 3D field and populate it with values (distance from the center)
-        self.launch_kernel()
-
     @wp.kernel
-    def make_field(self, field: wp.array3d(dtype=float), center: wp.vec3, radius: float):
-        for i, j, k in field:
-            p = wp.vec3(float(i), float(j), float(k))
-            d = wp.length(p - center) - radius
-            field[i, j, k] = d
+    def make_field(field: wp.array3d(dtype=float), center: wp.vec3, radius: float):
+        i, j, k = wp.tid()
+        p = wp.vec3(float(i), float(j), float(k))
+        d = wp.length(p - center) - radius
+        field[i, j, k] = d
 
     def update_mesh(self, new_mesh: np.ndarray):
         # This function updates the mesh (could be used to update particle positions, etc.)

@@ -59,9 +59,6 @@ class ComputeLBM:
         # Load the mesh
         self.load_mesh()
 
-        # Save coral mesh for visualization
-        self.save_coral_mesh()
-
         # Boundary conditions
         self.setup_boundary_conditions()
 
@@ -204,8 +201,6 @@ class ComputeLBM:
         # Compute macroscopic quantities (density and velocity)
         rho_field, u_field = self.macro(self.f_0, rho_field, u_field)
 
-        # Compute coral mesh (assuming you have a function or logic for it)
-        coral_mesh_field = self.get_coral_mesh_field()  # You need to define this logic
 
         # Convert Warp arrays to NumPy for saving
         rho_np = rho_field.numpy()[0].astype(np.float32)  # (nx, ny, nz)
@@ -254,7 +249,7 @@ class ComputeLBM:
 
         print("Simulation completed successfully.")
 
-    def run_step(self, step):
+    def run_step(self, step) -> None:
         """
         Run one iteration, return fields as numpy arrays (uses get_field_numpy())
         """
@@ -269,8 +264,7 @@ class ComputeLBM:
 
         elapsed_time = time.time() - start_time
         print(f"Iteration: {step}/{self.num_steps} | Time elapsed: {elapsed_time:.2f}s")
-
-        return self.get_field_numpy()
+        
     
     def run(self):
         """

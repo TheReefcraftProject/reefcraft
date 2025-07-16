@@ -72,4 +72,5 @@ space = ReefSpace()
 for i in range(5):
     space.step()
     v_field = space.get_fields_numpy().get("velocity")
+    c_field = space.get_fields_numpy().get("coral")
     visualize_velocity_field(v_field)

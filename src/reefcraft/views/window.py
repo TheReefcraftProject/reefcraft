@@ -37,6 +37,6 @@ class Window:
     def update(self) -> None:
         """Render one frame of the simulation and overlay UI."""
         with self.stats:
-            self.reef.draw()
+            self.reef.grow_and_draw()
             self.panel.draw()
         self.stats.render()

@@ -6,7 +6,10 @@
 
 """The geometric scene for the reef."""
 
+import numpy as np
 import pygfx as gfx
+
+from reefcraft.sim.llabres import LlabresSurface
 
 
 class Reef:
@@ -16,9 +19,20 @@ class Reef:
         self.renderer = renderer
         self.scene = gfx.Scene()
 
-        cube = gfx.Mesh(gfx.box_geometry(1, 1, 1), gfx.MeshPhongMaterial(color="#0040ff"))
-        cube.local.position = (0, 0.5, 0)
-        self.scene.add(cube)
+        # Create Llabres surface
+        self.surface = LlabresSurface(device="cuda")
+
+        mesh_data = self.surface.get_numpy()
+
+        self.positions_buf = gfx.Buffer(np.array(mesh_data["verts"], copy=True))
+        self.indices_buf = gfx.Buffer(np.array(mesh_data["faces"], copy=True))
+        self.normals_buf = gfx.Buffer(np.zeros_like(mesh_data["verts"]))  # Zero normals since wireframe
+
+        self.geometry = gfx.Geometry(positions=self.positions_buf, indices=self.indices_buf, normals=self.normals_buf)
+        self.material = gfx.MeshPhongMaterial(color="#0040ff", flat_shading=True)
+        self.mesh = gfx.Mesh(self.geometry, self.material)
+        self.mesh.local.rotation = np.array([-0.7071, 0.0, 0.0, 0.7071], dtype=np.float32)
+        self.scene.add(self.mesh)
 
         self.scene.add(gfx.AmbientLight("#fff", 0.3))
         light = gfx.DirectionalLight("#fff", 3)
@@ -48,6 +62,21 @@ class Reef:
         self.controller = gfx.OrbitController(self.camera, register_events=self.renderer)
         self.camera.show_object(self.scene)
 
-    def draw(self) -> None:
-        """Draw a solid rectangle on the left side of the UI scene."""
+    def grow_and_draw(self):
+        subdivided = self.surface.step()
+        mesh_data = self.surface.get_numpy()
+
+        if subdivided:
+            # Topology changed → rebuild buffers
+            self.positions_buf = gfx.Buffer(mesh_data["verts"])
+            self.indices_buf = gfx.Buffer(mesh_data["faces"])
+            self.normals_buf = gfx.Buffer(np.zeros_like(mesh_data["verts"]))
+
+            self.geometry.positions = self.positions_buf
+            self.geometry.indices = self.indices_buf
+            self.geometry.normals = self.normals_buf
+        else:
+            # No subdivision → safe to update positions
+            self.positions_buf.set_data(mesh_data["verts"])
+
         self.renderer.render(self.scene, self.camera, flush=False)

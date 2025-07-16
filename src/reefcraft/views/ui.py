@@ -195,6 +195,6 @@ class Panel:
         event.target.set_pointer_capture(event.pointer_id, self.renderer)
         pass
 
-    def draw(self) -> None:
+    def update(self, time: float) -> None:
         """Draw a solid rectangle on the left side of the UI scene."""
         self.renderer.render(self.scene, self.camera, flush=False)

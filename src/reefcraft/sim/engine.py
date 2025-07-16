@@ -18,6 +18,10 @@ class Engine:
         """Initialize the engine with a new :class:`Timer`."""
         self.timer = Timer()
 
+    # ------------------------------------------------------------------------
+    # Timer control
+    # ------------------------------------------------------------------------
+
     def start(self) -> None:
         """Start or resume the timer."""
         self.timer.start()
@@ -30,10 +34,14 @@ class Engine:
         """Reset the timer to the initial state."""
         self.timer.reset()
 
-    def update(self) -> None:
-        """Advance the simulation state."""
-        pass
-
     def get_time(self) -> float:
         """Return the current simulation time."""
         return self.timer.time
+
+    # ------------------------------------------------------------------------
+    # Simulation API
+    # ------------------------------------------------------------------------
+
+    def update(self) -> None:
+        """Advance the simulation state."""
+        pass

@@ -21,22 +21,28 @@ class Window:
     """The window is both an OS level window as well as a render canvas and renderer."""
 
     def __init__(self, engine: Engine, app_root: Path) -> None:
-        """Initialize the window and GUI state."""
+        """Initialize the window and view state."""
+        self.engine = engine
         self.canvas = RenderCanvas(size=(1920, 1080), title="Reefcraft", update_mode="continuous", max_fps=60)
+
+        # Make the window beautiful with dark mode titel bar and an icon
         icon_path = (app_root / "resources" / "icon" / "reefcraft.ico").resolve()
         apply_dark_titlebar_and_icon("Reefcraft", icon_path)
 
+        # Prepare our pygfx renderer
         self.renderer = gfx.WgpuRenderer(self.canvas)
-        self.renderer.request_draw(self.update)
-
+        # TODO: set up update(time) and draw() cycles separately
+        # disp = gfx.Display(before_render=animate, stats=True)
+        self.renderer.request_draw(lambda: self.update(self.engine.get_time()))
         self.stats = gfx.Stats(viewport=self.renderer)
 
+        # Create the view of the reef and the ui panel
         self.reef = Reef(self.renderer)
         self.panel = Panel(self.renderer)
 
-    def update(self) -> None:
+    def update(self, time: float) -> None:
         """Render one frame of the simulation and overlay UI."""
         with self.stats:
-            self.reef.draw()
-            self.panel.draw()
+            self.reef.update(time)
+            self.panel.update(time)
         self.stats.render()

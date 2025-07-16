@@ -8,12 +8,14 @@
 
 import numpy as np
 import pygfx as gfx
+from numpy.typing import NDArray
 
 
 class CoralMesh:
     """The buffers for the mesh representing the coral we are growing."""
 
     def __init__(self) -> None:
+        """Allocate raw buffers to hold the coral geometery positions, faces, etc."""
         self.vertices, self.indicies = self.default_polyp_mesh(size=1.0, height=0.2, res=24)
 
         self.positions_buf = gfx.Buffer(self.vertices)
@@ -22,7 +24,7 @@ class CoralMesh:
         self.geometry = gfx.Geometry(positions=self.positions_buf, indices=self.indices_buf)
         self.material = gfx.MeshPhongMaterial(color="#0040ff")  # Tell the material to use vertex colors
 
-    def default_polyp_mesh(self, size=1.0, height=0.3, res=16):
+    def default_polyp_mesh(self, size: float = 1.0, height: float = 0.3, res: int = 16) -> tuple[NDArray[np.float32], NDArray[np.uint32]]:
         """Returns: vertices: (res*res, 3) float32 array indices:  ((res-1)*(res-1)*2, 3) uint32 array."""
         # 1) build a res×res grid in the x–y plane
         xs = np.linspace(-size / 2, size / 2, res, dtype=np.float32)
@@ -56,7 +58,8 @@ class CoralMesh:
 class Reef:
     """The geometry, lighting, camera, and draw routines for the reef."""
 
-    def __init__(self, renderer) -> None:
+    def __init__(self, renderer: gfx.WgpuRenderer) -> None:
+        """Prepare the Reef class to hold a 3D scene including the coral."""
         self.renderer = renderer
         self.viewport = gfx.Viewport(renderer)
         self.scene = gfx.Scene()
@@ -99,4 +102,4 @@ class Reef:
 
     def draw(self) -> None:
         """Update the reef scene and draw."""
-        self.viewport.render(self.scene, self.camera)  # , flush=False)
+        self.viewport.render(self.scene, self.camera)

@@ -6,10 +6,9 @@
 
 """Primary window for the application and views."""
 
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
-import glfw
 import pygfx as gfx
 from rendercanvas.auto import RenderCanvas
 

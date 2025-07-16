@@ -198,8 +198,6 @@ class Panel:
 
     def update(self, time: float) -> None:
         """Update the UI."""
-        # self.positions_buf.set_data(self.wp_vertices.numpy())
-        print("update panel", time)
         pass
 
     def draw(self) -> None:

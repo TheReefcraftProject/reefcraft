@@ -44,4 +44,5 @@ class Engine:
 
     def update(self) -> float:
         """Advance the simulation state."""
+        print("ENGINE UPDATE: ", self.timer.time)
         return self.timer.time

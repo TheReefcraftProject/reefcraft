@@ -27,17 +27,25 @@ class ReefcraftApp:
 
     def run(self) -> None:
         """Run the application and block until the window closes."""
-        # Start the Engine and loop...
-        # self.window.renderer.request_draw(self.window.draw())
+        # Start the Engine and loop. This hands event control off to pygfx.
+        # Not necessarily ideal, but there are lots of sandtraps in terms of
+        # processing events to do it manually.  For, now let pygfx do it.
+        # The callback that allows this to occur is on the renderer created by
+        # the Window class
+        self.window.register_app_step(self.step)
         self.engine.start()
         loop.run()
+
+    def step(self) -> None:
+        """Perform a complete step for the frame by calling update() then draw()."""
+        self.update()
+        self.draw()
 
     def update(self) -> None:
         """Update the engine and then the window/visualiztion to reflect the engine."""
         time = self.engine.update()
         self.window.update(time)
 
-        # def draw(self) -> None:
-        """Draw the visualiztion starting at the Window level."""
-
-    #    self.window.draw()
+    def draw(self) -> None:
+        """Render one frame of the simulation and overlay UI."""
+        self.window.draw()

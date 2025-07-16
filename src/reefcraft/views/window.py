@@ -7,6 +7,7 @@
 """Primary window for the application and views."""
 
 from pathlib import Path
+from typing import Callable
 
 import glfw
 import pygfx as gfx
@@ -24,7 +25,7 @@ class Window:
     def __init__(self, engine: Engine, app_root: Path) -> None:
         """Initialize the window and view state."""
         self.engine = engine
-        self.canvas = RenderCanvas(size=(1920, 1080), title="Reefcraft")  # , update_mode="continuous", max_fps=60)
+        self.canvas = RenderCanvas(size=(1920, 1080), title="Reefcraft", update_mode="continuous", max_fps=60)
 
         # Make the window beautiful with dark mode titel bar and an icon
         icon_path = (app_root / "resources" / "icon" / "reefcraft.ico").resolve()
@@ -40,12 +41,16 @@ class Window:
         self.reef = Reef(self.renderer)
         self.panel = Panel(self.renderer)
 
-        self.renderer.request_draw(self.draw())
+        # self.renderer.request_draw(self.draw)
 
     @property
     def is_open(self) -> bool:
         """Flag indicating the window is still open."""
         return not self.canvas.get_closed()
+
+    def register_app_step(self, step: Callable) -> None:
+        """Async schedule the update and draw cycles as a single 'step'."""
+        self.renderer.request_draw(step)
 
     def update(self, time: float) -> None:
         """Advance one frame of the simulation and overlay UI."""
@@ -54,7 +59,6 @@ class Window:
 
     def draw(self) -> None:
         """Render one frame of the simulation and overlay UI."""
-        print("DRAW")
         with self.stats:
             self.reef.draw()
             self.panel.draw()

@@ -8,8 +8,6 @@
 
 import numpy as np
 import pygfx as gfx
-import warp as wp
-import wgpu
 
 
 class CoralMesh:
@@ -97,10 +95,8 @@ class Reef:
     def update(self, time: float) -> None:
         """Update the reef scene and draw."""
         # self.positions_buf.set_data(self.wp_vertices.numpy())
-        print("update window", time)
         pass
 
     def draw(self) -> None:
         """Update the reef scene and draw."""
-        # self.positions_buf.set_data(self.wp_vertices.numpy())
         self.viewport.render(self.scene, self.camera)  # , flush=False)

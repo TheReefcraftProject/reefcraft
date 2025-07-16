@@ -97,7 +97,7 @@ num_iterations = 5
 
 for i in range(num_iterations):
     # Simulate velocity field (replace this with the actual velocity field from your simulation)
-    velocity_field = lbm_sim.run_step(i).get("velocity")  # Random 3D velocity field for example
+    velocity_field = lbm_sim.run_step(i).get("velocity")  
 
     print(f"Visualizing iteration {i + 1}...")
     visualize_velocity_field(velocity_field)

@@ -26,5 +26,18 @@ class ReefcraftApp:
         self.window = Window(self.engine, self.app_root)
 
     def run(self) -> None:
-        """Start the application."""
+        """Run the application and block until the window closes."""
+        # Start the Engine and loop...
+        # self.window.renderer.request_draw(self.window.draw())
+        self.engine.start()
         loop.run()
+
+    def update(self) -> None:
+        """Update the engine and then the window/visualiztion to reflect the engine."""
+        time = self.engine.update()
+        self.window.update(time)
+
+        # def draw(self) -> None:
+        """Draw the visualiztion starting at the Window level."""
+
+    #    self.window.draw()

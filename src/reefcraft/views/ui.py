@@ -166,6 +166,7 @@ class Panel:
     def __init__(self, renderer: gfx.WgpuRenderer, width: int = 300, height: int = 1080) -> None:
         """Initialize the panel and its correstponding 3D scene and ortho cameras."""
         self.renderer = renderer
+        self.viewport = gfx.Viewport(renderer)
 
         geom = gfx.plane_geometry(width=width, height=height, width_segments=1, height_segments=1)
         mat = gfx.MeshBasicMaterial(color="#08080A")
@@ -187,14 +188,20 @@ class Panel:
 
     def _on_mouse_down(self, event: gfx.PointerEvent) -> None:
         """When the mouse is clicked in background of the panel, capture the mouse and block others."""
-        event.target.set_pointer_capture(event.pointer_id, self.renderer)
+        event.target.set_pointer_capture(event.pointer_id, self.viewport)
         pass
 
     def _on_mouse_up(self, event: gfx.PointerEvent) -> None:
         """Release the mouse on mouse up."""
-        event.target.set_pointer_capture(event.pointer_id, self.renderer)
+        event.target.set_pointer_capture(event.pointer_id, self.viewport)
         pass
 
     def update(self, time: float) -> None:
+        """Update the UI."""
+        # self.positions_buf.set_data(self.wp_vertices.numpy())
+        print("update panel", time)
+        pass
+
+    def draw(self) -> None:
         """Draw a solid rectangle on the left side of the UI scene."""
-        self.renderer.render(self.scene, self.camera, flush=False)
+        self.viewport.render(self.scene, self.camera)  # , flush=False)

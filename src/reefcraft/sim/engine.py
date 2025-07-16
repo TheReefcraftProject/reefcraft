@@ -42,6 +42,6 @@ class Engine:
     # Simulation API
     # ------------------------------------------------------------------------
 
-    def update(self) -> None:
+    def update(self) -> float:
         """Advance the simulation state."""
-        pass
+        return self.timer.time

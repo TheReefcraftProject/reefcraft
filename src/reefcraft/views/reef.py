@@ -60,6 +60,7 @@ class Reef:
 
     def __init__(self, renderer) -> None:
         self.renderer = renderer
+        self.viewport = gfx.Viewport(renderer)
         self.scene = gfx.Scene()
 
         self.coral = CoralMesh()
@@ -90,10 +91,16 @@ class Reef:
         self.scene.add(grid)
 
         self.camera = gfx.PerspectiveCamera()
-        self.controller = gfx.OrbitController(self.camera, register_events=self.renderer)
+        self.controller = gfx.OrbitController(self.camera, register_events=self.viewport)
         self.camera.show_object(self.scene)
 
     def update(self, time: float) -> None:
         """Update the reef scene and draw."""
         # self.positions_buf.set_data(self.wp_vertices.numpy())
-        self.renderer.render(self.scene, self.camera, flush=False)
+        print("update window", time)
+        pass
+
+    def draw(self) -> None:
+        """Update the reef scene and draw."""
+        # self.positions_buf.set_data(self.wp_vertices.numpy())
+        self.viewport.render(self.scene, self.camera)  # , flush=False)

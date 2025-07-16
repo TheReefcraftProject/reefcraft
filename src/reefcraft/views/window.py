@@ -25,7 +25,7 @@ class Window:
     def __init__(self, engine: Engine, app_root: Path) -> None:
         """Initialize the window and view state."""
         self.engine = engine
-        self.canvas = RenderCanvas(size=(1920, 1080), title="Reefcraft", update_mode="continuous", max_fps=60)
+        self.canvas = RenderCanvas(size=(1920, 1080), title="Reefcraft", update_mode="continuous", max_fps=60)  # type: ignore
 
         # Make the window beautiful with dark mode titel bar and an icon
         icon_path = (app_root / "resources" / "icon" / "reefcraft.ico").resolve()
@@ -33,15 +33,11 @@ class Window:
 
         # Prepare our pygfx renderer
         self.renderer = gfx.WgpuRenderer(self.canvas)
-        # TODO: set up update(time) and draw() cycles separately
-        # disp = gfx.Display(before_render=animate, stats=True)
         self.stats = gfx.Stats(viewport=self.renderer)
 
         # Create the view of the reef and the ui panel
         self.reef = Reef(self.renderer)
         self.panel = Panel(self.renderer)
-
-        # self.renderer.request_draw(self.draw)
 
     @property
     def is_open(self) -> bool:

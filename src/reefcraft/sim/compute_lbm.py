@@ -16,7 +16,7 @@ import xlb.velocity_set
 import jax.numpy as jnp
 from xlb.operator.macroscopic import Macroscopic
 from xlb.utils import save_image, save_fields_vtk  
-import trimesh 
+import trimesh
 
 # ----- LBM Class ----- #
 class ComputeLBM:

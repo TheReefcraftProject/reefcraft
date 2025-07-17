@@ -12,6 +12,8 @@ from pathlib import Path
 
 from rendercanvas.auto import loop
 
+from reefcraft.reefcraft_logging import configure_logging, logger
+
 from reefcraft.sim.engine import Engine
 from reefcraft.views.window import Window
 
@@ -22,6 +24,7 @@ class ReefcraftApp:
     def __init__(self, app_root: Path | None = None) -> None:
         """Initialize the application state."""
         self.app_root = Path(app_root) if app_root else Path(__file__).resolve().parents[1]
+        configure_logging(self.app_root)
         self.engine = Engine()
         self.window = Window(self.engine, self.app_root)
 

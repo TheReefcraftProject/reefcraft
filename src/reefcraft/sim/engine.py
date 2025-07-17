@@ -8,7 +8,7 @@
 
 from __future__ import annotations
 
-from reefcraft.reefcraft_logging import logger
+from reefcraft.utils.logger import logger
 from .timer import Timer
 
 

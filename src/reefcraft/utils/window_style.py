@@ -8,7 +8,7 @@
 
 import sys
 
-from reefcraft.reefcraft_logging import logger
+from reefcraft.utils.logger import logger
 
 if sys.platform == "win32":
     import ctypes

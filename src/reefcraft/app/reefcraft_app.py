@@ -12,7 +12,7 @@ from pathlib import Path
 
 from rendercanvas.auto import loop
 
-from reefcraft.reefcraft_logging import configure_logging, logger
+from reefcraft.utils.logger import configure_logging, logger
 
 from reefcraft.sim.engine import Engine
 from reefcraft.views.window import Window

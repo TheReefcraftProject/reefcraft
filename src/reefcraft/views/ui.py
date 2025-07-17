@@ -7,7 +7,7 @@
 """Defines the main GUI layout as a side panel."""
 
 import pygfx as gfx
-from reefcraft.reefcraft_logging import logger
+from reefcraft.utils.logger import logger
 
 
 class Widget:

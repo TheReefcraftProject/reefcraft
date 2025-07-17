@@ -7,6 +7,7 @@
 """Defines the main GUI layout as a side panel."""
 
 import pygfx as gfx
+from reefcraft.utils.logger import logger
 
 
 class Widget:
@@ -158,7 +159,7 @@ class Section:
 
     def __init__(self) -> None:
         """Initialize the section TBD."""
-        print("NOT IMPL")
+        logger.debug("Section initialized - not yet implemented")
 
 
 class Panel:

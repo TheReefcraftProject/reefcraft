@@ -12,9 +12,8 @@ from pathlib import Path
 
 from rendercanvas.auto import loop
 
-from reefcraft.utils.logger import configure_logging, logger
-
 from reefcraft.sim.engine import Engine
+from reefcraft.utils.logger import configure_logging, logger
 from reefcraft.views.window import Window
 
 
@@ -30,11 +29,13 @@ class ReefcraftApp:
 
     def run(self) -> None:
         """Run the application and block until the window closes."""
+        # =====================================================================
         # Start the Engine and loop. This hands event control off to pygfx.
         # Not necessarily ideal, but there are lots of sandtraps in terms of
         # processing events to do it manually.  For, now let pygfx do it.
         # The callback that allows this to occur is on the renderer created by
         # the Window class
+        # =====================================================================
         self.window.register_app_step(self.step)
         self.engine.start()
         loop.run()

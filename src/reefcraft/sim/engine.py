@@ -6,9 +6,8 @@
 
 """Simple simulation engine used for driving updates."""
 
-from __future__ import annotations
-
 from reefcraft.utils.logger import logger
+
 from .timer import Timer
 
 
@@ -45,5 +44,4 @@ class Engine:
 
     def update(self) -> float:
         """Advance the simulation state."""
-        logger.debug("ENGINE UPDATE: {}", self.timer.time)
         return self.timer.time

@@ -15,7 +15,7 @@ def configure_logging(app_root: Path | None = None) -> None:
         colorize=True,
         backtrace=True,
         diagnose=True,
-        format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level} | {name}:{function}:{line} - {message}",
+        format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level} | {file.path}:{line} - {message}",
     )
     log_path = Path(app_root or Path.cwd()) / "reefcraft.log"
     log_path.parent.mkdir(parents=True, exist_ok=True)

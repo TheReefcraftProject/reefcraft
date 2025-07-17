@@ -20,7 +20,7 @@ if sys.platform == "win32":
         icon_path = Path(icon_path)
 
         hwnd = ctypes.windll.user32.FindWindowW(None, window_title)
-        logger.debug("HWND for '%s': %s", window_title, hwnd)
+        logger.debug("HWND for '{}': {}", window_title, hwnd)
         if not hwnd:
             logger.debug("Unable to find HWND for dark mode")
             return
@@ -39,9 +39,9 @@ if sys.platform == "win32":
 
         # Attempt to set window icon
         if icon_path.exists():
-            logger.debug("Icon path exists: %s", icon_path.resolve())
+            logger.debug("Icon path exists: {}", icon_path.resolve())
             hIcon = ctypes.windll.user32.LoadImageW(None, str(icon_path.resolve()), 1, 0, 0, 0x00000010)
-            logger.debug("hIcon loaded: %s", hIcon)
+            logger.debug("hIcon loaded: {}", hIcon)
             if hIcon:
                 ctypes.windll.user32.SendMessageW(hwnd, 0x80, 0, hIcon)  # ICON_SMALL
                 ctypes.windll.user32.SendMessageW(hwnd, 0x80, 1, hIcon)  # ICON_BIG
@@ -49,7 +49,7 @@ if sys.platform == "win32":
             else:
                 logger.error("Failed to load icon with LoadImageW")
         else:
-            logger.error("Icon path does not exist: %s", icon_path)
+            logger.error("Icon path does not exist: {}", icon_path)
 else:
 
     def apply_dark_titlebar_and_icon(window_title: str, icon_path: str) -> None:

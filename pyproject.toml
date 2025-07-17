@@ -9,11 +9,13 @@ name = "reefcraft"
 version = "0.1"
 description = "Photorealistic Coral Simulations with Physically Based Accuracy"
 readme = "README.md"
-requires-python = ">=3.11, <3.13"
+requires-python = ">=3.11,<4.0"
 classifiers = [
-  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
 ]
 dependencies = [
   "attrs>=25.3.0",
@@ -31,6 +33,7 @@ dependencies = [
   "pygfx>=0.12.0",
   "glfw>=2.9.0",
   "warp-lang>=1.8.0",
+  "uv>=0.7.22",
 ]
 
 [build-system]

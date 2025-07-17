@@ -1,3 +1,9 @@
+# -----------------------------------------------------------------------------
+# Copyright (c) 2025 The Reefcraft Project.
+#
+# Licensed under the MIT License. See the LICENSE file for details.
+# -----------------------------------------------------------------------------
+
 import numpy as np
 import warp as wp
 
@@ -8,6 +14,8 @@ class LlabresSurface:
         self.verts, self.faces = self.gen_llabres_seed()
         self.norms = wp.zeros(self.verts.shape[0], dtype=wp.vec3f, device=self.device)
         self.fixed = wp.zeros(self.verts.shape[0], dtype=wp.int32, device=self.device)
+        self.num_steps = 0
+        self.edge_midpoints = {}
 
         # Initialize fixed verts
         verts_np = self.verts.numpy()
@@ -39,14 +47,21 @@ class LlabresSurface:
 
         return verts_wp, faces_wp
 
-    def step(self, thresh=0.3, amount=0.001):
+    def step(self, base_thresh=0.47, amount=0.001, dmax=1.0, decay=0.02, floor=0.2):
         self.compute_normals()
 
-        wp.launch(grow, dim=self.verts.shape[0], inputs=[self.verts, self.norms, self.fixed, thresh, amount], device=self.device)
+        wp.launch(grow, dim=self.verts.shape[0], inputs=[self.verts, self.norms, self.fixed, base_thresh, amount], device=self.device)
 
-        return self.subdiv()
+        self.num_steps += 1
 
-    def compute_normals(self):
+        # Gradual refinement: decay the subdivision threshold
+        adaptive_thresh = dmax * np.exp(-decay * self.num_steps) + floor
+
+        did_subdivide = self.subdiv(self.edge_midpoints, edge_thresh=dmax)
+
+        return did_subdivide
+
+    def compute_normals(self) -> None:
         # Zero the normals first
         self.norms.fill_(0.0)
 
@@ -55,6 +70,18 @@ class LlabresSurface:
 
         # Normalize per vertex
         wp.launch(normalize_normals, dim=self.norms.shape[0], inputs=[self.norms], device=self.device)
+
+        verts_np = self.verts.numpy()
+        norms_np = self.norms.numpy()
+
+        for i in range(len(verts_np)):
+            if np.isclose(verts_np[i][2], 0.0, atol=1e-6):
+                norms_np[i][2] = 0.0
+                norm = np.linalg.norm(norms_np[i])
+                if norm > 1e-8:  # Avoid division by zero
+                    norms_np[i] /= norm
+
+        self.norms.assign(wp.from_numpy(norms_np, dtype=wp.vec3f, device=self.device))
 
     def get_dlpack(self) -> dict:
         """Export the mesh as DLPack for zero-copy to external systems."""
@@ -68,13 +95,15 @@ class LlabresSurface:
             "norms": np.array(self.norms.numpy(), copy=True),
         }
 
-    def subdiv(self, edge_thresh=0.8):
+    def subdiv(self, edge_midpoints, edge_thresh=1.0):
+        if edge_midpoints is None:
+            edge_midpoints = {}
+
         verts_np = self.verts.numpy()
         faces_np = self.faces.numpy()
 
         new_verts = verts_np.tolist()
         new_faces = []
-        edge_midpoints = {}
 
         M12 = []  # 1 edge splits
         M13 = []  # 2 edge splits
@@ -275,11 +304,13 @@ def accumulate_normals(verts: wp.array(dtype=wp.vec3f), faces: wp.array(dtype=wp
     e1 = v1 - v0
     e2 = v2 - v0
 
-    n = wp.normalize(wp.cross(e1, e2))
+    cross = wp.cross(e1, e2)
+    if wp.length(cross) > 1e-8:
+        n = wp.normalize(cross)
 
-    wp.atomic_add(norms, i0, n)
-    wp.atomic_add(norms, i1, n)
-    wp.atomic_add(norms, i2, n)
+        wp.atomic_add(norms, i0, n)
+        wp.atomic_add(norms, i1, n)
+        wp.atomic_add(norms, i2, n)
 
 
 @wp.kernel

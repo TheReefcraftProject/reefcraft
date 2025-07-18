@@ -6,7 +6,7 @@
 
 """Simple simulation engine used for driving updates."""
 
-from reefcraft.sim.growth_model import GrowthModel
+from reefcraft.sim.llabres import LlabresSurface
 from reefcraft.sim.state import SimState
 from reefcraft.utils.logger import logger
 
@@ -20,7 +20,7 @@ class Engine:
         """Initialize the engine with a new :class:`Timer`."""
         self.timer = Timer()
         self.state = SimState()
-        self.model = GrowthModel(self.state)
+        self.model = LlabresSurface()
 
     # ------------------------------------------------------------------------
     # Timer control
@@ -49,5 +49,5 @@ class Engine:
 
     def update(self) -> float:
         """Advance the simulation state."""
-        self.model.update(self.timer.time)
+        self.model.update(self.timer.time, self.state)
         return self.timer.time

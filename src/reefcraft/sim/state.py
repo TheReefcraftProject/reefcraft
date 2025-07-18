@@ -26,12 +26,26 @@ class CoralState:
         self.indices = indices
 
     def get_render_mesh(self) -> dict:
-        """Retrieve the mesh data for the coral we are growing."""
+        """Retrieve the mesh data with left-handed (Y-up) coords for rendering."""
         # TODO: Add a check for None for the arrays
+        verts_np = np.array(self.vertices.numpy(), copy=True)
+        verts_np[:, [1, 2]] = verts_np[:, [2, 1]]  # Swap Y/Z for left-handed view
+        return {
+            "vertices": verts_np,
+            "indices": np.array(self.indices.numpy(), copy=True),
+        }
+    
+    """possible options for LBM accessing?"""
+    def get_physics_mesh(self) -> dict:
+        """Return the original right-handed (Z-up) mesh for physics/coupling."""
         return {
             "vertices": np.array(self.vertices.numpy(), copy=True),
             "indices": np.array(self.indices.numpy(), copy=True),
         }
+    
+    def get_physics_wp(self) -> tuple[wp.array, wp.array]:
+        """Return the warp arrays directly (no copies)."""
+        return self.vertices, self.indices
 
 
 class SimState:

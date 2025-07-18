@@ -41,15 +41,6 @@ class ReefcraftApp:
         loop.run()
 
     def step(self) -> None:
-        """Perform a complete step for the frame by calling update() then draw()."""
-        self.update()
-        self.draw()
-
-    def update(self) -> None:
-        """Update the engine and then the window/visualiztion to reflect the engine."""
-        time = self.engine.update()
-        self.window.update(time, self.engine.context)
-
-    def draw(self) -> None:
-        """Render one frame of the simulation and overlay UI."""
-        self.window.draw()
+        """Perform a complete step for the frame by calling update() on engine then draw() on views."""
+        self.engine.update()
+        self.window.draw(self.engine.state)

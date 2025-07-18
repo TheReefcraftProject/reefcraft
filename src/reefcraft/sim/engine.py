@@ -6,8 +6,8 @@
 
 """Simple simulation engine used for driving updates."""
 
-from reefcraft.sim.context import SimContext
 from reefcraft.sim.growth_model import GrowthModel
+from reefcraft.sim.state import SimState
 from reefcraft.utils.logger import logger
 
 from .timer import Timer
@@ -19,8 +19,8 @@ class Engine:
     def __init__(self) -> None:
         """Initialize the engine with a new :class:`Timer`."""
         self.timer = Timer()
-        self.context = SimContext()
-        self.model = GrowthModel(self.context)
+        self.state = SimState()
+        self.model = GrowthModel(self.state)
 
     # ------------------------------------------------------------------------
     # Timer control

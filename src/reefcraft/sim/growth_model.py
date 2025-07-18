@@ -11,14 +11,14 @@ from typing import Literal
 import numpy as np
 import warp as wp
 
-from reefcraft.sim.context import SimContext
+from reefcraft.sim.state import SimState
 from reefcraft.utils.logger import logger
 
 
 class GrowthModel:
     """A base class for all coral morphological models."""
 
-    def __init__(self, context: SimContext) -> None:
+    def __init__(self, context: SimState) -> None:
         """Initialize the engine with a new :class:`Timer`."""
         self.context = context
         self.reset()

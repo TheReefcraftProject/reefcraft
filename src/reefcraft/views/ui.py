@@ -8,7 +8,7 @@
 
 import pygfx as gfx
 
-from reefcraft.sim.context import SimContext
+from reefcraft.sim.state import SimState
 from reefcraft.utils.logger import logger
 
 
@@ -194,17 +194,11 @@ class Panel:
     def _on_mouse_down(self, event: gfx.PointerEvent) -> None:
         """When the mouse is clicked in background of the panel, capture the mouse and block others."""
         event.target.set_pointer_capture(event.pointer_id, self.renderer)
-        pass
 
     def _on_mouse_up(self, event: gfx.PointerEvent) -> None:
         """Release the mouse on mouse up."""
         event.target.release_pointer_capture(event.pointer_id)
-        pass
 
-    def update(self, time: float, sim_context: SimContext) -> None:
-        """Update the UI."""
-        pass
-
-    def draw(self) -> None:
+    def draw(self, state: SimState) -> None:
         """Draw a solid rectangle on the left side of the UI scene."""
         self.viewport.render(self.scene, self.camera)  # , flush=False)

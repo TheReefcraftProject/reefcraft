@@ -8,9 +8,8 @@
 
 import numpy as np
 import pygfx as gfx
-import warp as wp
 
-from reefcraft.sim.context import CoralContext, SimContext
+from reefcraft.sim.state import CoralState, SimState
 from reefcraft.utils.logger import logger
 
 
@@ -39,9 +38,9 @@ class CoralMesh:
         self.geometry = gfx.Geometry(positions=self.positions_buf, indices=self.indices_buf)
         self.mesh = gfx.Mesh(self.geometry, gfx.MeshPhongMaterial(color="#0040ff"))
 
-    def update(self, context: CoralContext) -> None:
+    def sync(self, state: CoralState) -> None:
         """Update the visualized mesh to the latest from the sim."""
-        mesh_data = context.get_render_mesh()
+        mesh_data = state.get_render_mesh()
 
         # for now always do a full update!
         # if subdivided:
@@ -91,11 +90,7 @@ class Reef:
         self.controller = gfx.OrbitController(self.camera, register_events=self.viewport)
         self.camera.show_object(self.scene)
 
-    def update(self, time: float, sim_context: SimContext) -> None:
+    def draw(self, state: SimState) -> None:
         """Update the reef scene and draw."""
-        self.coral.update(sim_context.coral)
-        pass
-
-    def draw(self) -> None:
-        """Update the reef scene and draw."""
+        self.coral.sync(state.coral)
         self.viewport.render(self.scene, self.camera)

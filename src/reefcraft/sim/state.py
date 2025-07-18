@@ -12,13 +12,18 @@ import warp as wp
 from reefcraft.utils.logger import logger
 
 
-class CoralContext:
+class CoralState:
     """A base class for all coral morphological models."""
 
     def __init__(self) -> None:
         """Initialize the coral data state within the sim."""
         self.vertices = None
         self.indices = None
+
+    def set_mesh(self, vertices: wp.array, indices: wp.array) -> None:
+        """Set the mesh data directly."""
+        self.vertices = vertices
+        self.indices = indices
 
     def get_render_mesh(self) -> dict:
         """Retrieve the mesh data for the coral we are growing."""
@@ -28,15 +33,10 @@ class CoralContext:
             "indices": np.array(self.indices.numpy(), copy=True),
         }
 
-    def set_mesh(self, vertices: wp.array, indices: wp.array) -> None:
-        """Set the mesh data directly."""
-        self.vertices = vertices
-        self.indices = indices
 
-
-class SimContext:
+class SimState:
     """The data context for the simulation including all simulation state."""
 
     def __init__(self) -> None:
         """Initialize the simulation."""
-        self.coral = CoralContext()
+        self.coral = CoralState()

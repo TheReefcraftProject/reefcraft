@@ -8,7 +8,9 @@
 
 import numpy as np
 import pygfx as gfx
-from numpy.typing import NDArray
+
+from reefcraft.sim.sim_context import CoralContext, SimContext
+from reefcraft.utils.logger import logger
 
 
 class CoralMesh:
@@ -16,43 +18,38 @@ class CoralMesh:
 
     def __init__(self) -> None:
         """Allocate raw buffers to hold the coral geometery positions, faces, etc."""
-        self.vertices, self.indicies = self.default_polyp_mesh(size=1.0, height=0.2, res=24)
+        # 1) Three 3-D points (x, y, z) for the triangle’s corners
+        self.vertices = np.array(
+            [
+                [0.0, 0.0, 0.0],  # vertex 0
+                [1.0, 0.0, 0.0],  # vertex 1
+                [0.0, 1.0, 0.0],  # vertex 2
+            ],
+            dtype=np.float32,
+        )
 
-        self.positions_buf = gfx.Buffer(self.vertices)
-        self.indices_buf = gfx.Buffer(self.indicies)
+        # 2) A flat index list saying “one triangle: connect 0→1→2”
+        self.indices = np.array([0, 1, 2], dtype=np.uint32)
 
-        self.geometry = gfx.Geometry(positions=self.positions_buf, indices=self.indices_buf)
+        # 3) Wrap those in gfx.Buffer and build your Geometry
+        # self.positions_buf = gfx.Buffer(self.vertices)
+        # self.indices_buf = gfx.Buffer(self.indices)
+
+        # self.geometry = gfx.Geometry(
+        #     positions=self.positions_buf,
+        #     indices=self.indices_buf,
+        # )
+        self.geometry = gfx.Geometry(positions=self.vertices, indices=self.indices)
+        gfx.Mesh(self.geometry, gfx.MeshPhongMaterial(color="#0040ff"))
         self.material = gfx.MeshPhongMaterial(color="#0040ff")  # Tell the material to use vertex colors
 
-    def default_polyp_mesh(self, size: float = 1.0, height: float = 0.3, res: int = 16) -> tuple[NDArray[np.float32], NDArray[np.uint32]]:
-        """Returns: vertices: (res*res, 3) float32 array indices:  ((res-1)*(res-1)*2, 3) uint32 array."""
-        # 1) build a res×res grid in the x–y plane
-        xs = np.linspace(-size / 2, size / 2, res, dtype=np.float32)
-        ys = np.linspace(-size / 2, size / 2, res, dtype=np.float32)
-        xv, yv = np.meshgrid(xs, ys, indexing="xy")
-
-        # 2) Gaussian bump for the mound normalized radius squared, falls off sharply
-        rr = (xv / (size / 2)) ** 2 + (yv / (size / 2)) ** 2
-        zv = height * np.exp(-5 * rr).astype(np.float32)
-
-        # 3) Stack into vertex list
-        vertices = np.stack([xv, zv, yv], axis=-1).reshape(-1, 3)
-
-        # 4) Build quad‐to‐tri indices
-        indices = []
-        for i in range(res - 1):
-            for j in range(res - 1):
-                i0 = i * res + j
-                i1 = i0 + 1
-                i2 = i0 + res
-                i3 = i2 + 1
-                # two triangles per quad
-                indices.append([i0, i2, i1])
-                indices.append([i1, i2, i3])
-
-        indices = np.array(indices, dtype=np.uint32)
-
-        return vertices, indices
+    def update(self, context: CoralContext) -> None:
+        """Update the visualized mesh to the latest from the sim."""
+        mesh_data = context.get_render_mesh()
+        # if mesh_data["verts"] is not None:
+        # for now always do a full update!
+        # self.geometry.positions = gfx.Buffer(mesh_data["verts"])
+        # self.geometry.indices = gfx.Buffer(mesh_data["faces"])
 
 
 class Reef:
@@ -95,9 +92,9 @@ class Reef:
         self.controller = gfx.OrbitController(self.camera, register_events=self.viewport)
         self.camera.show_object(self.scene)
 
-    def update(self, time: float) -> None:
+    def update(self, time: float, sim_context: SimContext) -> None:
         """Update the reef scene and draw."""
-        # self.positions_buf.set_data(self.wp_vertices.numpy())
+        self.coral.update(sim_context.coral)
         pass
 
     def draw(self) -> None:

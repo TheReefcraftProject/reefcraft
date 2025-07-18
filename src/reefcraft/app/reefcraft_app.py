@@ -48,7 +48,7 @@ class ReefcraftApp:
     def update(self) -> None:
         """Update the engine and then the window/visualiztion to reflect the engine."""
         time = self.engine.update()
-        self.window.update(time)
+        self.window.update(time, self.engine.context)
 
     def draw(self) -> None:
         """Render one frame of the simulation and overlay UI."""

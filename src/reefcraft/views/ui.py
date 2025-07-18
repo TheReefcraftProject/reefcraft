@@ -8,6 +8,7 @@
 
 import pygfx as gfx
 
+from reefcraft.sim.sim_context import SimContext
 from reefcraft.utils.logger import logger
 
 
@@ -200,7 +201,7 @@ class Panel:
         event.target.release_pointer_capture(event.pointer_id)
         pass
 
-    def update(self, time: float) -> None:
+    def update(self, time: float, sim_context: SimContext) -> None:
         """Update the UI."""
         pass
 

@@ -6,6 +6,8 @@
 
 """Simple simulation engine used for driving updates."""
 
+from reefcraft.sim.coral_growth_model import CoralGrowthModel
+from reefcraft.sim.sim_context import SimContext
 from reefcraft.utils.logger import logger
 
 from .timer import Timer
@@ -17,6 +19,8 @@ class Engine:
     def __init__(self) -> None:
         """Initialize the engine with a new :class:`Timer`."""
         self.timer = Timer()
+        self.context = SimContext()
+        self.model = CoralGrowthModel(self.context)
 
     # ------------------------------------------------------------------------
     # Timer control
@@ -33,6 +37,7 @@ class Engine:
     def reset(self) -> None:
         """Reset the timer to the initial state."""
         self.timer.reset()
+        self.model.reset()
 
     def get_time(self) -> float:
         """Return the current simulation time."""

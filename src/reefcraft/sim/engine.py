@@ -6,7 +6,9 @@
 
 """Simple simulation engine used for driving updates."""
 
-from __future__ import annotations
+from reefcraft.sim.growth_model import GrowthModel
+from reefcraft.sim.state import SimState
+from reefcraft.utils.logger import logger
 
 from .timer import Timer
 
@@ -17,6 +19,12 @@ class Engine:
     def __init__(self) -> None:
         """Initialize the engine with a new :class:`Timer`."""
         self.timer = Timer()
+        self.state = SimState()
+        self.model = GrowthModel(self.state)
+
+    # ------------------------------------------------------------------------
+    # Timer control
+    # ------------------------------------------------------------------------
 
     def start(self) -> None:
         """Start or resume the timer."""
@@ -29,11 +37,17 @@ class Engine:
     def reset(self) -> None:
         """Reset the timer to the initial state."""
         self.timer.reset()
-
-    def update(self) -> None:
-        """Advance the simulation state."""
-        pass
+        self.model.reset()
 
     def get_time(self) -> float:
         """Return the current simulation time."""
+        return self.timer.time
+
+    # ------------------------------------------------------------------------
+    # Simulation API
+    # ------------------------------------------------------------------------
+
+    def update(self) -> float:
+        """Advance the simulation state."""
+        self.model.update(self.timer.time)
         return self.timer.time

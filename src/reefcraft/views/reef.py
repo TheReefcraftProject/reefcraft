@@ -6,23 +6,65 @@
 
 """The geometric scene for the reef."""
 
+import numpy as np
 import pygfx as gfx
+
+from reefcraft.sim.state import CoralState, SimState
+from reefcraft.utils.logger import logger
+
+
+class CoralMesh:
+    """The buffers for the mesh representing the coral we are growing."""
+
+    def __init__(self) -> None:
+        """Allocate raw buffers to hold the coral geometery positions, faces, etc."""
+        # Hand-rolled tri as a placeholder
+        self.vertices = np.array(
+            [
+                [-0.5, 0.0, 0.0],
+                [0.5, 0.0, 0.0],
+                [0.0, 1.0, 0.0],
+            ],
+            dtype=np.float32,
+        )
+        self.indices = np.array(
+            [
+                [0, 1, 2],
+            ],
+            dtype=np.uint32,
+        )
+        self.positions_buf = gfx.Buffer(self.vertices)
+        self.indices_buf = gfx.Buffer(self.indices)
+        self.geometry = gfx.Geometry(positions=self.positions_buf, indices=self.indices_buf)
+        self.mesh = gfx.Mesh(self.geometry, gfx.MeshPhongMaterial(color="#0040ff"))
+
+    def sync(self, state: CoralState) -> None:
+        """Update the visualized mesh to the latest from the sim."""
+        mesh_data = state.get_render_mesh()
+
+        # for now always do a full update!
+        # if subdivided:
+        self.geometry.positions = gfx.Buffer(mesh_data["vertices"])
+        self.geometry.indices = gfx.Buffer(mesh_data["indices"])
+        # else
+        # self.positions_buf.set_data(mesh_data["vertices"])
 
 
 class Reef:
     """The geometry, lighting, camera, and draw routines for the reef."""
 
-    def __init__(self, renderer) -> None:
+    def __init__(self, renderer: gfx.WgpuRenderer) -> None:
+        """Prepare the Reef class to hold a 3D scene including the coral."""
         self.renderer = renderer
+        self.viewport = gfx.Viewport(renderer)
         self.scene = gfx.Scene()
 
-        cube = gfx.Mesh(gfx.box_geometry(1, 1, 1), gfx.MeshPhongMaterial(color="#0040ff"))
-        cube.local.position = (0, 0.5, 0)
-        self.scene.add(cube)
+        self.coral = CoralMesh()
+        self.scene.add(self.coral.mesh)
 
         self.scene.add(gfx.AmbientLight("#fff", 0.3))
         light = gfx.DirectionalLight("#fff", 3)
-        light.local.position = (1.5, 2.0, 4.0)
+        light.local.position = (1.5, 2.0, 1.0)
         self.scene.add(light)
 
         grid = gfx.Grid(
@@ -45,9 +87,10 @@ class Reef:
         self.scene.add(grid)
 
         self.camera = gfx.PerspectiveCamera()
-        self.controller = gfx.OrbitController(self.camera, register_events=self.renderer)
+        self.controller = gfx.OrbitController(self.camera, register_events=self.viewport)
         self.camera.show_object(self.scene)
 
-    def draw(self) -> None:
-        """Draw a solid rectangle on the left side of the UI scene."""
-        self.renderer.render(self.scene, self.camera, flush=False)
+    def draw(self, state: SimState) -> None:
+        """Update the reef scene and draw."""
+        self.coral.sync(state.coral)
+        self.viewport.render(self.scene, self.camera)

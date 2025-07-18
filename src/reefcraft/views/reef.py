@@ -8,8 +8,9 @@
 
 import numpy as np
 import pygfx as gfx
+import warp as wp
 
-from reefcraft.sim.sim_context import CoralContext, SimContext
+from reefcraft.sim.context import CoralContext, SimContext
 from reefcraft.utils.logger import logger
 
 
@@ -18,38 +19,36 @@ class CoralMesh:
 
     def __init__(self) -> None:
         """Allocate raw buffers to hold the coral geometery positions, faces, etc."""
-        # 1) Three 3-D points (x, y, z) for the triangle’s corners
+        # Hand-rolled tri as a placeholder
         self.vertices = np.array(
             [
-                [0.0, 0.0, 0.0],  # vertex 0
-                [1.0, 0.0, 0.0],  # vertex 1
-                [0.0, 1.0, 0.0],  # vertex 2
+                [-0.5, 0.0, 0.0],
+                [0.5, 0.0, 0.0],
+                [0.0, 1.0, 0.0],
             ],
             dtype=np.float32,
         )
-
-        # 2) A flat index list saying “one triangle: connect 0→1→2”
-        self.indices = np.array([0, 1, 2], dtype=np.uint32)
-
-        # 3) Wrap those in gfx.Buffer and build your Geometry
-        # self.positions_buf = gfx.Buffer(self.vertices)
-        # self.indices_buf = gfx.Buffer(self.indices)
-
-        # self.geometry = gfx.Geometry(
-        #     positions=self.positions_buf,
-        #     indices=self.indices_buf,
-        # )
-        self.geometry = gfx.Geometry(positions=self.vertices, indices=self.indices)
-        gfx.Mesh(self.geometry, gfx.MeshPhongMaterial(color="#0040ff"))
-        self.material = gfx.MeshPhongMaterial(color="#0040ff")  # Tell the material to use vertex colors
+        self.indices = np.array(
+            [
+                [0, 1, 2],
+            ],
+            dtype=np.uint32,
+        )
+        self.positions_buf = gfx.Buffer(self.vertices)
+        self.indices_buf = gfx.Buffer(self.indices)
+        self.geometry = gfx.Geometry(positions=self.positions_buf, indices=self.indices_buf)
+        self.mesh = gfx.Mesh(self.geometry, gfx.MeshPhongMaterial(color="#0040ff"))
 
     def update(self, context: CoralContext) -> None:
         """Update the visualized mesh to the latest from the sim."""
         mesh_data = context.get_render_mesh()
-        # if mesh_data["verts"] is not None:
+
         # for now always do a full update!
-        # self.geometry.positions = gfx.Buffer(mesh_data["verts"])
-        # self.geometry.indices = gfx.Buffer(mesh_data["faces"])
+        # if subdivided:
+        self.geometry.positions = gfx.Buffer(mesh_data["vertices"])
+        self.geometry.indices = gfx.Buffer(mesh_data["indices"])
+        # else
+        # self.positions_buf.set_data(mesh_data["vertices"])
 
 
 class Reef:
@@ -62,7 +61,7 @@ class Reef:
         self.scene = gfx.Scene()
 
         self.coral = CoralMesh()
-        self.scene.add(gfx.Mesh(self.coral.geometry, self.coral.material))
+        self.scene.add(self.coral.mesh)
 
         self.scene.add(gfx.AmbientLight("#fff", 0.3))
         light = gfx.DirectionalLight("#fff", 3)

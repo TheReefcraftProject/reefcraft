@@ -8,7 +8,7 @@
 
 import pygfx as gfx
 
-from reefcraft.sim.sim_context import SimContext
+from reefcraft.sim.context import SimContext
 from reefcraft.utils.logger import logger
 
 

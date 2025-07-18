@@ -12,8 +12,8 @@ from pathlib import Path
 import pygfx as gfx
 from rendercanvas.auto import RenderCanvas
 
+from reefcraft.sim.context import SimContext
 from reefcraft.sim.engine import Engine
-from reefcraft.sim.sim_context import SimContext
 from reefcraft.utils.logger import logger
 from reefcraft.utils.window_style import apply_dark_titlebar_and_icon
 from reefcraft.views.reef import Reef

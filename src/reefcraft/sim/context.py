@@ -17,20 +17,20 @@ class CoralContext:
 
     def __init__(self) -> None:
         """Initialize the coral data state within the sim."""
-        self.verts = wp.zeros(3, dtype=wp.vec3f)  # , device=self.device)
-        self.faces = wp.zeros(3, dtype=wp.int32)  # , device=self.device)
+        self.vertices = None
+        self.indices = None
 
     def get_render_mesh(self) -> dict:
         """Retrieve the mesh data for the coral we are growing."""
+        # TODO: Add a check for None for the arrays
         return {
-            "verts": np.array(self.verts.numpy(), copy=True),
-            "faces": np.array(self.faces.numpy(), copy=True),
+            "vertices": np.array(self.vertices.numpy(), copy=True),
+            "indices": np.array(self.indices.numpy(), copy=True),
         }
 
     def set_mesh(self, vertices: wp.array, indices: wp.array) -> None:
         """Set the mesh data directly."""
-        logger.debug("SET_MESH on CORAL: {}, {}", vertices, indices)
-        self.verts = vertices
+        self.vertices = vertices
         self.indices = indices
 
 

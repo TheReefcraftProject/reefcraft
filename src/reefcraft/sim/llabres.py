@@ -11,18 +11,17 @@ from reefcraft.sim.state import SimState
 
 
 class LlabresSurface:
-    def __init__(self, device="cuda") -> None:
-        self.device = device
+    def __init__(self) -> None:
         self.verts, self.faces = self.gen_llabres_seed()
-        self.norms = wp.zeros(self.verts.shape[0], dtype=wp.vec3f, device=self.device)
-        self.fixed = wp.zeros(self.verts.shape[0], dtype=wp.int32, device=self.device)
+        self.norms = wp.zeros(self.verts.shape[0], dtype=wp.vec3f)
+        self.fixed = wp.zeros(self.verts.shape[0], dtype=wp.int32)
         self.num_steps = 0
         self.edge_midpoints = {}
 
         # Initialize fixed verts
         verts_np = self.verts.numpy()
         fixed_mask = (verts_np[:, 2] <= 0.0).astype(np.int32)
-        self.fixed = wp.array(fixed_mask, dtype=wp.int32, device=self.device)
+        self.fixed = wp.array(fixed_mask, dtype=wp.int32)
 
     def gen_llabres_seed(self, radius=1.0, height=0.1) -> tuple[wp.array, wp.array]:
         verts = []
@@ -44,15 +43,15 @@ class LlabresSurface:
             faces.append([0, 1 + i, 1 + ((i + 1) % 6)])
 
         # Convert to warp arrays
-        verts_wp = wp.array(np.array(verts, dtype=np.float32), dtype=wp.vec3f, device=self.device)
-        faces_wp = wp.array(np.array(faces, dtype=np.int32), dtype=wp.vec3i, device=self.device)
+        verts_wp = wp.array(np.array(verts, dtype=np.float32), dtype=wp.vec3f)
+        faces_wp = wp.array(np.array(faces, dtype=np.int32), dtype=wp.vec3i)
 
         return verts_wp, faces_wp
 
     def step(self, base_thresh=0.47, amount=0.001, dmax=1.0, decay=0.02, floor=0.2):
         self.compute_normals()
 
-        wp.launch(grow, dim=self.verts.shape[0], inputs=[self.verts, self.norms, self.fixed, base_thresh, amount], device=self.device)
+        wp.launch(grow, dim=self.verts.shape[0], inputs=[self.verts, self.norms, self.fixed, base_thresh, amount])
 
         self.num_steps += 1
 
@@ -68,10 +67,10 @@ class LlabresSurface:
         self.norms.fill_(0.0)
 
         # Accumulate face contributions
-        wp.launch(accumulate_normals, dim=self.faces.shape[0], inputs=[self.verts, self.faces, self.norms], device=self.device)
+        wp.launch(accumulate_normals, dim=self.faces.shape[0], inputs=[self.verts, self.faces, self.norms])
 
         # Normalize per vertex
-        wp.launch(normalize_normals, dim=self.norms.shape[0], inputs=[self.norms], device=self.device)
+        wp.launch(normalize_normals, dim=self.norms.shape[0], inputs=[self.norms])
 
         verts_np = self.verts.numpy()
         norms_np = self.norms.numpy()
@@ -83,7 +82,7 @@ class LlabresSurface:
                 if norm > 1e-8:  # Avoid division by zero
                     norms_np[i] /= norm
 
-        self.norms.assign(wp.from_numpy(norms_np, dtype=wp.vec3f, device=self.device))
+        self.norms.assign(wp.from_numpy(norms_np, dtype=wp.vec3f))
 
     def get_dlpack(self) -> dict:
         """Export the mesh as DLPack for zero-copy to external systems."""
@@ -97,15 +96,14 @@ class LlabresSurface:
             "norms": np.array(self.norms.numpy(), copy=True),
         }
 
-    
     def reset(self):
-        self.__init__(self.device)  # reinit in place, optional cleanup if needed
+        self.__init__()  # reinit in place, optional cleanup if needed
 
     def update(self, time: float, state: SimState):
-        #Perform one growth step and sync to the SimState.
+        # Perform one growth step and sync to the SimState.
         self.step()
         state.coral.set_mesh(self.verts, self.faces)
-                             
+
     def subdiv(self, edge_midpoints, edge_thresh=1.0):
         if edge_midpoints is None:
             edge_midpoints = {}
@@ -175,14 +173,14 @@ class LlabresSurface:
             new_faces.extend(F14.tolist())
 
         # Update Warp arrays
-        self.verts = wp.array(np.array(new_verts, dtype=np.float32), dtype=wp.vec3f, device=self.device)
-        self.faces = wp.array(np.array(new_faces, dtype=np.int32), dtype=wp.vec3i, device=self.device)
+        self.verts = wp.array(np.array(new_verts, dtype=np.float32), dtype=wp.vec3f)
+        self.faces = wp.array(np.array(new_faces, dtype=np.int32), dtype=wp.vec3i)
 
         # Recompute fixed and norms
         verts_np = np.array(new_verts, dtype=np.float32)
         fixed_mask = (verts_np[:, 2] <= 0.0).astype(np.int32)
-        self.fixed = wp.array(fixed_mask, dtype=wp.int32, device=self.device)
-        self.norms = wp.zeros(len(new_verts), dtype=wp.vec3f, device=self.device)
+        self.fixed = wp.array(fixed_mask, dtype=wp.int32)
+        self.norms = wp.zeros(len(new_verts), dtype=wp.vec3f)
 
         return subdivd
 

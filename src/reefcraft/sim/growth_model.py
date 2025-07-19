@@ -52,7 +52,6 @@ class GrowthModel:
             wave_in_place,
             dim=vertices.shape[0],
             inputs=[vertices, time, 0.1, 0.5],
-            device="cuda:0",
         )
 
     def default_polyp_mesh(self, size: float = 1.0, height: float = 0.3, res: int = 32) -> None:
@@ -82,7 +81,7 @@ class GrowthModel:
 
         indices = np.array(indices, dtype=np.uint32)
 
-        vertices_wp = wp.array(vertices, dtype=wp.vec3, device="cuda:0")
-        indices_wp = wp.array(indices, dtype=wp.uint32, device="cuda:0")
+        vertices_wp = wp.array(vertices, dtype=wp.vec3)
+        indices_wp = wp.array(indices, dtype=wp.uint32)
 
         self.context.coral.set_mesh(vertices_wp, indices_wp)

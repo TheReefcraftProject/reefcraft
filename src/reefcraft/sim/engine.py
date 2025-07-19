@@ -4,20 +4,29 @@
 # Licensed under the MIT License. See the LICENSE file for details.
 # -----------------------------------------------------------------------------
 
-"""Simple simulation engine used for driving updates."""
+"""Simulation engine used for driving updates."""
+
+import warp as wp
 
 from reefcraft.sim.llabres import LlabresSurface
 from reefcraft.sim.state import SimState
+from reefcraft.sim.timer import Timer
 from reefcraft.utils.logger import logger
-
-from .timer import Timer
 
 
 class Engine:
     """A thin wrapper that controls a :class:`Timer`."""
 
     def __init__(self) -> None:
-        """Initialize the engine with a new :class:`Timer`."""
+        """Prepare the engine for execution."""
+        # Initialize NVIDIA Warp and log the device
+        wp.init()
+        dev = wp.get_device()
+        logger.info(f"Warp version:    {wp.config.version}")
+        logger.info(f"Default device:  {dev}")  # calls dev.__str__()
+        logger.info(f"Device class:    {dev.__class__.__name__}")
+
+        # Create the internal engine classes
         self.timer = Timer()
         self.state = SimState()
         self.model = LlabresSurface()

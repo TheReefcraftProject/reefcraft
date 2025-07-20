@@ -69,6 +69,7 @@ class ComputeLBM:
 
         # Update the boundary condition for the coral mesh
         self.bc_coral = HalfwayBounceBackBC(mesh_vertices=self.coral_vertices)
+        self.boundary_conditions.append(self.bc_coral)
 
     def setup_boundary_conditions(self):
         box = self.grid.bounding_box_indices()
@@ -82,9 +83,8 @@ class ComputeLBM:
         bc_left = RegularizedBC("velocity", prescribed_value=(self.fluid_speed, 0.0, 0.0), indices=inlet)
         bc_walls = FullwayBounceBackBC(indices=walls)
         bc_do_nothing = ExtrapolationOutflowBC(indices=outlet)
-        bc_coral = HalfwayBounceBackBC(mesh_vertices=self.coral_vertices)  # Adding the coral mesh as a BC
 
-        self.boundary_conditions = [bc_walls, bc_left, bc_do_nothing, bc_coral]
+        self.boundary_conditions = [bc_walls, bc_left, bc_do_nothing]
 
     def get_field_numpy(self) -> dict:
         rho_field = self.grid.create_field(cardinality=1)

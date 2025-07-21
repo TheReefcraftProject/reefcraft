@@ -6,8 +6,6 @@
 
 """Utility class for tracking elapsed simulation time."""
 
-from __future__ import annotations
-
 import time
 
 

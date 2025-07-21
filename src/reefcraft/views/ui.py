@@ -8,6 +8,9 @@
 
 import pygfx as gfx
 
+from reefcraft.sim.state import SimState
+from reefcraft.utils.logger import logger
+
 
 class Widget:
     """A base cass for all widget types."""
@@ -25,12 +28,12 @@ class ListLayout:
 
     def __init__(self) -> None:
         """Create the slider and add it to the given ``panel`` scene."""
-        self.widgets = []
+        self.widgets: list[Widget] = []
         self.line_spacing = 10
 
-    def add_widget(self, widget) -> None:
+    def add_widget(self, widget: Widget) -> None:
         """Append another widget to the list."""
-        self.widgets += widget
+        self.widgets.append(widget)
 
     @property
     def height(self) -> int:
@@ -73,7 +76,8 @@ class Slider(Widget):
             gfx.plane_geometry(width=width, height=height),
             gfx.MeshBasicMaterial(color=background_color),
         )
-        self._bg_mesh.material.pick_write = True
+        if self._bg_mesh.material is not None:
+            self._bg_mesh.material.pick_write = True
 
         # Foreground mesh showing the filled portion
         self._fg_mesh = gfx.Mesh(
@@ -123,7 +127,7 @@ class Slider(Widget):
         self._bg_mesh.local.position = self._screen_to_world(self.left + self.width / 2, self.top + self.height / 2, -1)
 
         # Foreground
-        self._fg_mesh.geometry = gfx.plane_geometry(width=self.width * filled, height=self.height)
+        self._fg_mesh.geometry = gfx.plane_geometry(width=int(self.width * filled), height=self.height)
         self._fg_mesh.local.position = self._screen_to_world(self.left + (self.width * filled) / 2, self.top + self.height / 2, 0)
 
         # Text overlay
@@ -157,7 +161,7 @@ class Section:
 
     def __init__(self) -> None:
         """Initialize the section TBD."""
-        print("NOT IMPL")
+        logger.debug("Section initialized - not yet implemented")
 
 
 class Panel:
@@ -166,6 +170,7 @@ class Panel:
     def __init__(self, renderer: gfx.WgpuRenderer, width: int = 300, height: int = 1080) -> None:
         """Initialize the panel and its correstponding 3D scene and ortho cameras."""
         self.renderer = renderer
+        self.viewport = gfx.Viewport(renderer)
 
         geom = gfx.plane_geometry(width=width, height=height, width_segments=1, height_segments=1)
         mat = gfx.MeshBasicMaterial(color="#08080A")
@@ -173,7 +178,8 @@ class Panel:
         mesh.local.position = (-((1920 / 2) - (300 / 2)), 0, -100)
 
         # Block the picking for the background of the panel
-        mesh.material.pick_write = True
+        if mesh.material is not None:
+            mesh.material.pick_write = True
         mesh.add_event_handler(self._on_mouse_down, "pointer_down")
         mesh.add_event_handler(self._on_mouse_up, "pointer_up")
 
@@ -188,13 +194,11 @@ class Panel:
     def _on_mouse_down(self, event: gfx.PointerEvent) -> None:
         """When the mouse is clicked in background of the panel, capture the mouse and block others."""
         event.target.set_pointer_capture(event.pointer_id, self.renderer)
-        pass
 
     def _on_mouse_up(self, event: gfx.PointerEvent) -> None:
         """Release the mouse on mouse up."""
-        event.target.set_pointer_capture(event.pointer_id, self.renderer)
-        pass
+        event.target.release_pointer_capture(event.pointer_id)
 
-    def draw(self) -> None:
+    def draw(self, state: SimState) -> None:
         """Draw a solid rectangle on the left side of the UI scene."""
-        self.renderer.render(self.scene, self.camera, flush=False)
+        self.viewport.render(self.scene, self.camera)  # , flush=False)

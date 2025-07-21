@@ -23,6 +23,7 @@ class ComputeLBM:
         self.grid_shape = (64, 64, 64)
         self.fluid_speed = 1.0
         self.current_step = 0
+        self.bc_coral = None
 
         self.Re = 50000.0
         self.clength = self.grid_shape[0] - 1
@@ -72,7 +73,9 @@ class ComputeLBM:
         self.coral_cross_section = np.prod(mesh_extents[1:]) / dx**2
 
         # Update the boundary condition for the coral mesh
-        self.bc_coral = HalfwayBounceBackBC(mesh_vertices=self.coral_vertices)
+        # TODO For now cheat and only update a single time and look for a way to make the mesh dynamic
+        if self.bc_coral is None:
+            self.bc_coral = HalfwayBounceBackBC(mesh_vertices=self.coral_vertices)
         self.boundary_conditions.append(self.bc_coral)
 
     def setup_boundary_conditions(self) -> None:

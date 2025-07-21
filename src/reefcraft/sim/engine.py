@@ -8,6 +8,7 @@
 
 import warp as wp
 
+from reefcraft.sim.compute_lbm import ComputeLBM
 from reefcraft.sim.llabres import LlabresSurface
 from reefcraft.sim.state import SimState
 from reefcraft.sim.timer import Timer
@@ -30,6 +31,7 @@ class Engine:
         self.timer = Timer()
         self.state = SimState()
         self.model = LlabresSurface()
+        self.water = ComputeLBM()
 
     # ------------------------------------------------------------------------
     # Timer control
@@ -59,4 +61,5 @@ class Engine:
     def update(self) -> float:
         """Advance the simulation state."""
         self.model.update(self.timer.time, self.state)
+        self.water.step(self.model.get_numpy())
         return self.timer.time

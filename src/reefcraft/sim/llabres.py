@@ -8,10 +8,13 @@ import numpy as np
 import warp as wp
 
 from reefcraft.sim.state import SimState
+from reefcraft.utils.logger import logger
 
 
 class LlabresSurface:
+    """Class based on Llabres Et Al column coral growth."""
     def __init__(self) -> None:
+        """Initialization of single Llabres column coral."""
         self.verts, self.faces = self.gen_llabres_seed()
         self.norms = wp.zeros(self.verts.shape[0], dtype=wp.vec3f)
         self.fixed = wp.zeros(self.verts.shape[0], dtype=wp.int32)
@@ -24,6 +27,7 @@ class LlabresSurface:
         self.fixed = wp.array(fixed_mask, dtype=wp.int32)
 
     def gen_llabres_seed(self, radius=1.0, height=0.1) -> tuple[wp.array, wp.array]:
+        """Generate a hexagonal mesh to start Llabres coral growth."""
         verts = []
         faces = []
 
@@ -48,7 +52,8 @@ class LlabresSurface:
 
         return verts_wp, faces_wp
 
-    def step(self, base_thresh=0.47, amount=0.001, dmax=1.0, decay=0.02, floor=0.2):
+    def step(self, base_thresh=0.47, amount=0.001, dmax=1.0, decay=0.02, floor=0.2) -> bool:
+        """Single step of coral growth and subdivision. Returns boolean of subdivision status to help with resetting rendering buffers."""
         self.compute_normals()
 
         wp.launch(grow, dim=self.verts.shape[0], inputs=[self.verts, self.norms, self.fixed, base_thresh, amount])
@@ -63,6 +68,7 @@ class LlabresSurface:
         return did_subdivide
 
     def compute_normals(self) -> None:
+        """Compute vertex growth normals."""
         # Zero the normals first
         self.norms.fill_(0.0)
 
@@ -84,10 +90,6 @@ class LlabresSurface:
 
         self.norms.assign(wp.from_numpy(norms_np, dtype=wp.vec3f))
 
-    def get_dlpack(self) -> dict:
-        """Export the mesh as DLPack for zero-copy to external systems."""
-        return {"verts": self.verts.to_dlpack(), "faces": self.faces.to_dlpack()}
-
     def get_numpy(self) -> dict:
         """Optional: get CPU copies for debugging or visualization."""
         return {
@@ -96,15 +98,17 @@ class LlabresSurface:
             "norms": np.array(self.norms.numpy(), copy=True),
         }
 
-    def reset(self):
+    def reset(self) -> None:
+        """Reinitialize mesh for simulation restart/reset."""
         self.__init__()  # reinit in place, optional cleanup if needed
 
-    def update(self, time: float, state: SimState):
-        # Perform one growth step and sync to the SimState.
+    def update(self, time: float, state: SimState) -> None:
+        """Perform one growth step and sync to the SimState."""
         self.step()
         state.coral.set_mesh(self.verts, self.faces)
-
-    def subdiv(self, edge_midpoints, edge_thresh=1.0):
+                             
+    def subdiv(self, edge_midpoints, edge_thresh=1.0) -> None:
+        """Determine edges and midpoints for subdivision, return boolean of subdiv status."""
         if edge_midpoints is None:
             edge_midpoints = {}
 
@@ -185,7 +189,8 @@ class LlabresSurface:
         return subdivd
 
     def subdiv_I(self, V, M12, edge_midpoints):
-        print("subdiv_I")
+        """Subdivide single edge of triangle."""
+        logger.info("subdiv_I")
         i1_list = []
 
         for i0, i1, i2 in M12:
@@ -209,7 +214,8 @@ class LlabresSurface:
         return F12
 
     def subdiv_II(self, V, M13, edge_midpoints):
-        print("subdiv_II")
+        """Subdivide two edges of triangle."""
+        logger.info("subdiv_II")
         i1_list = []
         i2_list = []
 
@@ -247,7 +253,8 @@ class LlabresSurface:
         return F13
 
     def subdiv_III(self, V, F, edge_midpoints):
-        print("subdiv_III")
+        """Subdivide three edges of triangle."""
+        logger.info("subdiv_III")
         i1_list = []
         i2_list = []
         i3_list = []
@@ -258,7 +265,7 @@ class LlabresSurface:
             k2 = tuple(sorted((i2, i0)))
             k3 = tuple(sorted((i0, i1)))
 
-            def get_or_create(key, v_start, v_end):
+            def get_or_create(key, v_start, v_end) -> int:
                 if key in edge_midpoints:
                     return edge_midpoints[key]
                 else:
@@ -289,6 +296,7 @@ class LlabresSurface:
 
 @wp.kernel
 def grow(verts: wp.array(dtype=wp.vec3f), norms: wp.array(dtype=wp.vec3f), fixed: wp.array(dtype=wp.int32), thresh: float, amount: float) -> None:
+    """Growth along vertex normals."""
     i = wp.tid()
     if fixed[i]:
         return
@@ -301,7 +309,8 @@ def grow(verts: wp.array(dtype=wp.vec3f), norms: wp.array(dtype=wp.vec3f), fixed
 
 
 @wp.kernel
-def accumulate_normals(verts: wp.array(dtype=wp.vec3f), faces: wp.array(dtype=wp.vec3i), norms: wp.array(dtype=wp.vec3f)):
+def accumulate_normals(verts: wp.array(dtype=wp.vec3f), faces: wp.array(dtype=wp.vec3i), norms: wp.array(dtype=wp.vec3f)) -> None:
+    """First step of vertex normals."""
     t = wp.tid()
 
     i0, i1, i2 = faces[t][0], faces[t][1], faces[t][2]
@@ -323,6 +332,7 @@ def accumulate_normals(verts: wp.array(dtype=wp.vec3f), faces: wp.array(dtype=wp
 
 
 @wp.kernel
-def normalize_normals(norms: wp.array(dtype=wp.vec3f)):
+def normalize_normals(norms: wp.array(dtype=wp.vec3f)) -> None:
+    """Normalize calculated vertex normals."""
     i = wp.tid()
     norms[i] = wp.normalize(norms[i])

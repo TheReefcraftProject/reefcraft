@@ -11,8 +11,9 @@ from reefcraft.sim.state import SimState
 from reefcraft.utils.logger import logger
 
 
-class LlabresSurface:
+class LlabresGrowthModel:
     """Class based on Llabres Et Al column coral growth."""
+
     def __init__(self) -> None:
         """Initialization of single Llabres column coral."""
         self.verts, self.faces = self.gen_llabres_seed()
@@ -26,7 +27,7 @@ class LlabresSurface:
         fixed_mask = (verts_np[:, 2] <= 0.0).astype(np.int32)
         self.fixed = wp.array(fixed_mask, dtype=wp.int32)
 
-    def gen_llabres_seed(self, radius=1.0, height=0.1) -> tuple[wp.array, wp.array]:
+    def gen_llabres_seed(self, radius: float = 1.0, height: float = 0.1) -> tuple[wp.array, wp.array]:
         """Generate a hexagonal mesh to start Llabres coral growth."""
         verts = []
         faces = []
@@ -52,16 +53,13 @@ class LlabresSurface:
 
         return verts_wp, faces_wp
 
-    def step(self, base_thresh=0.47, amount=0.001, dmax=1.0, decay=0.02, floor=0.2) -> bool:
+    def step(self, base_thresh: float = 0.47, amount: float = 0.001, dmax: float = 1.0, decay: float = 0.02, floor: float = 0.2) -> bool:
         """Single step of coral growth and subdivision. Returns boolean of subdivision status to help with resetting rendering buffers."""
         self.compute_normals()
 
         wp.launch(grow, dim=self.verts.shape[0], inputs=[self.verts, self.norms, self.fixed, base_thresh, amount])
 
         self.num_steps += 1
-
-        # Gradual refinement: decay the subdivision threshold
-        adaptive_thresh = dmax * np.exp(-decay * self.num_steps) + floor
 
         did_subdivide = self.subdiv(self.edge_midpoints, edge_thresh=dmax)
 
@@ -106,8 +104,8 @@ class LlabresSurface:
         """Perform one growth step and sync to the SimState."""
         self.step()
         state.coral.set_mesh(self.verts, self.faces)
-                             
-    def subdiv(self, edge_midpoints, edge_thresh=1.0) -> None:
+
+    def subdiv(self, edge_midpoints: dict[tuple[int, int], int] | None, edge_thresh: float = 1.0) -> bool:
         """Determine edges and midpoints for subdivision, return boolean of subdiv status."""
         if edge_midpoints is None:
             edge_midpoints = {}
@@ -188,7 +186,7 @@ class LlabresSurface:
 
         return subdivd
 
-    def subdiv_I(self, V, M12, edge_midpoints):
+    def subdiv_I(self, V: list[list[float]], M12: list[tuple[int, int, int]], edge_midpoints: dict[tuple[int, int], int]) -> np.ndarray:
         """Subdivide single edge of triangle."""
         logger.info("subdiv_I")
         i1_list = []
@@ -213,7 +211,7 @@ class LlabresSurface:
 
         return F12
 
-    def subdiv_II(self, V, M13, edge_midpoints):
+    def subdiv_II(self, V: list[list[float]], M13: list[tuple[int, int, int]], edge_midpoints: dict[tuple[int, int], int]) -> np.ndarray:
         """Subdivide two edges of triangle."""
         logger.info("subdiv_II")
         i1_list = []
@@ -252,7 +250,7 @@ class LlabresSurface:
 
         return F13
 
-    def subdiv_III(self, V, F, edge_midpoints):
+    def subdiv_III(self, V: list[list[float]], F: list[tuple[int, int, int]], edge_midpoints: dict[tuple[int, int], int]) -> np.ndarray:
         """Subdivide three edges of triangle."""
         logger.info("subdiv_III")
         i1_list = []
@@ -265,7 +263,7 @@ class LlabresSurface:
             k2 = tuple(sorted((i2, i0)))
             k3 = tuple(sorted((i0, i1)))
 
-            def get_or_create(key, v_start, v_end) -> int:
+            def get_or_create(key: tuple[int, int], v_start: int, v_end: int) -> int:
                 if key in edge_midpoints:
                     return edge_midpoints[key]
                 else:

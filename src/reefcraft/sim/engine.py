@@ -9,7 +9,7 @@
 import warp as wp
 
 from reefcraft.sim.compute_lbm import ComputeLBM
-from reefcraft.sim.llabres import LlabresSurface
+from reefcraft.sim.llabres import LlabresGrowthModel
 from reefcraft.sim.state import SimState
 from reefcraft.sim.timer import Timer
 from reefcraft.utils.logger import logger
@@ -30,7 +30,7 @@ class Engine:
         # Create the internal engine classes
         self.timer = Timer()
         self.state = SimState()
-        self.model = LlabresSurface()
+        self.model = LlabresGrowthModel()
         self.water = ComputeLBM()
 
     # ------------------------------------------------------------------------

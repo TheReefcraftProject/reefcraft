@@ -9,7 +9,7 @@ import numpy as np
 import xlb.velocity_set
 from xlb.compute_backend import ComputeBackend
 from xlb.grid import grid_factory
-from xlb.operator.boundary_condition import ExtrapolationOutflowBC, FullwayBounceBackBC, HalfwayBounceBackBC, RegularizedBC
+from xlb.operator.boundary_condition import ExtrapolationOutflowBC, HalfwayBounceBackBC, RegularizedBC
 from xlb.operator.macroscopic import Macroscopic
 from xlb.operator.stepper import IncompressibleNavierStokesStepper
 from xlb.precision_policy import PrecisionPolicy
@@ -86,7 +86,7 @@ class ComputeLBM:
         walls = np.unique(np.array(walls), axis=-1).tolist()
 
         bc_left = RegularizedBC("velocity", prescribed_value=(self.fluid_speed, 0.0, 0.0), indices=inlet)
-        bc_walls = FullwayBounceBackBC(indices=walls)
+        bc_walls = ExtrapolationOutflowBC(indices=walls)
         bc_do_nothing = ExtrapolationOutflowBC(indices=outlet)
 
         self.boundary_conditions = [bc_walls, bc_left, bc_do_nothing]

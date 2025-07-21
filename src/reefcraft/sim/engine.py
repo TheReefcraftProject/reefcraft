@@ -8,11 +8,12 @@
 
 import warp as wp
 
+from reefcraft.sim.compute_lbm import ComputeLBM
 from reefcraft.sim.llabres import LlabresSurface
 from reefcraft.sim.state import SimState
 from reefcraft.sim.timer import Timer
-from reefcraft.sim.compute_lbm import ComputeLBM
 from reefcraft.utils.logger import logger
+
 
 class Engine:
     """A thin wrapper that controls a :class:`Timer`."""

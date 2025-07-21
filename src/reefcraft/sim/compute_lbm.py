@@ -1,22 +1,27 @@
-import os
-import time
+# -----------------------------------------------------------------------------
+# Copyright (c) 2025 The Reefcraft Project.
+#
+# Licensed under the MIT License. See the LICENSE file for details.
+# -----------------------------------------------------------------------------
+"""LBM computation engine."""
+
 import numpy as np
-import matplotlib.pyplot as plt
-from xlb.compute_backend import ComputeBackend
-from xlb.precision_policy import PrecisionPolicy
-from xlb.grid import grid_factory
-from xlb.operator.stepper import IncompressibleNavierStokesStepper
-from xlb.operator.boundary_condition import RegularizedBC, ExtrapolationOutflowBC, FullwayBounceBackBC, HalfwayBounceBackBC
 import xlb.velocity_set
-import jax.numpy as jnp
+from xlb.compute_backend import ComputeBackend
+from xlb.grid import grid_factory
+from xlb.operator.boundary_condition import ExtrapolationOutflowBC, FullwayBounceBackBC, HalfwayBounceBackBC, RegularizedBC
 from xlb.operator.macroscopic import Macroscopic
-from xlb.utils import save_image, save_fields_vtk
-import trimesh
+from xlb.operator.stepper import IncompressibleNavierStokesStepper
+from xlb.precision_policy import PrecisionPolicy
+
 
 class ComputeLBM:
-    def __init__(self):
-        self.grid_shape = (64,64,64)
-        self.fluid_speed = 1.0 
+    """Compute water states with LBM."""
+
+    def __init__(self) -> None:
+        """Initialize ComputeLBM fields and data."""
+        self.grid_shape = (64, 64, 64)
+        self.fluid_speed = 1.0
         self.current_step = 0
 
         self.Re = 50000.0
@@ -47,11 +52,10 @@ class ComputeLBM:
 
         self.f_0, self.f_1, self.bc_mask, self.missing_mask = self.stepper.prepare_fields()
 
-    def update_mesh(self, mesh_data: dict):
-        # Extract the mesh vertices, faces, and normals from the dictionary
-        self.coral_vertices = mesh_data["verts"]  # Warp array of vertices
-        self.coral_faces = mesh_data["faces"]  # Warp array of faces
-        self.coral_normals = mesh_data.get("norms", None)  # Optionally get normals if available
+    def update_mesh(self, mesh_data: dict) -> None:
+        """Update Coral and boundry conditions."""
+        self.coral_vertices = mesh_data["verts"]
+        self.coral_faces = mesh_data["faces"]
 
         # Process the mesh vertices (transform to the grid space)
         mesh_extents = self.coral_vertices.max(axis=0) - self.coral_vertices.min(axis=0)
@@ -71,7 +75,8 @@ class ComputeLBM:
         self.bc_coral = HalfwayBounceBackBC(mesh_vertices=self.coral_vertices)
         self.boundary_conditions.append(self.bc_coral)
 
-    def setup_boundary_conditions(self):
+    def setup_boundary_conditions(self) -> None:
+        """Set up 'tank' bouindries."""
         box = self.grid.bounding_box_indices()
         box_no_edge = self.grid.bounding_box_indices(remove_edges=True)
 
@@ -87,6 +92,7 @@ class ComputeLBM:
         self.boundary_conditions = [bc_walls, bc_left, bc_do_nothing]
 
     def get_field_numpy(self) -> dict:
+        """Get water data fields."""
         rho_field = self.grid.create_field(cardinality=1)
         u_field = self.grid.create_field(cardinality=self.velocity_set.d)
 
@@ -97,8 +103,6 @@ class ComputeLBM:
 
         u_np = np.moveaxis(u_np, 0, -1)
 
-        coral_mesh_np = self.get_coral_mesh_field()
-
         pressure_np = (rho_np - 1.0) / 3.0
         vel_mag_np = np.linalg.norm(u_np, axis=-1)
 
@@ -107,30 +111,14 @@ class ComputeLBM:
             "pressure": pressure_np.astype(np.float32),
             "velocity": u_np,
             "velocity_magnitude": vel_mag_np.astype(np.float32),
-            "coral_mesh": coral_mesh_np,
         }
 
         return fields
 
-    def get_coral_mesh_field(self):
-        coral_mesh_field = np.zeros(self.grid_shape, dtype=np.float32)
-        for i in range(self.coral_vertices.shape[0]):
-            x, y, z = self.coral_vertices[i]
-            ix = int(np.round(x))
-            iy = int(np.round(y))
-            iz = int(np.round(z))
-
-            if 0 <= ix < self.grid_shape[0] and 0 <= iy < self.grid_shape[1] and 0 <= iz < self.grid_shape[2]:
-                coral_mesh_field[ix, iy, iz] = 1
-
-        return coral_mesh_field
-
-
     def step(self, mesh_data: dict) -> None:
-
+        """Run one iteration of LBM."""
         self.f_0, self.f_1 = self.stepper(self.f_0, self.f_1, self.bc_mask, self.missing_mask, self.current_step)
         self.f_0, self.f_1 = self.f_1, self.f_0
         self.current_step += 1
         self.update_mesh(mesh_data=mesh_data)
-        #time.sleep(1.0 / steps_per_second)  # Control real-time step rate
-        
+        # time.sleep(1.0 / steps_per_second)  # Control real-time step rate

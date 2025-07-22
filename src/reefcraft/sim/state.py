@@ -54,3 +54,4 @@ class SimState:
     def __init__(self) -> None:
         """Initialize the simulation."""
         self.coral = CoralState()
+        self.velocity_field: np.ndarray

@@ -61,5 +61,5 @@ class Engine:
     def update(self) -> float:
         """Advance the simulation state."""
         self.model.update(self.timer.time, self.state)
-        self.water.step(self.model.get_numpy())
+        self.water.step(self.model.get_numpy(), self.state)
         return self.timer.time

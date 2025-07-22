@@ -23,7 +23,7 @@ class ComputeLBM:
     def __init__(self) -> None:
         """Initialize ComputeLBM fields and data."""
         self.grid_shape = (64, 64, 64)
-        self.fluid_speed = 1.0
+        self.fluid_speed = 0.02
         self.current_step = 0
         self.bc_coral = None
 
@@ -35,7 +35,7 @@ class ComputeLBM:
         self.compute_backend = ComputeBackend.WARP
         self.precision_policy = PrecisionPolicy.FP32FP32
 
-        self.velocity_set = xlb.velocity_set.D3Q27(precision_policy=self.precision_policy, backend=self.compute_backend)
+        self.velocity_set = xlb.velocity_set.D3Q19(precision_policy=self.precision_policy, backend=self.compute_backend)
         xlb.init(velocity_set=self.velocity_set, default_backend=self.compute_backend, default_precision_policy=self.precision_policy)
         self.grid = grid_factory(self.grid_shape, compute_backend=self.compute_backend)
 
@@ -45,7 +45,7 @@ class ComputeLBM:
             omega=self.omega,
             grid=self.grid,
             boundary_conditions=self.boundary_conditions,
-            collision_type="KBC",
+            collision_type="BGK",
         )
         self.macro = Macroscopic(
             compute_backend=self.compute_backend,
@@ -78,7 +78,9 @@ class ComputeLBM:
         # TODO For now cheat and only update a single time and look for a way to make the mesh dynamic
         if self.bc_coral is None:
             self.bc_coral = HalfwayBounceBackBC(mesh_vertices=self.coral_vertices)
-        self.boundary_conditions.append(self.bc_coral)
+        self.boundary_conditions = [self.bc_walls, self.bc_left, self.bc_do_nothing, self.bc_coral]#This needs a fix, infinitly growing list!
+        self.stepper.boundary_conditions = self.boundary_conditions # Update stepper with new boundry
+
 
     def setup_boundary_conditions(self) -> None:
         """Set up 'tank' bouindries."""
@@ -90,11 +92,11 @@ class ComputeLBM:
         walls = [box["bottom"][i] + box["top"][i] + box["front"][i] + box["back"][i] for i in range(self.velocity_set.d)]
         walls = np.unique(np.array(walls), axis=-1).tolist()
 
-        bc_left = RegularizedBC("velocity", prescribed_value=(self.fluid_speed, 0.0, 0.0), indices=inlet)
-        bc_walls = ExtrapolationOutflowBC(indices=walls)
-        bc_do_nothing = ExtrapolationOutflowBC(indices=outlet)
+        self.bc_left = RegularizedBC("velocity", prescribed_value=(self.fluid_speed, 0.0, 0.0), indices=inlet)
+        self.bc_walls = ExtrapolationOutflowBC(indices=walls)
+        self.bc_do_nothing = ExtrapolationOutflowBC(indices=outlet)
 
-        self.boundary_conditions = [bc_walls, bc_left, bc_do_nothing]
+        self.boundary_conditions = [self.bc_walls, self.bc_left, self.bc_do_nothing]
 
     def get_field_numpy(self) -> dict:
         """Get water data fields."""
@@ -125,6 +127,7 @@ class ComputeLBM:
         self.f_0, self.f_1 = self.stepper(self.f_0, self.f_1, self.bc_mask, self.missing_mask, self.current_step)
         self.f_0, self.f_1 = self.f_1, self.f_0
         self.current_step += 1
+
         self.update_mesh(mesh_data=mesh_data)
         # time.sleep(1.0 / steps_per_second)  # Control real-time step rate
         state.velocity_field = self.get_field_numpy()["velocity"]

@@ -27,10 +27,10 @@ class ComputeLBM:
         self.current_step = 0
         self.bc_coral = None
 
-        self.Re = 50000.0
+        self.Re = 30000.0
         self.clength = self.grid_shape[0] - 1
         self.visc = self.fluid_speed * self.clength / self.Re
-        self.omega = 1.0 / (3.0 * self.visc + 0.5)
+        self.omega = 1.0
 
         self.compute_backend = ComputeBackend.WARP
         self.precision_policy = PrecisionPolicy.FP32FP32
@@ -80,7 +80,7 @@ class ComputeLBM:
             self.bc_coral = HalfwayBounceBackBC(mesh_vertices=self.coral_vertices)
         self.boundary_conditions = [self.bc_walls, self.bc_left, self.bc_do_nothing, self.bc_coral]#This needs a fix, infinitly growing list!
         self.stepper.boundary_conditions = self.boundary_conditions # Update stepper with new boundry
-
+        self.f_0, self.f_1, self.bc_mask, self.missing_mask = self.stepper.prepare_fields()
 
     def setup_boundary_conditions(self) -> None:
         """Set up 'tank' bouindries."""

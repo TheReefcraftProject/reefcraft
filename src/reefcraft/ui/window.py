@@ -14,10 +14,12 @@ from rendercanvas.auto import RenderCanvas
 
 from reefcraft.sim.engine import Engine
 from reefcraft.sim.state import SimState
+from reefcraft.ui.button import Button
+from reefcraft.ui.panel import Panel
+from reefcraft.ui.reef import Reef
+from reefcraft.ui.slider import Slider
 from reefcraft.utils.logger import logger
 from reefcraft.utils.window_style import apply_dark_titlebar_and_icon
-from reefcraft.views.reef import Reef
-from reefcraft.views.ui import Panel
 
 
 class Window:
@@ -39,6 +41,12 @@ class Window:
         # Create the view of the reef and the ui panel
         self.reef = Reef(self.renderer)
         self.panel = Panel(self.renderer)
+
+        Slider(self.panel, left=20, top=20, width=250, height=20, max_value=100, value=10, on_change=lambda val: logger.debug(f"Slider1 Value: {val}"))
+        Slider(self.panel, left=20, top=50, width=250, height=20, max_value=100, value=70, on_change=lambda val: logger.debug(f"Slider2 Value: {val}"))
+        Slider(self.panel, left=20, top=80, width=250, height=20, max_value=100, value=15, on_change=lambda val: logger.debug(f"Slider3 Value: {val}"))
+        Button(self.panel, left=20, top=110, width=250, height=20, label="HI MOM!", on_click=lambda: logger.debug("MOM Button Clicked!"))
+        Button(self.panel, left=20, top=140, width=250, height=20, label="Grow Coral", on_click=lambda: logger.debug("Let's grow some coral!"))
 
     @property
     def is_open(self) -> bool:

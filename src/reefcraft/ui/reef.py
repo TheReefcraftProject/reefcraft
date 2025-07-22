@@ -10,7 +10,6 @@ import numpy as np
 import pygfx as gfx
 
 from reefcraft.sim.state import CoralState, SimState
-from reefcraft.utils.logger import logger
 
 
 class CoralMesh:

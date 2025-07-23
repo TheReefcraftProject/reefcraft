@@ -30,7 +30,7 @@ class ComputeLBM:
         self.Re = 30000.0
         self.clength = self.grid_shape[0] - 1
         self.visc = self.fluid_speed * self.clength / self.Re
-        self.omega = 1.0
+        self.omega = 0.5
 
         self.compute_backend = ComputeBackend.WARP
         self.precision_policy = PrecisionPolicy.FP32FP32
@@ -78,9 +78,13 @@ class ComputeLBM:
         # TODO For now cheat and only update a single time and look for a way to make the mesh dynamic
         if self.bc_coral is None:
             self.bc_coral = HalfwayBounceBackBC(mesh_vertices=self.coral_vertices)
-        self.boundary_conditions = [self.bc_walls, self.bc_left, self.bc_do_nothing, self.bc_coral]#This needs a fix, infinitly growing list!
-        self.stepper.boundary_conditions = self.boundary_conditions # Update stepper with new boundry
-        self.f_0, self.f_1, self.bc_mask, self.missing_mask = self.stepper.prepare_fields()
+        self.stepper.boundary_conditions = self.boundary_conditions  # Update stepper with new boundry
+
+        # self.f_0, self.f_1, self.bc_mask, self.missing_mask = self.stepper.prepare_fields() # I think this needs to happen, but throws an error
+
+        # appened coral boundary
+        if self.current_step == 0:
+            self.boundary_conditions.append(self.bc_coral)
 
     def setup_boundary_conditions(self) -> None:
         """Set up 'tank' bouindries."""
@@ -92,11 +96,11 @@ class ComputeLBM:
         walls = [box["bottom"][i] + box["top"][i] + box["front"][i] + box["back"][i] for i in range(self.velocity_set.d)]
         walls = np.unique(np.array(walls), axis=-1).tolist()
 
-        self.bc_left = RegularizedBC("velocity", prescribed_value=(self.fluid_speed, 0.0, 0.0), indices=inlet)
-        self.bc_walls = ExtrapolationOutflowBC(indices=walls)
-        self.bc_do_nothing = ExtrapolationOutflowBC(indices=outlet)
+        bc_left = RegularizedBC("velocity", prescribed_value=(self.fluid_speed, 0.0, 0.0), indices=inlet)
+        bc_walls = ExtrapolationOutflowBC(indices=walls)
+        bc_do_nothing = ExtrapolationOutflowBC(indices=outlet)
 
-        self.boundary_conditions = [self.bc_walls, self.bc_left, self.bc_do_nothing]
+        self.boundary_conditions = [bc_walls, bc_left, bc_do_nothing]
 
     def get_field_numpy(self) -> dict:
         """Get water data fields."""

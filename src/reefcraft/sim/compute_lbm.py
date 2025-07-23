@@ -23,19 +23,19 @@ class ComputeLBM:
     def __init__(self) -> None:
         """Initialize ComputeLBM fields and data."""
         self.grid_shape = (64, 64, 64)
-        self.fluid_speed = 1.0
+        self.fluid_speed = 0.02
         self.current_step = 0
         self.bc_coral = None
 
-        self.Re = 50000.0
+        self.Re = 30000.0
         self.clength = self.grid_shape[0] - 1
         self.visc = self.fluid_speed * self.clength / self.Re
-        self.omega = 1.0 / (3.0 * self.visc + 0.5)
+        self.omega = 0.5
 
         self.compute_backend = ComputeBackend.WARP
         self.precision_policy = PrecisionPolicy.FP32FP32
 
-        self.velocity_set = xlb.velocity_set.D3Q27(precision_policy=self.precision_policy, backend=self.compute_backend)
+        self.velocity_set = xlb.velocity_set.D3Q19(precision_policy=self.precision_policy, backend=self.compute_backend)
         xlb.init(velocity_set=self.velocity_set, default_backend=self.compute_backend, default_precision_policy=self.precision_policy)
         self.grid = grid_factory(self.grid_shape, compute_backend=self.compute_backend)
 
@@ -45,7 +45,7 @@ class ComputeLBM:
             omega=self.omega,
             grid=self.grid,
             boundary_conditions=self.boundary_conditions,
-            collision_type="KBC",
+            collision_type="BGK",
         )
         self.macro = Macroscopic(
             compute_backend=self.compute_backend,
@@ -78,7 +78,13 @@ class ComputeLBM:
         # TODO For now cheat and only update a single time and look for a way to make the mesh dynamic
         if self.bc_coral is None:
             self.bc_coral = HalfwayBounceBackBC(mesh_vertices=self.coral_vertices)
-        self.boundary_conditions.append(self.bc_coral)
+        self.stepper.boundary_conditions = self.boundary_conditions  # Update stepper with new boundry
+
+        # self.f_0, self.f_1, self.bc_mask, self.missing_mask = self.stepper.prepare_fields() # I think this needs to happen, but throws an error
+
+        # appened coral boundary
+        if self.current_step == 0:
+            self.boundary_conditions.append(self.bc_coral)
 
     def setup_boundary_conditions(self) -> None:
         """Set up 'tank' bouindries."""
@@ -125,6 +131,7 @@ class ComputeLBM:
         self.f_0, self.f_1 = self.stepper(self.f_0, self.f_1, self.bc_mask, self.missing_mask, self.current_step)
         self.f_0, self.f_1 = self.f_1, self.f_0
         self.current_step += 1
+
         self.update_mesh(mesh_data=mesh_data)
         # time.sleep(1.0 / steps_per_second)  # Control real-time step rate
         state.velocity_field = self.get_field_numpy()["velocity"]

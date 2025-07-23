@@ -62,4 +62,5 @@ class Engine:
         """Advance the simulation state."""
         self.model.update(self.timer.time, self.state)
         self.water.step(self.model.get_numpy(), self.state)
+        print(self.water.get_field_numpy().get("velocity"))
         return self.timer.time

@@ -9,6 +9,8 @@
 import numpy as np
 import warp as wp
 
+from reefcraft.sim.state import SimState
+
 
 class SimpleP:
     """Coral growth simulation with polyps evenly spaced on a hemisphere surface."""
@@ -36,12 +38,8 @@ class SimpleP:
         # Calculate the radius based on the polyp spacing
         self.radius = self.calculate_radius()
 
-        # Initialize the grid and polyps on GPU
-        self.grid = wp.array3d(grid_shape, dtype=float)  # Initialize grid with Warp (GPU)
+        # Initialize polyps as floating-point 3D coordinates
         self.polyps = self.initialize_polyps()
-
-        # Initialize the resource field with a gradient from resource_concentration to 0 on the floor level
-        self.initialize_resource_field()
 
     def calculate_radius(self) -> float:
         """Calculates the radius of the hemisphere based on the polyp spacing."""
@@ -56,14 +54,15 @@ class SimpleP:
 
         return radius
 
-    def initialize_polyps(self) -> list[tuple[int, int, int]]:
-        """Initializes the polyps on the hemisphere mesh.
+    def initialize_polyps(self) -> dict:
+        """Initializes the polyps on the hemisphere mesh as a dictionary of Warp arrays.
 
         Returns:
-        - A list of polyp positions.
+        - A dictionary with 'vertices' (wp.array) and 'indices' (wp.array).
         """
         num_polyps = 81
-        polyps = []
+        vertices = np.zeros((num_polyps, 3), dtype=np.float32)  # NumPy array for vertices
+        indices = np.arange(num_polyps, dtype=np.int32)  # Indices array (simple example)
 
         # Golden angle for even distribution
         golden_angle = np.pi * (3.0 - np.sqrt(5.0))
@@ -79,43 +78,26 @@ class SimpleP:
             y = self.radius * np.sin(phi) * np.sin(theta)
             z = self.radius * np.cos(phi)
 
-            # Convert the float positions to grid-like integer positions
-            ix = int(np.round(x / self.polyp_spacing))
-            iy = int(np.round(y / self.polyp_spacing))
-            iz = int(np.round(z / self.polyp_spacing))
+            # Store the polyp positions in the vertices array
+            vertices[i] = [x, y, z]
 
-            # Make sure the polyps stay within bounds of the grid
-            if 0 <= ix < self.grid_shape[0] and 0 <= iy < self.grid_shape[1] and 0 <= iz < self.grid_shape[2]:
-                polyps.append((ix, iy, iz))
+        # Convert the vertices and indices to Warp arrays
+        vertices_wp = wp.array(vertices, dtype=wp.vec3, device="cuda")
+        indices_wp = wp.array(indices, dtype=wp.int32, device="cuda")
 
-        return polyps
+        return {"vertices": vertices_wp, "indices": indices_wp}
 
-    @wp.kernel
-    def resource_gradient_kernel(field: wp.array3d(dtype=wp.float32), resource_concentration: float, grid_shape: wp.types.array(dtype=wp.types.int32)) -> None:
-        """Kernel to initialize the resource field with a gradient from resource_concentration at the top to 0 at the floor."""
-        i, j, k = wp.tid()  # Get the current thread's unique ID for the (x, y, z) coordinates
+    def update(self, state: SimState) -> None:
+        """Update state."""
+        state.coral.set_mesh(self.polyps.get("vertices"), self.polyps.get("indices"))
 
-        # Get the z-coordinate from k
-        top_z = wp.float32(grid_shape[2] - 1)  # Topmost z-coordinate (highest point in the grid)
-        floor_z = wp.float32(0)  # Floor z-coordinate (lowest point in the grid)
+    def growth_function(self, polyp: tuple) -> float:
+        """Compute growth amount based on resource concentration and polyp's z-coordinate."""
+        # Example: Linear resource gradient based on z-coordinate (top has most resources)
+        z_position = polyp[2]
+        resource_at_polyp = self.resource_concentration * (z_position / self.radius)
+        return resource_at_polyp
 
-        # Calculate the resource value based on the z-coordinate
-        resource_value = resource_concentration * (wp.float32(1 - k) / (top_z - floor_z))
-
-        # Set the value in the field
-        field[i, j, k] = resource_value
-
-    def initialize_resource_field(self) -> None:
-        """Initializes the resource field with a gradient from resource_concentration at the top to 0 at the floor."""
-        grid_shape = np.array(self.grid_shape, dtype=np.int32)
-
-        # Launch the kernel with the 3D grid as input
-        wp.launch(self.resource_gradient_kernel, dim=self.grid_shape, inputs=[self.grid, self.resource_concentration, grid_shape], device=wp.get_device())
-
-        print("Resource field initialized with gradient.")
-
-
-# Example usage
-wp.init()
-simple_p = SimpleP(polyp_spacing=0.00025)
-print(f"Calculated radius: {simple_p.radius}")
+    def add_polyp(self, new_polyp: tuple) -> None:
+        """Add a new polyp (vertex) to the list of polyps."""
+        pass

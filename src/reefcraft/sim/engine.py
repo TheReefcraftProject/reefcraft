@@ -8,8 +8,7 @@
 
 import warp as wp
 
-from reefcraft.sim.compute_lbm import ComputeLBM
-from reefcraft.sim.llabres import LlabresGrowthModel
+from reefcraft.sim.simple_porag import SimpleP
 from reefcraft.sim.state import SimState
 from reefcraft.sim.timer import Timer
 from reefcraft.utils.logger import logger
@@ -30,8 +29,7 @@ class Engine:
         # Create the internal engine classes
         self.timer = Timer()
         self.state = SimState()
-        self.model = LlabresGrowthModel()
-        self.water = ComputeLBM()
+        self.model = SimpleP()
 
     # ------------------------------------------------------------------------
     # Timer control
@@ -48,7 +46,7 @@ class Engine:
     def reset(self) -> None:
         """Reset the timer to the initial state."""
         self.timer.reset()
-        self.model.reset()
+        # self.model.reset()
 
     def get_time(self) -> float:
         """Return the current simulation time."""
@@ -60,6 +58,5 @@ class Engine:
 
     def update(self) -> float:
         """Advance the simulation state."""
-        self.model.update(self.timer.time, self.state)
-        self.water.step(self.model.get_numpy())
+        self.model.update(self.state)
         return self.timer.time

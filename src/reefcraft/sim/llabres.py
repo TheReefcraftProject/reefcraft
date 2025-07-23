@@ -14,7 +14,7 @@ from reefcraft.utils.logger import logger
 class LlabresGrowthModel:
     """Class based on Llabres Et Al column coral growth."""
 
-    def __init__(self) -> None:
+    def __init__(self, sim_state: SimState) -> None:
         """Initialization of single Llabres column coral."""
         self.verts, self.faces = self.gen_llabres_seed()
         self.norms = wp.zeros(self.verts.shape[0], dtype=wp.vec3f)
@@ -26,6 +26,10 @@ class LlabresGrowthModel:
         verts_np = self.verts.numpy()
         fixed_mask = (verts_np[:, 2] <= 0.0).astype(np.int32)
         self.fixed = wp.array(fixed_mask, dtype=wp.int32)
+
+        # Add our new coral to the simulation state
+        self.coral_state = sim_state.add_coral()
+        self.coral_state.set_mesh(self.verts, self.faces)
 
     def gen_llabres_seed(self, radius: float = 1.0, height: float = 0.1) -> tuple[wp.array, wp.array]:
         """Generate a hexagonal mesh to start Llabres coral growth."""
@@ -103,7 +107,7 @@ class LlabresGrowthModel:
     def update(self, time: float, state: SimState) -> None:
         """Perform one growth step and sync to the SimState."""
         self.step()
-        state.coral.set_mesh(self.verts, self.faces)
+        self.coral_state.set_mesh(self.verts, self.faces)
 
     def subdiv(self, edge_midpoints: dict[tuple[int, int], int] | None, edge_thresh: float = 1.0) -> bool:
         """Determine edges and midpoints for subdivision, return boolean of subdiv status."""

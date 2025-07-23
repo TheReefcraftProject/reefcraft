@@ -25,7 +25,7 @@ def test_timer_pause_and_resume() -> None:
 
 def test_sim_controls_timer() -> None:
     sim = Engine()
-    sim.start()
+    sim.play()
     time.sleep(0.01)
     t1 = sim.get_time()
     assert t1 > 0
@@ -33,7 +33,7 @@ def test_sim_controls_timer() -> None:
     paused = sim.get_time()
     time.sleep(0.01)
     assert abs(sim.get_time() - paused) < 0.001
-    sim.start()
+    sim.play()
     time.sleep(0.01)
     assert sim.get_time() > paused
     sim.reset()

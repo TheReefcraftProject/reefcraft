@@ -16,50 +16,58 @@ from reefcraft.utils.logger import logger
 
 
 class Engine:
-    """A thin wrapper that controls a :class:`Timer`."""
+    """A thin wrapper that controls a :class:`Timer` and coordinates simulation components."""
 
     def __init__(self) -> None:
         """Prepare the engine for execution."""
-        # Initialize NVIDIA Warp and log the device
         wp.init()
         dev = wp.get_device()
         logger.info(f"Warp version:    {wp.config.version}")
-        logger.info(f"Default device:  {dev}")  # calls dev.__str__()
+        logger.info(f"Default device:  {dev}")
         logger.info(f"Device class:    {dev.__class__.__name__}")
 
-        # Create the internal engine classes
         self.timer = Timer()
         self.state = SimState()
-        self.model = LlabresGrowthModel()
+        self.model = LlabresGrowthModel(self.state)
         self.water = ComputeLBM()
 
     # ------------------------------------------------------------------------
     # Timer control
     # ------------------------------------------------------------------------
 
-    def start(self) -> None:
-        """Start or resume the timer."""
+    def play(self) -> None:
+        """Start or resume the simulation."""
         self.timer.start()
 
     def pause(self) -> None:
-        """Pause the timer."""
+        """Pause the simulation."""
         self.timer.pause()
 
     def reset(self) -> None:
-        """Reset the timer to the initial state."""
+        """Reset the simulation and pause."""
+        self.pause()
         self.timer.reset()
         self.model.reset()
+        # Optionally: reset self.state or water if needed
 
     def get_time(self) -> float:
         """Return the current simulation time."""
         return self.timer.time
+
+    @property
+    def is_playing(self) -> bool:
+        """Return True if the simulation is currently playing."""
+        return self.timer.is_running
 
     # ------------------------------------------------------------------------
     # Simulation API
     # ------------------------------------------------------------------------
 
     def update(self) -> float:
-        """Advance the simulation state."""
+        """Advance the simulation state if timer is running."""
+        if not self.is_playing:
+            return self.timer.time
+
         self.model.update(self.timer.time, self.state)
         self.water.step(self.model.get_numpy())
         return self.timer.time

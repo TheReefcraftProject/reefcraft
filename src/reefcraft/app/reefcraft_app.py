@@ -37,7 +37,7 @@ class ReefcraftApp:
         # the Window class
         # =====================================================================
         self.window.register_app_step(self.step)
-        self.engine.start()
+        # self.engine.play()
         loop.run()
 
     def step(self) -> None:

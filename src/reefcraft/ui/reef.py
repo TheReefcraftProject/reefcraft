@@ -10,6 +10,7 @@ import numpy as np
 import pygfx as gfx
 
 from reefcraft.sim.state import CoralState, SimState
+from reefcraft.utils.logger import logger
 
 
 class CoralMesh:
@@ -58,8 +59,7 @@ class Reef:
         self.viewport = gfx.Viewport(renderer)
         self.scene = gfx.Scene()
 
-        self.coral = CoralMesh()
-        self.scene.add(self.coral.mesh)
+        self.corals: dict[CoralState, CoralMesh] = {}
 
         self.scene.add(gfx.AmbientLight("#fff", 0.3))
         light = gfx.DirectionalLight("#fff", 3)
@@ -87,9 +87,13 @@ class Reef:
 
         self.camera = gfx.PerspectiveCamera()
         self.controller = gfx.OrbitController(self.camera, register_events=self.viewport)
-        self.camera.show_object(self.scene)
+        # self.camera.show_object(self.scene)
 
     def draw(self, state: SimState) -> None:
         """Update the reef scene and draw."""
-        self.coral.sync(state.coral)
+        for coral_state in state.corals:
+            if coral_state not in self.corals:
+                self.corals[coral_state] = CoralMesh()
+            self.corals[coral_state].sync(coral_state)
+
         self.viewport.render(self.scene, self.camera)

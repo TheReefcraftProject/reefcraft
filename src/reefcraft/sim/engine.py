@@ -30,6 +30,7 @@ class Engine:
         self.timer = Timer()
         self.state = SimState()
         self.model = SimpleP()
+        self.model.update(self.state)
 
     # ------------------------------------------------------------------------
     # Timer control

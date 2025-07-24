@@ -6,10 +6,12 @@
 """LBM computation engine."""
 
 import numpy as np
+import trimesh
+import warp as wp
 import xlb.velocity_set
 from xlb.compute_backend import ComputeBackend
 from xlb.grid import grid_factory
-from xlb.operator.boundary_condition import ExtrapolationOutflowBC, HalfwayBounceBackBC, RegularizedBC
+from xlb.operator.boundary_condition import ExtrapolationOutflowBC, FullwayBounceBackBC, HalfwayBounceBackBC, RegularizedBC
 from xlb.operator.macroscopic import Macroscopic
 from xlb.operator.stepper import IncompressibleNavierStokesStepper
 from xlb.precision_policy import PrecisionPolicy
@@ -26,7 +28,7 @@ class ComputeLBM:
         self.fluid_speed = 0.2
         self.current_step = 0
         self.bc_coral = None
-
+        self.stl_filename = "src/reefcraft/resources/stl/coral.stl"
         self.Re = 30000.0
         self.clength = self.grid_shape[0] - 1
         self.visc = self.fluid_speed * self.clength / self.Re
@@ -39,6 +41,7 @@ class ComputeLBM:
         xlb.init(velocity_set=self.velocity_set, default_backend=self.compute_backend, default_precision_policy=self.precision_policy)
         self.grid = grid_factory(self.grid_shape, compute_backend=self.compute_backend)
 
+        self.load_mesh()
         self.setup_boundary_conditions()
 
         self.stepper = IncompressibleNavierStokesStepper(
@@ -55,52 +58,60 @@ class ComputeLBM:
 
         self.f_0, self.f_1, self.bc_mask, self.missing_mask = self.stepper.prepare_fields()
 
-    def update_mesh(self, mesh_data: dict) -> None:
-        """Update Coral and boundry conditions."""
-        self.coral_vertices = mesh_data["verts"]
-        self.coral_faces = mesh_data["faces"]
+    def load_mesh(self, shift_up: float = 15.0) -> None:
+        """Load coral mesh from stl file."""
+        # Load and process mesh for the simulation
+        mesh = trimesh.load_mesh(self.stl_filename, process=False)
+        mesh_vertices = mesh.vertices
+        self.coral_faces = mesh.faces
 
-        # Process the mesh vertices (transform to the grid space)
-        mesh_extents = self.coral_vertices.max(axis=0) - self.coral_vertices.min(axis=0)
+        # Define the scaling factor (shrink by a factor of x)
+        scaling_factor = 300.0
+
+        # Scale down the vertices by the scaling factor
+        mesh_vertices /= scaling_factor
+
+        # Convert the mesh to Warp arrays
+        self.verts = wp.array(np.array(mesh_vertices, dtype=np.float32), dtype=wp.vec3f)
+        self.faces = wp.array(np.array(self.coral_faces, dtype=np.int32), dtype=wp.vec3i)
+
+        # Transform mesh points to align with grid
+        mesh_vertices -= mesh_vertices.min(axis=0)
+        mesh_extents = mesh_vertices.max(axis=0)
         length_phys_unit = mesh_extents.max()
         length_lbm_unit = self.grid_shape[0] / 4
         dx = length_phys_unit / length_lbm_unit
-        self.coral_vertices = self.coral_vertices / dx
+        mesh_vertices = mesh_vertices / dx
 
-        # Shift mesh to align with the grid
-        shift = np.array([self.grid_shape[0] / 4, (self.grid_shape[1] - mesh_extents[1] / dx) / 2, 0.0])
-        self.coral_vertices += shift
+        # Shift mesh to align with the grid and move it up along the z-axis
+        shift = np.array([self.grid_shape[0] / 4, (self.grid_shape[1] - mesh_extents[1] / dx) / 2, shift_up])
 
-        # Calculate the cross-sectional area for the coral mesh (just for boundary condition purposes)
+        self.coral_vertices = mesh_vertices + shift
+
+        # Cross-sectional area for the coral mesh (just for boundary condition purposes)
         self.coral_cross_section = np.prod(mesh_extents[1:]) / dx**2
 
-        # Update the boundary condition for the coral mesh
-        # TODO For now cheat and only update a single time and look for a way to make the mesh dynamic
-        if self.bc_coral is None:
-            self.bc_coral = HalfwayBounceBackBC(mesh_vertices=self.coral_vertices)
-        self.stepper.boundary_conditions = self.boundary_conditions  # Update stepper with new boundry
-
-        # self.f_0, self.f_1, self.bc_mask, self.missing_mask = self.stepper.prepare_fields() # I think this needs to happen, but throws an error
-
-        # appened coral boundary
-        if self.current_step == 0:
-            self.boundary_conditions.append(self.bc_coral)
+    def update_mesh(self, state: SimState) -> None:
+        """Update Coral and boundry conditions."""
+        state.coral.set_mesh(self.verts, self.faces)
 
     def setup_boundary_conditions(self) -> None:
-        """Set up 'tank' bouindries."""
-        # box = self.grid.bounding_box_indices()
+        """Boundry conditions."""
+        # Boundary conditions
+        box = self.grid.bounding_box_indices()
         box_no_edge = self.grid.bounding_box_indices(remove_edges=True)
 
         inlet = box_no_edge["left"]
         outlet = box_no_edge["right"]
-        walls = [box_no_edge["bottom"][i] + box_no_edge["top"][i] + box_no_edge["front"][i] + box_no_edge["back"][i] for i in range(self.velocity_set.d)]
+        walls = [box["bottom"][i] + box["top"][i] + box["front"][i] + box["back"][i] for i in range(self.velocity_set.d)]
         walls = np.unique(np.array(walls), axis=-1).tolist()
 
         bc_left = RegularizedBC("velocity", prescribed_value=(self.fluid_speed, 0.0, 0.0), indices=inlet)
-        bc_walls = ExtrapolationOutflowBC(indices=walls)
+        bc_walls = FullwayBounceBackBC(indices=walls)
         bc_do_nothing = ExtrapolationOutflowBC(indices=outlet)
+        bc_coral = HalfwayBounceBackBC(mesh_vertices=self.coral_vertices)  # Adding the coral mesh as a BC
 
-        self.boundary_conditions = [bc_walls, bc_left, bc_do_nothing]
+        self.boundary_conditions = [bc_walls, bc_left, bc_do_nothing, bc_coral]
 
     def get_field_numpy(self) -> dict:
         """Get water data fields."""
@@ -126,12 +137,10 @@ class ComputeLBM:
 
         return fields
 
-    def step(self, mesh_data: dict, state: SimState) -> None:
+    def step(self, state: SimState) -> None:
         """Run one iteration of LBM."""
         self.f_0, self.f_1 = self.stepper(self.f_0, self.f_1, self.bc_mask, self.missing_mask, self.current_step)
         self.f_0, self.f_1 = self.f_1, self.f_0
         self.current_step += 1
-
-        self.update_mesh(mesh_data=mesh_data)
         # time.sleep(1.0 / steps_per_second)  # Control real-time step rate
         state.velocity_field = self.get_field_numpy()["velocity"]

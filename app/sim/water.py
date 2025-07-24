@@ -6,18 +6,20 @@
 """
 Here we use the ComputeLBM class to run the water simulation.
 
-IDEA/GOAL: Have this return specified fields (e.g. Density, Velocity) 
+IDEA/GOAL: Have this return specified fields (e.g. Density, Velocity)
 in specified formats (numpy, jnp, warp array) at specified points in loop to be used in reefcraft.
 """
-# Import LBM 
-from compute_lbm import ComputeLBM
-import numpy as np
+
+# Import LBM
 import matplotlib.pyplot as plt
 import matplotlib.quiver as quiver
+import numpy as np
+from compute_lbm import ComputeLBM
 from mpl_toolkits.mplot3d import Axes3D
 
+
 # --- Function for matplt visual --- #
-def visualize_velocity_field(velocity_field):
+def visualize_velocity_field(velocity_field) -> None:
     """
     Visualize the 3D velocity field using sparse plotting.
     """
@@ -49,48 +51,44 @@ def visualize_velocity_field(velocity_field):
 
     # Create a figure and axis for 3D plot
     fig = plt.figure(figsize=(12, 10))
-    ax = fig.add_subplot(111, projection='3d')  # Ensure this is a 3D plot
+    ax = fig.add_subplot(111, projection="3d")  # Ensure this is a 3D plot
 
     # Plot sparse velocity vectors using quiver
     ax.quiver(X_sparse, Y_sparse, Z_sparse, u_sparse, v_sparse, w_sparse, length=1, normalize=True, linewidth=2)
 
     # Set axis labels
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    #ax.set_zlabel('Z')
+    ax.set_xlabel("X")
+    ax.set_ylabel("Y")
+    # ax.set_zlabel('Z')
 
     # Set the title
-    ax.set_title('3D Sparse Velocity Field Vectors')
+    ax.set_title("3D Sparse Velocity Field Vectors")
 
     plt.show()
 
 
 # ---- Set up Parameters and Create Instance of ComputeLBM ---- #
-#---------------------------------------------------------------#
+# ---------------------------------------------------------------#
 
 # Simulation parameters
 grid_shape = (32, 32, 32)  # Grid size
-num_steps = 100              # Total number of simulation steps
-fluid_speed = 0.02           # Fluid speed (m/s)
+num_steps = 100  # Total number of simulation steps
+fluid_speed = 0.02  # Fluid speed (m/s)
 stl_filename = "app/resources/stl/coral.stl"  # Path to the coral mesh (for boundary conditions)
 post_process_interval = 100  # Interval for post-processing (e.g., saving VTK or images)
 
 # Create an instance of LatticeBoltzmannMethod
 lbm_sim = ComputeLBM(
-    grid_shape=grid_shape,
-    num_steps=num_steps,
-    fluid_speed=fluid_speed,
-    stl_filename=stl_filename,
-    post_process_interval=post_process_interval
+    grid_shape=grid_shape, num_steps=num_steps, fluid_speed=fluid_speed, stl_filename=stl_filename, post_process_interval=post_process_interval
 )
 
-# ---- Examples of running ---- # 
+# ---- Examples of running ---- #
 
 # Run Simulation - No post processing
 lbm_sim.run()
 
 # Run the simulation with save vtk
-#lbm_sim.run_vtk()
+# lbm_sim.run_vtk()
 
 # Example of runing one iteration at a time and returning the numpy velocity field and plotting it
 num_iterations = 5

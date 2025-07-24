@@ -14,7 +14,7 @@ from reefcraft.utils.logger import logger
 
 class WaterParticles:
     """Class to manage water particles for visualization."""
-    def __init__(self, num_particles: int = 1000, grid_shape: tuple = (64, 64, 64)) -> None:
+    def __init__(self, num_particles: int = 2000, grid_shape: tuple = (30, 30, 30)) -> None:
         """Initialize particles randomly within LBM grid."""
         self.num_particles = num_particles
         self.grid_shape = grid_shape
@@ -32,7 +32,7 @@ class WaterParticles:
 
         self.points = gfx.Points(
             self.geometry,
-            gfx.PointsMaterial(color = "#00ffff", size = 2)
+            gfx.PointsMaterial(color = "#00ffbf", size = 2)
         )
 
         logger.info(f"Initialized {num_particles} water particles.")
@@ -54,31 +54,43 @@ class WaterParticles:
         return self.points
     
     def advect(self, velocity_field: np.ndarray, dt: float = 0.1) -> None:
-        """Move particles using the velocity field.
+        """Move particles using the velocity field with corrected indexing.
 
         Args:
-            velocity_field: (64, 64, 64, 3) numpy array of velocity vectors.
+            velocity_field: (32, 32, 32, 3) numpy array of velocity vectors.
             dt: timestep for advection.
         """
-        positions = self.positions.copy()
+        xw, yw, zw = self.grid_shape
+        x_half, z_half = xw / 2, zw / 2
+        y_max = yw
 
-        #convert world pos to LBM grid idx
-        ix = np.clip(np.round(positions[:, 0] + self.grid_shape[0] / 2).astype(int), 0, self.grid_shape[0]-1)
-        iy = np.clip(np.round(positions[:, 1]).astype(int), 0, self.grid_shape[1]-1)
-        iz = np.clip(np.round(positions[:, 2] + self.grid_shape[2] / 2).astype(int), 0, self.grid_shape[2]-1)
+        # Clip to interior of LBM field to avoid boundary dead zones
+        ix = np.clip(np.round(self.positions[:, 0] + x_half).astype(int), 1, xw - 2)
+        iy = np.clip(np.round(self.positions[:, 1]).astype(int), 1, yw - 2)
+        iz = np.clip(np.round(self.positions[:, 2] + z_half).astype(int), 1, zw - 2)
 
-        #handle possible nan vals
-        vel_field = np.nan_to_num(velocity_field, nan=0.0)
+        velocities = velocity_field[ix, iy, iz]
 
-        # Use vel_field instead of velocity_field for sampling
-        velocities = vel_field[ix, iy, iz]
-
-        # Update positions
+        # Move particles
         self.positions += velocities * dt
 
-        self.positions[:, 0] = (self.positions[:, 0] + self.grid_shape[0]/2) % self.grid_shape[0] - self.grid_shape[0]/2
-        self.positions[:, 1] = np.clip(self.positions[:, 1], 0, self.grid_shape[1])  # Y stays clamped for now
-        self.positions[:, 2] = (self.positions[:, 2] + self.grid_shape[2]/2) % self.grid_shape[2] - self.grid_shape[2]/2
+        # Get mask for out-of-bounds axes
+        out_x_low  = self.positions[:, 0] < -x_half
+        out_x_high = self.positions[:, 0] >  x_half
+        out_y_low  = self.positions[:, 1] < 0
+        out_y_high = self.positions[:, 1] > y_max
+        out_z_low  = self.positions[:, 2] < -z_half
+        out_z_high = self.positions[:, 2] >  z_half
+
+        # X wrap: reappear at opposite side
+        self.positions[out_x_low, 0] = x_half - 1.0
+        self.positions[out_x_high, 0] = -x_half + 1.0
+
+        # Y bounce: reflect off top/bottom
+        self.positions[out_y_low | out_y_high, 1] = np.clip(self.positions[out_y_low | out_y_high, 1], 1, y_max - 2)
+
+        # Z wrap: reappear at opposite side
+        self.positions[out_z_low, 2] = z_half - 1.0
+        self.positions[out_z_high, 2] = -z_half + 1.0
 
         self.positions_buf.set_data(self.positions)
-

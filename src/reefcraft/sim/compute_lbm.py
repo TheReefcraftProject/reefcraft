@@ -80,13 +80,15 @@ class ComputeLBM:
 
         # Update the boundary condition for the coral mesh
         self.bc_coral = HalfwayBounceBackBC(mesh_vertices=self.coral_vertices)
-        self.stepper.boundary_conditions = self.boundary_conditions  # Update stepper with new boundry
 
-        # appened coral boundary
-        if self.current_step == 0:
-            self.boundary_conditions.append(self.bc_coral)
-
+        # Re-create boundary conditions including the updated coral mesh
         self.setup_boundary_conditions()
+
+        # Update the stepper with the new boundary conditions and masks
+        self.stepper.boundary_conditions = self.boundary_conditions
+        self.bc_mask, self.missing_mask = self.stepper._process_boundary_conditions(
+            self.boundary_conditions, self.bc_mask, self.missing_mask
+        )
 
     def setup_boundary_conditions(self) -> None:
         """Set up 'tank' bouindries."""
@@ -103,6 +105,8 @@ class ComputeLBM:
         bc_do_nothing = ExtrapolationOutflowBC(indices=outlet)
 
         self.boundary_conditions = [bc_walls, bc_left, bc_do_nothing]
+        if self.bc_coral is not None:
+            self.boundary_conditions.append(self.bc_coral)
 
     def get_field_numpy(self) -> dict:
         """Get water data fields."""

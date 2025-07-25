@@ -8,89 +8,115 @@
 
 import numpy as np
 import pygfx as gfx
+import warp as wp
 
 from reefcraft.utils.logger import logger
 
 
 class WaterParticles:
     """Class to manage water particles for visualization."""
-    def __init__(self, num_particles: int = 2000, grid_shape: tuple = (30, 30, 30)) -> None:
+    def __init__(self, num_particles: int = 100, grid_shape: tuple = (32, 32, 32)) -> None:
         """Initialize particles randomly within LBM grid."""
         self.num_particles = num_particles
-        self.grid_shape = grid_shape
+        self.grid_shape = np.array(grid_shape, dtype=np.float32)
 
-        grid_centered = np.array(grid_shape)/2.0
-
-        self.positions = np.random.uniform(
-            low = [-grid_centered[0], 0, -grid_centered[2]],
-            high = [grid_centered[0], grid_shape[1], grid_centered[2]],
-            size = (num_particles, 3)
+        # Random initial positions in world space
+        grid_centered = self.grid_shape / 2.0
+        init_pos = np.random.uniform(
+            low=[-grid_centered[0], 0, -grid_centered[2]],
+            high=[grid_centered[0], grid_shape[1], grid_centered[2]],
+            size=(num_particles, 3),
         ).astype(np.float32)
 
-        self.positions_buf = gfx.Buffer(self.positions)
-        self.geometry = gfx.Geometry(positions = self.positions_buf)
+        # Store GPU copy
+        self.positions_wp = wp.array(init_pos, dtype=wp.vec3, device="cuda")
+        self.positions_buf = gfx.Buffer(init_pos)
+        self.geometry = gfx.Geometry(positions=self.positions_buf)
 
         self.points = gfx.Points(
             self.geometry,
-            gfx.PointsMaterial(color = "#00ffbf", size = 2)
+            gfx.PointsMaterial(color="#00ffbf", size=4)
         )
 
-        logger.info(f"Initialized {num_particles} water particles.")
+        logger.info(f"[Warp] Initialized {num_particles} GPU particles.")
 
     def reset(self) -> None:
-        """Reseed particles randomly in the domain."""
-        self.positions = np.random.uniform(
-            low = [0, 0, 0],
-            high = self.grid_shape,
-            size = (self.num_particles, 3)
+        """Reseed particles randomly in the domain (both Warp + gfx buffer)."""
+        grid_centered = self.grid_shape / 2.0
+        reset_pos = np.random.uniform(
+            low=[-grid_centered[0], 0, -grid_centered[2]],
+            high=[grid_centered[0], self.grid_shape[1], grid_centered[2]],
+            size=(self.num_particles, 3),
         ).astype(np.float32)
 
-        self.positions_buf.set_data(self.positions)
+        # Update both Warp and gfx
+        self.positions_wp = wp.array(reset_pos, dtype=wp.vec3, device="cuda")
+        self.positions_buf.set_data(reset_pos)
 
-        logger.info("Water particles reset.")
+        logger.info("[Warp] Water particles reset.")
 
     def get_actor(self) -> gfx.Points:
         """Return the gfx actor to add to the scene."""
         return self.points
     
     def advect(self, velocity_field: np.ndarray, dt: float = 0.1) -> None:
-        """Move particles using the velocity field with corrected indexing.
+        """Launch a warp kernel to advect particles using the velocity field."""
+        # Flatten velocity field for easy indexing (assume shape [Nx, Ny, Nz, 3])
+        flat_velocity = velocity_field.reshape(-1, 3).astype(np.float32)
+        velocity_wp = wp.array(flat_velocity, dtype=wp.vec3, device="cuda")
 
-        Args:
-            velocity_field: (32, 32, 32, 3) numpy array of velocity vectors.
-            dt: timestep for advection.
-        """
-        xw, yw, zw = self.grid_shape
-        x_half, z_half = xw / 2, zw / 2
-        y_max = yw
+        wp.launch(
+            kernel=advect_kernel,
+            dim=self.num_particles,
+            inputs=[
+                self.positions_wp,
+                velocity_wp,
+                wp.vec3(*self.grid_shape),
+                dt,
+            ]
+        )
 
-        # Clip to interior of LBM field to avoid boundary dead zones
-        ix = np.clip(np.round(self.positions[:, 0] + x_half).astype(int), 1, xw - 2)
-        iy = np.clip(np.round(self.positions[:, 1]).astype(int), 1, yw - 2)
-        iz = np.clip(np.round(self.positions[:, 2] + z_half).astype(int), 1, zw - 2)
+        # Sync back to CPU only for gfx update
+        updated = self.positions_wp.numpy()
+        self.positions_buf.set_data(updated)
 
-        velocities = velocity_field[ix, iy, iz]
+@wp.kernel
+def advect_kernel(
+    positions: wp.array(dtype=wp.vec3),
+    velocity_field: wp.array(dtype=wp.vec3),
+    grid_shape: wp.vec3,
+    dt: float,
+) -> None:
+    """Move particles using the velocity field."""
+    tid = wp.tid()
 
-        # Move particles
-        self.positions += velocities * dt
+    pos = positions[tid]
 
-        # Get mask for out-of-bounds axes
-        out_x_low  = self.positions[:, 0] < -x_half
-        out_x_high = self.positions[:, 0] >  x_half
-        out_y_low  = self.positions[:, 1] < 0
-        out_y_high = self.positions[:, 1] > y_max
-        out_z_low  = self.positions[:, 2] < -z_half
-        out_z_high = self.positions[:, 2] >  z_half
+    half_x = grid_shape[0] * 0.5
+    half_z = grid_shape[2] * 0.5
 
-        # X wrap: reappear at opposite side
-        self.positions[out_x_low, 0] = x_half - 1.0
-        self.positions[out_x_high, 0] = -x_half + 1.0
+    gx = wp.clamp(wp.int(wp.round(pos[0] + half_x)), 1, int(grid_shape[0]) - 2)
+    gy = wp.clamp(wp.int(wp.round(pos[1])), 1, int(grid_shape[1]) - 2)
+    gz = wp.clamp(wp.int(wp.round(pos[2] + half_z)), 1, int(grid_shape[2]) - 2)
 
-        # Y bounce: reflect off top/bottom
-        self.positions[out_y_low | out_y_high, 1] = np.clip(self.positions[out_y_low | out_y_high, 1], 1, y_max - 2)
+    index = (gx * int(grid_shape[1]) + gy) * int(grid_shape[2]) + gz
+    vel = velocity_field[index]
 
-        # Z wrap: reappear at opposite side
-        self.positions[out_z_low, 2] = z_half - 1.0
-        self.positions[out_z_high, 2] = -z_half + 1.0
+    pos += vel * dt
 
-        self.positions_buf.set_data(self.positions)
+    if pos[0] < -half_x:
+        pos[0] = half_x - 1.0
+    elif pos[0] > half_x:
+        pos[0] = -half_x + 1.0
+
+    if pos[1] < 0.0:
+        pos[1] = 1.0
+    elif pos[1] > grid_shape[1]:
+        pos[1] = grid_shape[1] - 2.0
+
+    if pos[2] < -half_z:
+        pos[2] = half_z - 1.0
+    elif pos[2] > half_z:
+        pos[2] = -half_z + 1.0
+
+    positions[tid] = pos

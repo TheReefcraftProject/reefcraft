@@ -99,17 +99,6 @@ class SimpleP:
         """Update the mesh with a new set of polyps."""
         self.mesh = mesh_data
 
-    def add_polyp(self, new_polyp: tuple) -> None:
-        """Add a new polyp (vertex) to the list of polyps."""
-        pass
-
-    def growth_function(self, polyp: tuple) -> float:
-        """Compute growth amount based on resource concentration and polyp's z-coordinate."""
-        z_position = polyp[2]
-        z_max = self.grid_shape[2]
-        resource_at_polyp = self.resource_concentration * (z_position / z_max)
-        return resource_at_polyp
-
     @wp.kernel
     def calculate_normals_kernel(vertices: wp.array(dtype=wp.vec3f), normals: wp.array(dtype=wp.vec3f), n: int) -> None:
         """Kernel to calculate normals for each vertex based on the hemisphere structure."""
@@ -131,27 +120,80 @@ class SimpleP:
         # Launch the kernel to calculate normals
         wp.launch(self.calculate_normals_kernel, dim=num_polyps, inputs=[self.mesh["vertices"], self.normals, num_polyps])
 
-    # -----------------------------------------------------------#
-    #            ABOVE THIS LINE WORKS, BELOW DOES NOT
-    # -----------------------------------------------------------#
-
     @wp.kernel
     def growth_kernel(
-        vertices: wp.array(dtype=wp.vec3f), normals: wp.array(dtype=wp.vec3f), growth_amount: wp.array(dtype=wp.float32), spacing: float, n: int
+        vertices: wp.array(dtype=wp.vec3f),
+        normals: wp.array(dtype=wp.vec3f),
+        growth_amount: wp.array(dtype=wp.float32),
+        spacing: float,
+        n: int,
+        resource_concentration: float,
+        z_max: float,
     ) -> None:
         """Kernel to update polyp positions based on growth and normal vectors."""
         idx = wp.tid()
         if idx < n:
-            vertices[idx] += normals[idx] * growth_amount[idx] * spacing
+            # Get the vertex and normal for the current vertex
+            vertex = vertices[idx]
+            normal = normals[idx]
+
+            # Compute growth amount based on resource concentration and polyp's z-coordinate
+            z_position = vertex[2]
+            resource_at_polyp = resource_concentration * (z_position / z_max)
+
+            # Compute the angle between the normal and the z-axis
+            angle = wp.acos(wp.dot(normal, wp.vec3(0.0, 0.0, 1.0)) / wp.length(normal))
+            angle_deg = wp.degrees(angle)  # Convert the angle from radians to degrees
+
+            # Scale the resource based on convexity
+            scale = (360.0 - angle_deg) / 360.0  # Convex = more resources
+
+            # Calculate the final growth amount
+            growth = resource_at_polyp * scale
+
+            # Update the growth_amount (apply spacing for movement)
+            growth_amount[idx] = growth * spacing
+
+            # Update the polyp's position based on the growth amount and the normal direction
+            vertices[idx] += normal * growth_amount[idx]
+
+    def add_polyp(self, new_polyp: tuple) -> None:
+        """Add a new polyp (vertex) to the list of polyps if space allows."""
+        # Check if there’s space for the new polyp based on spacing
+        for vertex in self.mesh["vertices"]:
+            distance = np.linalg.norm(vertex - np.array(new_polyp))
+            if distance < self.polyp_spacing:
+                # No space for this polyp, return
+                return
+
+        # If there's space, add the new polyp
+        new_vertex_wp = wp.array([new_polyp], dtype=wp.vec3f, device="cuda")
+        self.mesh["vertices"] = wp.concatenate([self.mesh["vertices"], new_vertex_wp])
+        # Recalculate normals for the new mesh including the added polyp
+        self.launch_mesh_kernel()
 
     def growth_step(self) -> None:
         """Update state by growing the polyps and updating the mesh."""
-        # Growth step: move polyps along the normal vector by an amount determined by growth function
-
+        # Retrieve the mesh vertices and normals
         vertices = self.mesh["vertices"]
         normals = self.normals
 
-        growth_amount = wp.array([self.growth_function(vertex) for vertex in vertices.numpy()], dtype=wp.float32, device="cuda")
+        # Create an array to store the growth amount for each polyp
+        growth_amount = wp.zeros(len(vertices), dtype=wp.float32, device="cuda")
 
         # Launch the growth kernel to update the polyps
-        wp.launch(self.growth_kernel, dim=len(vertices), inputs=[vertices, normals, growth_amount, self.polyp_spacing, len(vertices)])
+        wp.launch(
+            self.growth_kernel,
+            dim=len(vertices),
+            inputs=[vertices, normals, growth_amount, self.polyp_spacing, len(vertices), self.resource_concentration, float(self.grid_shape[2])],
+        )  # Pass resource concentration and z_max (grid size)
+
+        # Check if space is available to add a new polyp
+        new_polyp = (
+            np.random.uniform(-self.radius, self.radius),
+            np.random.uniform(-self.radius, self.radius),
+            np.random.uniform(0, self.radius),
+        )  # Random position within the hemisphere
+
+        # Add the new polyp if there's space
+        self.add_polyp(new_polyp)

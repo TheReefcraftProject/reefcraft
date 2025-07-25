@@ -37,7 +37,7 @@ class Window:
         self.stats = gfx.Stats(viewport=self.renderer)
 
         # Create the view of the reef and the ui panel
-        self.reef = Reef(self.renderer)
+        self.reef = Reef(self.renderer, grid_shape=self.engine.water.grid_shape)
         self.panel = Panel(self.renderer)
 
     @property

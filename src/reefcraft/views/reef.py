@@ -53,7 +53,7 @@ class CoralMesh:
 class Reef:
     """The geometry, lighting, camera, and draw routines for the reef."""
 
-    def __init__(self, renderer: gfx.WgpuRenderer) -> None:
+    def __init__(self, renderer: gfx.WgpuRenderer, grid_shape: tuple[int, int, int] = (32, 32, 32)) -> None:
         """Prepare the Reef class to hold a 3D scene including the coral."""
         self.renderer = renderer
         self.viewport = gfx.Viewport(renderer)
@@ -62,7 +62,7 @@ class Reef:
         self.coral = CoralMesh()
         self.scene.add(self.coral.mesh)
 
-        self.water_particles = WaterParticles()
+        self.water_particles = WaterParticles(grid_shape=grid_shape)
         self.scene.add(self.water_particles.get_actor())
 
         self.scene.add(gfx.AmbientLight("#fff", 0.3))

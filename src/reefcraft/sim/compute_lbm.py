@@ -72,10 +72,6 @@ class ComputeLBM:
         # Scale down the vertices by the scaling factor
         mesh_vertices /= scaling_factor
 
-        # Convert the mesh to Warp arrays
-        self.verts = wp.array(np.array(mesh_vertices, dtype=np.float32), dtype=wp.vec3f)
-        self.faces = wp.array(np.array(self.coral_faces, dtype=np.int32), dtype=wp.vec3i)
-
         # Transform mesh points to align with grid
         mesh_vertices -= mesh_vertices.min(axis=0)
         mesh_extents = mesh_vertices.max(axis=0)
@@ -84,17 +80,26 @@ class ComputeLBM:
         dx = length_phys_unit / length_lbm_unit
         mesh_vertices = mesh_vertices / dx
 
-        # Shift mesh to align with the grid and move it to the center of the xy-plane
-        center_shift_xy = np.array(
+        # Shift mesh so its bounding box is centered inside the LBM grid.
+        # We treat the simulation space as Z-up, therefore we compute the
+        # translation for all axes explicitly.
+        center_shift = np.array(
             [
-                (self.grid_shape[0] - mesh_extents[0] / dx) / 2,  # Center along x-axis
-                (self.grid_shape[1] - mesh_extents[1] / dx) / 2,  # Center along y-axis
-                0.0,  # Keep the z-axis aligned for now (it will be shifted by shift_up later)
+                (self.grid_shape[0] - mesh_extents[0] / dx) / 2,  # x-axis
+                (self.grid_shape[1] - mesh_extents[1] / dx) / 2,  # y-axis
+                (self.grid_shape[2] - mesh_extents[2] / dx) / 2,  # z-axis
             ]
         )
 
-        # Apply the shift to the mesh vertices
-        self.coral_vertices = mesh_vertices + center_shift_xy
+        # Apply the shift to the mesh vertices so the coral is roughly centred
+        # within the LBM domain. Converting to Warp arrays happens afterwards so
+        # physics and rendering share the same coordinates.
+        self.coral_vertices = mesh_vertices + center_shift
+
+        # Convert the mesh to Warp arrays after positioning so physics and
+        # rendering share the same coordinates
+        self.verts = wp.array(np.array(self.coral_vertices, dtype=np.float32), dtype=wp.vec3f)
+        self.faces = wp.array(np.array(self.coral_faces, dtype=np.int32), dtype=wp.vec3i)
 
         # Cross-sectional area for the coral mesh (just for boundary condition purposes)
         self.coral_cross_section = np.prod(mesh_extents[1:]) / dx**2

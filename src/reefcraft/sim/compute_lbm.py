@@ -25,7 +25,7 @@ class ComputeLBM:
     def __init__(self) -> None:
         """Initialize ComputeLBM fields and data."""
         self.grid_shape = (32, 32, 32)
-        self.fluid_speed = 0.2
+        self.fluid_speed = 0.1
         self.current_step = 0
         self.bc_coral = None
         self.stl_filename = "src/reefcraft/resources/stl/coral.stl"
@@ -58,7 +58,7 @@ class ComputeLBM:
 
         self.f_0, self.f_1, self.bc_mask, self.missing_mask = self.stepper.prepare_fields()
 
-    def load_mesh(self, shift_up: float = 15.0) -> None:
+    def load_mesh(self) -> None:
         """Load coral mesh from stl file."""
         # Load and process mesh for the simulation
         mesh = trimesh.load_mesh(self.stl_filename, process=False)
@@ -94,9 +94,6 @@ class ComputeLBM:
 
         # Apply the shift to the mesh vertices
         self.coral_vertices = mesh_vertices + center_shift_xy
-
-        # Shift the mesh along the z-axis using the shift_up parameter
-        self.coral_vertices[:, 2] += shift_up
 
         # Cross-sectional area for the coral mesh (just for boundary condition purposes)
         self.coral_cross_section = np.prod(mesh_extents[1:]) / dx**2

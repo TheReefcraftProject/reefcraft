@@ -28,7 +28,7 @@ class SimpleP:
         self.polyp_spacing = polyp_spacing
         self.max_time_steps = max_time_steps
         self.resource_concentration = resource_concentration
-
+        self.device = "cuda"
         # Calculate the radius based on the polyp spacing
         self.radius = self.calculate_radius()
 
@@ -160,16 +160,32 @@ class SimpleP:
     def add_polyp(self, new_polyp: tuple) -> None:
         """Add a new polyp (vertex) to the list of polyps if space allows."""
         # Check if there’s space for the new polyp based on spacing
-        for vertex in self.mesh["vertices"]:
-            distance = np.linalg.norm(vertex - np.array(new_polyp))
-            if distance < self.polyp_spacing:
-                # No space for this polyp, return
+        vertices_np = self.mesh["vertices"].numpy()
+        for vertex in vertices_np:
+            if np.linalg.norm(vertex - np.array(new_polyp, dtype=np.float32)) < self.polyp_spacing:
                 return
 
-        # If there's space, add the new polyp
-        new_vertex_wp = wp.array([new_polyp], dtype=wp.vec3f, device="cuda")
-        self.mesh["vertices"] = wp.concatenate([self.mesh["vertices"], new_vertex_wp])
-        # Recalculate normals for the new mesh including the added polyp
+        # Add the new polyp without altering existing vertex order
+        new_vertices = np.concatenate([vertices_np, np.array([new_polyp], dtype=np.float32)], axis=0)
+        new_idx = len(new_vertices) - 1
+
+        # Connect the new polyp to its three nearest neighbours to preserve the current geometry
+        indices_np = self.mesh["indices"].numpy()
+        distances = np.linalg.norm(vertices_np - np.array(new_polyp, dtype=np.float32), axis=1)
+        nearest = np.argsort(distances)[:3]
+        new_tris = np.array(
+            [
+                [new_idx, nearest[0], nearest[1]],
+                [new_idx, nearest[1], nearest[2]],
+                [new_idx, nearest[2], nearest[0]],
+            ],
+            dtype=np.int32,
+        )
+
+        self.mesh["vertices"] = wp.array(new_vertices, dtype=wp.vec3f, device=self.device)
+        self.mesh["indices"] = wp.array(np.concatenate([indices_np, new_tris]), dtype=wp.vec3i, device=self.device)
+
+        self.normals = wp.zeros(len(new_vertices), dtype=wp.vec3f, device=self.device)
         self.launch_mesh_kernel()
 
     def growth_step(self) -> None:
@@ -188,12 +204,21 @@ class SimpleP:
             inputs=[vertices, normals, growth_amount, self.polyp_spacing, len(vertices), self.resource_concentration, float(self.grid_shape[2])],
         )  # Pass resource concentration and z_max (grid size)
 
-        # Check if space is available to add a new polyp
-        new_polyp = (
-            np.random.uniform(-self.radius, self.radius),
-            np.random.uniform(-self.radius, self.radius),
-            np.random.uniform(0, self.radius),
-        )  # Random position within the hemisphere
+        wp.synchronize()
+        verts_np = self.mesh["vertices"].numpy()
+        indices_np = self.mesh["indices"].numpy()
 
-        # Add the new polyp if there's space
-        self.add_polyp(new_polyp)
+        candidate = None
+        max_gap = self.polyp_spacing
+
+        for tri in indices_np:
+            for i in range(3):
+                vi = tri[i]
+                vj = tri[(i + 1) % 3]
+                dist = np.linalg.norm(verts_np[vi] - verts_np[vj])
+                if dist > 2 * self.polyp_spacing and dist > max_gap:
+                    max_gap = dist
+                    candidate = (verts_np[vi] + verts_np[vj]) / 2.0
+
+        if candidate is not None:
+            self.add_polyp(tuple(candidate))

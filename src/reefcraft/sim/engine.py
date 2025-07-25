@@ -47,7 +47,7 @@ class Engine:
     def reset(self) -> None:
         """Reset the timer to the initial state."""
         self.timer.reset()
-        self.model.reset()
+        #self.model.reset()
 
     def get_time(self) -> float:
         """Return the current simulation time."""

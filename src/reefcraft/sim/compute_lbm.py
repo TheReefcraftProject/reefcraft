@@ -83,10 +83,20 @@ class ComputeLBM:
         dx = length_phys_unit / length_lbm_unit
         mesh_vertices = mesh_vertices / dx
 
-        # Shift mesh to align with the grid and move it up along the z-axis
-        shift = np.array([self.grid_shape[0] / 4, (self.grid_shape[1] - mesh_extents[1] / dx) / 2, shift_up])
+        # Shift mesh to align with the grid and move it to the center of the xy-plane
+        center_shift_xy = np.array(
+            [
+                (self.grid_shape[0] - mesh_extents[0] / dx) / 2,  # Center along x-axis
+                (self.grid_shape[1] - mesh_extents[1] / dx) / 2,  # Center along y-axis
+                0.0,  # Keep the z-axis aligned for now (it will be shifted by shift_up later)
+            ]
+        )
 
-        self.coral_vertices = mesh_vertices + shift
+        # Apply the shift to the mesh vertices
+        self.coral_vertices = mesh_vertices + center_shift_xy
+
+        # Shift the mesh along the z-axis using the shift_up parameter
+        self.coral_vertices[:, 2] += shift_up
 
         # Cross-sectional area for the coral mesh (just for boundary condition purposes)
         self.coral_cross_section = np.prod(mesh_extents[1:]) / dx**2

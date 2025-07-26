@@ -15,7 +15,7 @@ from rendercanvas.auto import RenderCanvas
 from reefcraft.sim.engine import Engine
 from reefcraft.sim.state import SimState
 from reefcraft.ui.button import Button
-from reefcraft.ui.layout import Layout
+from reefcraft.ui.layout import Layout, LayoutDirection
 from reefcraft.ui.panel import Panel
 from reefcraft.ui.reef import Reef
 from reefcraft.ui.slider import Slider
@@ -45,12 +45,23 @@ class Window:
 
         _ = Layout(
             [
-                Slider(self.panel, width=250, on_change=lambda val: logger.debug(f"Slider1 Value: {val}")),
-                Slider(self.panel, width=250, on_change=lambda val: logger.debug(f"Slider1 Value: {val}")),
-                Slider(self.panel, width=250, on_change=lambda val: logger.debug(f"Slider1 Value: {val}")),
-                Button(self.panel, width=250, height=20, label="Mom", on_click=lambda: logger.debug("MOM Button Clicked!")),
-                Button(self.panel, width=250, height=20, label="Grow", on_click=lambda: logger.debug("Let's grow some coral!")),
-            ],
+                Layout(
+                    [
+                        Button(self.panel, width=20, height=20, label="P", on_click=lambda: logger.debug("P!")),
+                        Button(self.panel, width=20, height=20, label="X", on_click=lambda: logger.debug("X!")),
+                    ],
+                    LayoutDirection.HORIZONTAL,
+                ),
+                Layout(
+                    [
+                        Slider(self.panel, width=250, on_change=lambda val: logger.debug(f"Slider1 Value: {val}")),
+                        Slider(self.panel, width=250, on_change=lambda val: logger.debug(f"Slider1 Value: {val}")),
+                        Slider(self.panel, width=250, on_change=lambda val: logger.debug(f"Slider1 Value: {val}")),
+                        Button(self.panel, width=250, height=20, label="Mom", on_click=lambda: logger.debug("MOM Button Clicked!")),
+                        Button(self.panel, width=250, height=20, label="Grow", on_click=lambda: logger.debug("Let's grow some coral!")),
+                    ],
+                ),
+            ]
         )
 
     @property

@@ -12,8 +12,8 @@ def test_single_widget_vertical() -> None:
 
 
 def test_two_widgets_vertical() -> None:
-    w1 = Widget(top=0, left=0, width=100, height=20)
-    w2 = Widget(top=0, left=0, width=120, height=30)
+    w1 = Widget(width=100, height=20)
+    w2 = Widget(width=120, height=30)
     layout = Layout(direction=LayoutDirection.VERTICAL, widgets=[w1, w2], spacing=10, margin=5)
     assert w1.top == 5
     assert w2.top == 5 + 20 + 10

@@ -83,6 +83,9 @@ class Layout(Widget):
 
     def _layout(self) -> None:
         """Internal layout logic: positions widgets and sizes layout accordingly."""
+        # ``offset`` tracks the position along the main axis.  It starts at the
+        # layout's margin which represents a single outer padding at the
+        # beginning of the axis.
         offset = self.margin
         max_cross = 0
 
@@ -96,11 +99,18 @@ class Layout(Widget):
                 offset += widget.width + self.spacing
                 max_cross = max(max_cross, widget.height)
 
+        # After looping ``offset`` contains an extra ``spacing`` that should not
+        # be included after the final widget.  The size of the layout along the
+        # main axis therefore subtracts the trailing spacing.  Only the initial
+        # margin is included so the layout height/width matches expectations from
+        # the tests.
+        main_size = offset - self.spacing if self.widgets else 0
+
         if self.direction == LayoutDirection.VERTICAL:
-            self.height = offset - self.spacing + self.margin if self.widgets else 0
+            self.height = main_size
             self.width = max_cross
         else:
-            self.width = offset - self.spacing + self.margin if self.widgets else 0
+            self.width = main_size
             self.height = max_cross
 
         for widget in self.widgets:

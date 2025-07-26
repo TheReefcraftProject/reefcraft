@@ -79,6 +79,11 @@ class Widget:
         self._on_change_callbacks.append(callback)
 
     def _emit_change(self) -> None:
-        """Invoke all registered change callbacks."""
+        """Invoke all registered change callbacks and update visuals."""
+        self._update_visuals()
         for callback in self._on_change_callbacks:
             callback()
+
+    def _update_visuals(self) -> None:
+        """Update visuals when geometry or state changes. To be overridden by subclasses."""
+        pass

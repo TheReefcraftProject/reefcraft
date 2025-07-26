@@ -36,45 +36,45 @@ class Button(Widget):
         self,
         panel: Panel,
         *,
-        left: int,
-        top: int,
-        width: int,
-        height: int,
+        left: int = 0,
+        top: int = 0,
+        width: int = 100,
+        height: int = 20,
         label: str = "",
         enabled: bool = True,
         on_click: Callable[[], None] | None = None,
     ) -> None:
         """Create a new button widget."""
         super().__init__(top, left, width, height)
-        self.panel = panel
-        self.label = label
-        self.enabled = enabled
-        self._on_click_callback = on_click
+        self.panel: Panel = panel
+        self.label: str = label
+        self.enabled: bool = enabled
+        self._on_click_callback: Callable[[], None] | None = on_click
 
-        self.state = ButtonState.NORMAL if enabled else ButtonState.DISABLED
+        self.state: ButtonState = ButtonState.NORMAL if enabled else ButtonState.DISABLED
 
-        self.mat_normal = gfx.MeshBasicMaterial(color=self.theme.color, pick_write=True)
-        self.mat_disabled = gfx.MeshBasicMaterial(color=self.theme.disabled_color, pick_write=True)
-        self.mat_hover = gfx.MeshBasicMaterial(color=self.theme.hover_color, pick_write=True)
-        self.mat_pressed = gfx.MeshBasicMaterial(color=self.theme.highlight_color, pick_write=True)
+        self.mat_normal: gfx.MeshBasicMaterial = gfx.MeshBasicMaterial(color=self.theme.color, pick_write=True)
+        self.mat_disabled: gfx.MeshBasicMaterial = gfx.MeshBasicMaterial(color=self.theme.disabled_color, pick_write=True)
+        self.mat_hover: gfx.MeshBasicMaterial = gfx.MeshBasicMaterial(color=self.theme.hover_color, pick_write=True)
+        self.mat_pressed: gfx.MeshBasicMaterial = gfx.MeshBasicMaterial(color=self.theme.highlight_color, pick_write=True)
 
-        self._bg_mesh = gfx.Mesh(
+        self._bg_mesh: gfx.Mesh = gfx.Mesh(
             gfx.plane_geometry(width=width, height=height),
             self.mat_normal,
         )
-        text_mat = gfx.TextMaterial(color=self.theme.text_color)
-        self._text = gfx.Text(self.label, text_mat)
+        text_mat: gfx.TextMaterial = gfx.TextMaterial(color=self.theme.text_color)
+        self._text: gfx.Text = gfx.Text(self.label, text_mat)
 
-        self._dragging = False
+        self._dragging: bool = False
 
-        self.panel.scene.add(self._bg_mesh)
-        self.panel.scene.add(self._text)
+        _ = self.panel.scene.add(self._bg_mesh)
+        _ = self.panel.scene.add(self._text)
 
         # Bind event handlers to the background mesh (which is clickable)
-        self._bg_mesh.add_event_handler(self._on_mouse_enter, "pointer_enter")
-        self._bg_mesh.add_event_handler(self._on_mouse_leave, "pointer_leave")
-        self._bg_mesh.add_event_handler(self._on_mouse_down, "pointer_down")
-        self._bg_mesh.add_event_handler(self._on_mouse_up, "pointer_up")
+        _ = self._bg_mesh.add_event_handler(self._on_mouse_enter, "pointer_enter")  # type: ignore
+        _ = self._bg_mesh.add_event_handler(self._on_mouse_leave, "pointer_leave")  # type: ignore
+        _ = self._bg_mesh.add_event_handler(self._on_mouse_down, "pointer_down")  # type: ignore
+        _ = self._bg_mesh.add_event_handler(self._on_mouse_up, "pointer_up")  # type: ignore
 
         self._update_visuals()
 
@@ -101,7 +101,7 @@ class Button(Widget):
     # Event handlers (Slider-style logic)
     # ------------------------------------------------------------------
 
-    def _on_mouse_enter(self, event: gfx.PointerEvent) -> None:
+    def _on_mouse_enter(self, _event: gfx.PointerEvent) -> None:
         if self.enabled and not self._dragging:
             self.state = ButtonState.HOVER
             self._update_visuals()

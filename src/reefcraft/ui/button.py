@@ -4,20 +4,25 @@
 # Licensed under the MIT License. See the LICENSE file for details.
 # -----------------------------------------------------------------------------
 
-"""Button widget implementation."""
+"""Button widget implementation with optional icon support."""
 
 from __future__ import annotations
 
 from enum import Enum, auto
+from pathlib import Path
 from typing import TYPE_CHECKING
 
+import imageio.v3 as iio
+import numpy as np
 import pygfx as gfx
+
+from reefcraft.ui.widget import Widget
+from reefcraft.utils.paths import icons_dir
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     from reefcraft.ui.panel import Panel
-from reefcraft.ui.widget import Widget
 
 
 class ButtonState(Enum):
@@ -30,7 +35,7 @@ class ButtonState(Enum):
 
 
 class Button(Widget):
-    """Interactive UI button."""
+    """Interactive UI button with optional icon."""
 
     def __init__(
         self,
@@ -41,6 +46,7 @@ class Button(Widget):
         width: int = 100,
         height: int = 20,
         label: str = "",
+        icon: str | None = None,
         enabled: bool = True,
         on_click: Callable[[], None] | None = None,
     ) -> None:
@@ -50,27 +56,28 @@ class Button(Widget):
         self.label: str = label
         self.enabled: bool = enabled
         self._on_click_callback: Callable[[], None] | None = on_click
+        self.icon_name: str | None = icon
 
         self.state: ButtonState = ButtonState.NORMAL if enabled else ButtonState.DISABLED
 
-        self.mat_normal: gfx.MeshBasicMaterial = gfx.MeshBasicMaterial(color=self.theme.color, pick_write=True)
-        self.mat_disabled: gfx.MeshBasicMaterial = gfx.MeshBasicMaterial(color=self.theme.disabled_color, pick_write=True)
-        self.mat_hover: gfx.MeshBasicMaterial = gfx.MeshBasicMaterial(color=self.theme.hover_color, pick_write=True)
-        self.mat_pressed: gfx.MeshBasicMaterial = gfx.MeshBasicMaterial(color=self.theme.highlight_color, pick_write=True)
+        self.mat_normal = gfx.MeshBasicMaterial(color=self.theme.color, pick_write=True)
+        self.mat_disabled = gfx.MeshBasicMaterial(color=self.theme.disabled_color, pick_write=True)
+        self.mat_hover = gfx.MeshBasicMaterial(color=self.theme.hover_color, pick_write=True)
+        self.mat_pressed = gfx.MeshBasicMaterial(color=self.theme.highlight_color, pick_write=True)
 
-        self._bg_mesh: gfx.Mesh = gfx.Mesh(
-            gfx.plane_geometry(width=width, height=height),
-            self.mat_normal,
-        )
-        text_mat: gfx.TextMaterial = gfx.TextMaterial(color=self.theme.text_color)
-        self._text: gfx.Text = gfx.Text(self.label, text_mat)
+        self._bg_mesh = gfx.Mesh(gfx.plane_geometry(width=width, height=height), self.mat_normal)
+        text_mat = gfx.TextMaterial(color=self.theme.text_color)
+        self._text = gfx.Text(self.label, text_mat)
 
-        self._dragging: bool = False
+        self._icon_mesh: gfx.Mesh | None = self._load_icon(icon) if icon else None
 
         _ = self.panel.scene.add(self._bg_mesh)
         _ = self.panel.scene.add(self._text)
+        if self._icon_mesh:
+            _ = self.panel.scene.add(self._icon_mesh)
 
-        # Bind event handlers to the background mesh (which is clickable)
+        self._dragging = False
+
         _ = self._bg_mesh.add_event_handler(self._on_mouse_enter, "pointer_enter")  # type: ignore
         _ = self._bg_mesh.add_event_handler(self._on_mouse_leave, "pointer_leave")  # type: ignore
         _ = self._bg_mesh.add_event_handler(self._on_mouse_down, "pointer_down")  # type: ignore
@@ -78,9 +85,6 @@ class Button(Widget):
 
         self._update_visuals()
 
-    # ------------------------------------------------------------------
-    # Public API
-    # ------------------------------------------------------------------
     def set_label(self, text: str) -> None:
         """Update the button label."""
         self.label = text
@@ -93,20 +97,16 @@ class Button(Widget):
         self._update_visuals()
 
     def on_click(self) -> None:
-        """Called when the button is activated. Can be overridden or passed in as a callback."""
+        """Called when the button is activated."""
         if self._on_click_callback:
             self._on_click_callback()
-
-    # ------------------------------------------------------------------
-    # Event handlers (Slider-style logic)
-    # ------------------------------------------------------------------
 
     def _on_mouse_enter(self, _event: gfx.PointerEvent) -> None:
         if self.enabled and not self._dragging:
             self.state = ButtonState.HOVER
             self._update_visuals()
 
-    def _on_mouse_leave(self, event: gfx.PointerEvent) -> None:
+    def _on_mouse_leave(self, _event: gfx.PointerEvent) -> None:
         if self.enabled and not self._dragging:
             self.state = ButtonState.NORMAL
             self._update_visuals()
@@ -130,13 +130,11 @@ class Button(Widget):
             self.state = ButtonState.HOVER
             self._update_visuals()
 
-    # ------------------------------------------------------------------
-    # Visual updates
-    # ------------------------------------------------------------------
     def _screen_to_world(self, x: float, y: float, z: float = 0.0) -> tuple[float, float, float]:
         return (x - 1920 / 2, 1080 / 2 - y, z)
 
     def _update_visuals(self) -> None:
+        # Background material
         if self.state is ButtonState.DISABLED:
             self._bg_mesh.material = self.mat_disabled
         elif self.state is ButtonState.HOVER:
@@ -146,9 +144,30 @@ class Button(Widget):
         else:
             self._bg_mesh.material = self.mat_normal
 
+        # Geometry and placement
         self._bg_mesh.geometry = gfx.plane_geometry(width=self.width, height=self.height)
         self._bg_mesh.local.position = self._screen_to_world(self.left + self.width / 2, self.top + self.height / 2, 0)
+
+        # Text placement (centered)
         self._text.local.position = self._screen_to_world(self.left + self.width / 2, self.top + self.height / 2, -1)
+
+        # Icon placement (left of text, if present)
+        if self._icon_mesh:
+            icon_size = self.height * 0.6
+            self._icon_mesh.geometry = gfx.plane_geometry(icon_size, icon_size)
+            self._icon_mesh.local.position = self._screen_to_world(
+                self.left + icon_size / 2 + 5,
+                self.top + self.height / 2,
+                -1,
+            )
+
+    def _load_icon(self, name: str) -> gfx.Mesh:
+        """Load an icon image from the resources/icons directory and return a mesh."""
+        path = icons_dir() / name
+        img = iio.imread(path).astype(np.float32) / 255.0
+        tex = gfx.Texture(img, dim=2)
+        mat = gfx.MeshBasicMaterial(map=tex)
+        return gfx.Mesh(gfx.plane_geometry(1, 1), mat)
 
 
 class ToggleButton(Button):

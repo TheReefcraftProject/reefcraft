@@ -32,7 +32,7 @@ class Window:
         self.canvas = RenderCanvas(size=(1920, 1080), title="Reefcraft", update_mode="continuous", max_fps=60)  # type: ignore
 
         # Make the window beautiful with dark mode titel bar and an icon
-        icon_path = (app_root / "resources" / "icon" / "reefcraft.ico").resolve()
+        icon_path = (app_root / "resources" / "icons" / "reefcraft.ico").resolve()
         apply_dark_titlebar_and_icon("Reefcraft", icon_path)
 
         # Prepare our pygfx renderer
@@ -50,7 +50,7 @@ class Window:
                         ToggleButton(
                             self.panel, width=100, height=20, label_on="PLAYING", label_off="PAUSED", on_toggle=lambda state: logger.debug(f"Play {state}")
                         ),
-                        Button(self.panel, width=20, height=20, label="X", on_click=lambda: logger.debug("X!")),
+                        Button(self.panel, width=20, height=20, icon="play.png", on_click=lambda: logger.debug("ICON!")),
                     ],
                     LayoutDirection.HORIZONTAL,
                 ),

@@ -34,7 +34,7 @@ def test_alignment_end() -> None:
 
 
 def test_nested_layout_geometry() -> None:
-    # Build widget hierarchy
+    # Build widget hierarchy with explicit spacing = 10
     layout = Layout(
         [
             Layout(
@@ -43,6 +43,7 @@ def test_nested_layout_geometry() -> None:
                     Widget(width=20, height=20),  # "X"
                 ],
                 direction=LayoutDirection.HORIZONTAL,
+                spacing=10,
             ),
             Layout(
                 [
@@ -53,31 +54,29 @@ def test_nested_layout_geometry() -> None:
                     Widget(width=250, height=20),
                 ],
                 direction=LayoutDirection.VERTICAL,
+                spacing=10,
             ),
         ],
         direction=LayoutDirection.VERTICAL,
+        spacing=10,
     )
 
-    # Trigger layout calculations
-    # layout.update_geometry(left=0, top=0)
+    # Access nested layouts
+    row = layout.widgets[0]
+    column = layout.widgets[1]
 
-    # Access inner layouts
-    row = layout.widgets[0]  # Horizontal row with 2 widgets
-    column = layout.widgets[1]  # Vertical column with 5 widgets
-
-    # Horizontal layout starts at (0, 0), lays out left to right
+    # Horizontal layout with 2 widgets, spacing = 10
     w0, w1 = row.widgets
     assert w0.left == 0
     assert w0.top == 0
-    assert w1.left == 20
+    assert w1.left == 30  # w0.width + spacing = 20 + 10
     assert w1.top == 0
 
-    # Vertical layout starts at (0, 20), stacks downward
+    # Vertical layout starts at top = 30 (row height 20 + spacing 10)
     v0, v1, v2, v3, v4 = column.widgets
-    assert v0.left == 0
-    assert v0.top == 20
-    assert v1.top == 40
-    assert v2.top == 60
-    assert v3.top == 80
-    assert v4.top == 100
+    assert v0.top == 30
+    assert v1.top == 30 + 20 + 10  # 60
+    assert v2.top == 30 + 20 * 2 + 10 * 2  # 90
+    assert v3.top == 30 + 20 * 3 + 10 * 3  # 120
+    assert v4.top == 30 + 20 * 4 + 10 * 4  # 150
     assert all(w.left == 0 for w in [v0, v1, v2, v3, v4])

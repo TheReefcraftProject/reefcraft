@@ -14,7 +14,7 @@ from rendercanvas.auto import RenderCanvas
 
 from reefcraft.sim.engine import Engine
 from reefcraft.sim.state import SimState
-from reefcraft.ui.button import Button
+from reefcraft.ui.button import Button, ToggleButton
 from reefcraft.ui.layout import Layout, LayoutDirection
 from reefcraft.ui.panel import Panel
 from reefcraft.ui.reef import Reef
@@ -47,7 +47,9 @@ class Window:
             [
                 Layout(
                     [
-                        Button(self.panel, width=20, height=20, label="P", on_click=lambda: logger.debug("P!")),
+                        ToggleButton(
+                            self.panel, width=100, height=20, label_on="PLAYING", label_off="PAUSED", on_toggle=lambda state: logger.debug(f"Play {state}")
+                        ),
                         Button(self.panel, width=20, height=20, label="X", on_click=lambda: logger.debug("X!")),
                     ],
                     LayoutDirection.HORIZONTAL,
@@ -55,9 +57,9 @@ class Window:
                 Layout(
                     [
                         Slider(self.panel, width=250, on_change=lambda val: logger.debug(f"Slider1 Value: {val}")),
-                        Slider(self.panel, width=250, on_change=lambda val: logger.debug(f"Slider1 Value: {val}")),
-                        Slider(self.panel, width=250, on_change=lambda val: logger.debug(f"Slider1 Value: {val}")),
-                        Button(self.panel, width=250, height=20, label="Mom", on_click=lambda: logger.debug("MOM Button Clicked!")),
+                        Slider(self.panel, width=250, on_change=lambda val: logger.debug(f"Slider2 Value: {val}")),
+                        Slider(self.panel, width=250, on_change=lambda val: logger.debug(f"Slider3 Value: {val}")),
+                        Button(self.panel, width=250, height=20, label="Mom", on_click=lambda: logger.debug("Hi MOM!")),
                         Button(self.panel, width=250, height=20, label="Grow", on_click=lambda: logger.debug("Let's grow some coral!")),
                     ],
                 ),
@@ -75,8 +77,8 @@ class Window:
 
     def draw(self, state: SimState) -> None:
         """Render one frame of the simulation and overlay UI."""
-        with self.stats:
-            self.reef.draw(state)
-            self.panel.draw(state)
-        self.stats.render()
+        # with self.stats:
+        self.reef.draw(state)
+        self.panel.draw(state)
+        # self.stats.render()
         self.renderer.flush()

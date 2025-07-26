@@ -128,3 +128,7 @@ class Layout(Widget):
                     widget.top = self.top + (self.height - widget.height)
                 else:
                     widget.top = self.top
+
+    def _update_visuals(self) -> None:
+        """Update child widget positions when this layout moves."""
+        self._layout()

@@ -149,3 +149,58 @@ class Button(Widget):
         self._bg_mesh.geometry = gfx.plane_geometry(width=self.width, height=self.height)
         self._bg_mesh.local.position = self._screen_to_world(self.left + self.width / 2, self.top + self.height / 2, 0)
         self._text.local.position = self._screen_to_world(self.left + self.width / 2, self.top + self.height / 2, -1)
+
+
+class ToggleButton(Button):
+    """A button that toggles between two labeled states, like Play/Pause."""
+
+    def __init__(
+        self,
+        panel: Panel,
+        label_on: str,
+        label_off: str,
+        *,
+        initial: bool = False,
+        on_toggle: Callable[[bool], None] | None = None,
+        width: int = 100,
+        height: int = 20,
+    ) -> None:
+        """Initialize a toggleable button with two visual states."""
+        self._label_on = label_on
+        self._label_off = label_off
+        self._state = initial
+        self._on_toggle = on_toggle
+
+        # Use the correct label for the initial state
+        super().__init__(
+            panel,
+            label=self._label_on if self._state else self._label_off,
+            width=width,
+            height=height,
+            on_click=self._handle_click,
+        )
+
+        self._update_visuals()
+
+    def _handle_click(self) -> None:
+        """Handle button toggle logic when clicked."""
+        self._state = not self._state
+        self.set_label(self._label_on if self._state else self._label_off)
+        self._update_visuals()
+        if self._on_toggle:
+            self._on_toggle(self._state)
+
+    def _update_visuals(self) -> None:
+        """Update the button's visual state based on toggle status."""
+        # If toggled on and enabled, override the normal visual logic
+        if self._state and self.enabled:
+            self._bg_mesh.material = self.mat_pressed
+        else:
+            super()._update_visuals()
+
+        self._is_pressed = self._state  # visually depressed when toggled "on" - future
+
+    @property
+    def is_toggled(self) -> bool:
+        """Return the current toggle state."""
+        return self._state

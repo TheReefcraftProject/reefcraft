@@ -43,15 +43,15 @@ class Window:
         self.reef = Reef(self.renderer)
         self.panel = Panel(self.renderer)
 
-        controls = [
-            Slider(self.panel, width=250, on_change=lambda val: logger.debug(f"Slider1 Value: {val}")),
-            Slider(self.panel, width=250, on_change=lambda val: logger.debug(f"Slider1 Value: {val}")),
-            Slider(self.panel, width=250, on_change=lambda val: logger.debug(f"Slider1 Value: {val}")),
-            Button(self.panel, width=250, on_click=lambda: logger.debug("MOM Button Clicked!")),
-            Button(self.panel, width=250, on_click=lambda: logger.debug("Let's grow some coral!")),
-        ]
-
-        group = Layout(controls)
+        group = Layout(
+            [
+                # Slider(self.panel, width=250, on_change=lambda val: logger.debug(f"Slider1 Value: {val}")),
+                # Slider(self.panel, width=250, on_change=lambda val: logger.debug(f"Slider1 Value: {val}")),
+                # Slider(self.panel, width=250, on_change=lambda val: logger.debug(f"Slider1 Value: {val}")),
+                # Button(self.panel, width=250, label="Mom", on_click=lambda: logger.debug("MOM Button Clicked!")),
+                Button(self.panel, width=250, label="Grow", on_click=lambda: logger.debug("Let's grow some coral!")),
+            ]
+        )
         group.relayout()
 
     @property

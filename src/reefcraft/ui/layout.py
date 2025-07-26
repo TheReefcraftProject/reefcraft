@@ -31,8 +31,8 @@ class Layout(Widget):
 
     def __init__(
         self,
-        direction: LayoutDirection = LayoutDirection.VERTICAL,
         widgets: list[Widget] | None = None,
+        direction: LayoutDirection = LayoutDirection.VERTICAL,
         spacing: int = 10,
         margin: int = 0,
         alignment: Alignment = Alignment.START,

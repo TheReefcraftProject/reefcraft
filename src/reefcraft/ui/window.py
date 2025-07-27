@@ -45,10 +45,18 @@ class Window:
         self.reef = Reef(self.renderer)
         self.panel = Panel(self.renderer)
 
+        self._counter: int = 0
+
         _ = Layout(
             [
                 Layout(
                     [
+                        Label(
+                            self.panel,
+                            text=lambda: f"Counter: {self._counter}",
+                            width=120,
+                            align=TextAlign.LEFT,
+                        ),
                         Label(self.panel, text=lambda: f"{engine.get_time():.2f}", width=100, align=TextAlign.LEFT),
                         ToggleButton(
                             self.panel,
@@ -59,7 +67,13 @@ class Window:
                             on_toggle=lambda state: logger.debug(f"Play {state}"),
                         ),
                         ToggleButton(
-                            self.panel, width=20, height=20, icon_on="pause.png", icon_off="play.png", on_toggle=lambda state: logger.debug(f"Play {state}")
+                            self.panel,
+                            width=20,
+                            height=20,
+                            icon_on="pause.png",
+                            icon_off="play.png",
+                            on_toggle=lambda playing: engine.play() if playing else engine.pause(),
+                            initial=engine.is_playing,
                         ),
                     ],
                     LayoutDirection.HORIZONTAL,
@@ -91,6 +105,7 @@ class Window:
 
     def draw(self, state: SimState) -> None:
         """Render one frame of the simulation and overlay UI."""
+        self._counter += 1
         # with self.stats:
         self.reef.draw(state)
         self.panel.draw(state)

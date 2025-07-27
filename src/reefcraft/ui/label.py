@@ -13,6 +13,7 @@ import pygfx as gfx
 from reefcraft.ui.panel import Panel
 from reefcraft.ui.theme import Theme
 from reefcraft.ui.widget import Widget
+from reefcraft.utils.logger import logger
 
 
 class TextAlign(Enum):
@@ -59,7 +60,8 @@ class Label(Widget):
 
         # Only register callback if text is dynamic
         if callable(self.text_source):
-            self.panel.renderer.add_event_handler(self._update_text_pre_render, "prerender")
+            self.panel.renderer.add_event_handler(self._update_text_pre_render, "before_render")
+            logger.info("-> Added event handler for callable text update")
 
     def _evaluate_text(self) -> str:
         return self.text_source() if callable(self.text_source) else self.text_source

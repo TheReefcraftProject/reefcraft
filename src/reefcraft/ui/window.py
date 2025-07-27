@@ -15,6 +15,7 @@ from rendercanvas.auto import RenderCanvas
 from reefcraft.sim.engine import Engine
 from reefcraft.sim.state import SimState
 from reefcraft.ui.button import Button, ToggleButton
+from reefcraft.ui.icon import Icon
 from reefcraft.ui.layout import Layout, LayoutDirection
 from reefcraft.ui.panel import Panel
 from reefcraft.ui.reef import Reef
@@ -47,6 +48,7 @@ class Window:
             [
                 Layout(
                     [
+                        Icon(self.panel, "play.png", width=16, height=16),
                         ToggleButton(
                             self.panel, width=100, height=20, label_on="PLAYING", label_off="PAUSED", on_toggle=lambda state: logger.debug(f"Play {state}")
                         ),

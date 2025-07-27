@@ -47,6 +47,8 @@ class Button(Widget):
         height: int = 20,
         label: str = "",
         icon: str | None = None,
+        icon_width: int | None = None,
+        icon_height: int | None = None,
         enabled: bool = True,
         on_click: Callable[[], None] | None = None,
     ) -> None:
@@ -57,6 +59,8 @@ class Button(Widget):
         self.enabled: bool = enabled
         self._on_click_callback: Callable[[], None] | None = on_click
         self.icon_name: str | None = icon
+        self.icon_width: int | None = icon_width
+        self.icon_height: int | None = icon_height
 
         self.state: ButtonState = ButtonState.NORMAL if enabled else ButtonState.DISABLED
 
@@ -130,9 +134,6 @@ class Button(Widget):
             self.state = ButtonState.HOVER
             self._update_visuals()
 
-    def _screen_to_world(self, x: float, y: float, z: float = 0.0) -> tuple[float, float, float]:
-        return (x - 1920 / 2, 1080 / 2 - y, z)
-
     def _update_visuals(self) -> None:
         # Background material
         if self.state is ButtonState.DISABLED:
@@ -149,15 +150,16 @@ class Button(Widget):
         self._bg_mesh.local.position = self._screen_to_world(self.left + self.width / 2, self.top + self.height / 2, 0)
 
         # Text placement (centered)
-        self._text.local.position = self._screen_to_world(self.left + self.width / 2, self.top + self.height / 2, -1)
+        self._text.local.position = self._screen_to_world(self.left + self.width / 2, self.top + self.height / 2, -2)
 
-        # Icon placement (left of text, if present)
+        # Icon placement (centered)
         if self._icon_mesh:
-            icon_size = self.height * 0.6
-            self._icon_mesh.geometry = gfx.plane_geometry(icon_size, icon_size)
+            iw = self.icon_width or self.width
+            ih = self.icon_height or self.height
+            self._icon_mesh.geometry = gfx.plane_geometry(iw, ih)
             self._icon_mesh.local.position = self._screen_to_world(
-                self.left + icon_size / 2 + 5,
-                self.top + self.height / 2,
+                self.left + (self.width - iw) / 2 + iw / 2,
+                self.top + (self.height - ih) / 2 + ih / 2,
                 -1,
             )
 
@@ -166,34 +168,46 @@ class Button(Widget):
         path = icons_dir() / name
         img = iio.imread(path).astype(np.float32) / 255.0
         tex = gfx.Texture(img, dim=2)
-        mat = gfx.MeshBasicMaterial(map=tex)
+        mat = gfx.MeshBasicMaterial(map=tex, depth_test=False)
         return gfx.Mesh(gfx.plane_geometry(1, 1), mat)
 
 
 class ToggleButton(Button):
-    """A button that toggles between two labeled states, like Play/Pause."""
+    """A button that toggles between two labeled/icon states, like Play/Pause."""
 
     def __init__(
         self,
         panel: Panel,
-        label_on: str,
-        label_off: str,
+        label_on: str | None = None,
+        label_off: str | None = None,
         *,
+        icon_on: str | None = None,
+        icon_off: str | None = None,
+        icon_width: int | None = None,
+        icon_height: int | None = None,
         initial: bool = False,
         on_toggle: Callable[[bool], None] | None = None,
         width: int = 100,
         height: int = 20,
     ) -> None:
-        """Initialize a toggleable button with two visual states."""
+        """Initialize a toggleable button with optional label/icon states."""
         self._label_on = label_on
         self._label_off = label_off
+        self._icon_on = icon_on
+        self._icon_off = icon_off
         self._state = initial
         self._on_toggle = on_toggle
 
-        # Use the correct label for the initial state
+        # Determine initial values
+        init_label = self._label_on if self._state else self._label_off
+        init_icon = self._icon_on if self._state else self._icon_off
+
         super().__init__(
             panel,
-            label=self._label_on if self._state else self._label_off,
+            label=init_label or "",
+            icon=init_icon,
+            icon_width=icon_width,
+            icon_height=icon_height,
             width=width,
             height=height,
             on_click=self._handle_click,
@@ -204,22 +218,31 @@ class ToggleButton(Button):
     def _handle_click(self) -> None:
         """Handle button toggle logic when clicked."""
         self._state = not self._state
-        self.set_label(self._label_on if self._state else self._label_off)
+
+        # Update label if defined
+        if self._label_on or self._label_off:
+            new_label = self._label_on if self._state else self._label_off
+            self.set_label(new_label or "")
+
+        # Swap icon if needed
+        new_icon = self._icon_on if self._state else self._icon_off
+        if new_icon and new_icon != self.icon_name:
+            if self._icon_mesh:
+                self.panel.scene.remove(self._icon_mesh)
+            self.icon_name = new_icon
+            self._icon_mesh = self._load_icon(new_icon)
+            self.panel.scene.add(self._icon_mesh)
+
         self._update_visuals()
+
         if self._on_toggle:
             self._on_toggle(self._state)
 
     def _update_visuals(self) -> None:
         """Update the button's visual state based on toggle status."""
-        # If toggled on and enabled, override the normal visual logic
+        super()._update_visuals()  # Update text, icon, layout
+
         if self._state and self.enabled:
             self._bg_mesh.material = self.mat_pressed
-        else:
-            super()._update_visuals()
 
-        self._is_pressed = self._state  # visually depressed when toggled "on" - future
-
-    @property
-    def is_toggled(self) -> bool:
-        """Return the current toggle state."""
-        return self._state
+        self._is_pressed = self._state

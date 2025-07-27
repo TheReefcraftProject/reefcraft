@@ -76,17 +76,6 @@ class Slider(Widget):
                 self._on_change_callback(self.value)
             self._update_visuals()
 
-    # ------------------------------------------------------------------
-    # Utility helpers
-    # ------------------------------------------------------------------
-    def _screen_to_world(self, x: float, y: float, z: float = 0) -> tuple[float, float, float]:
-        """Convert screen-space coordinates to panel's world space."""
-        return (
-            x - 1920 / 2,
-            1080 / 2 - y,
-            z,
-        )
-
     @property
     def _percent(self) -> float:
         return (self.value - self.min) / (self.max - self.min)

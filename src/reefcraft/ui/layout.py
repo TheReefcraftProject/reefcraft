@@ -33,7 +33,7 @@ class Layout(Widget):
         self,
         widgets: list[Widget] | None = None,
         direction: LayoutDirection = LayoutDirection.VERTICAL,
-        spacing: int = 10,
+        spacing: int = 2,
         margin: int = 0,
         alignment: Alignment = Alignment.START,
     ) -> None:

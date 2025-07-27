@@ -21,5 +21,5 @@ class Theme:
     border_thickness: float = 1.0
     text_color: str = "#ffffff"
     disabled_text_color: str = "#808080"
-    font_size: float = 12.0
+    font_size: int = 12
     font_name: str | None = None

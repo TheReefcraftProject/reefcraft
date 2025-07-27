@@ -87,3 +87,7 @@ class Widget:
     def _update_visuals(self) -> None:
         """Update visuals when geometry or state changes. To be overridden by subclasses."""
         pass
+
+    def _screen_to_world(self, x: float, y: float, z: float = 0.0) -> tuple[float, float, float]:
+        """Convert screen-space coordinates to world-space, assuming 1920x1080 layout."""
+        return (x - 1920 / 2, 1080 / 2 - y, z)

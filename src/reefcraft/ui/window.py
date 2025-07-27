@@ -16,6 +16,7 @@ from reefcraft.sim.engine import Engine
 from reefcraft.sim.state import SimState
 from reefcraft.ui.button import Button, ToggleButton
 from reefcraft.ui.icon import Icon
+from reefcraft.ui.label import Label, TextAlign
 from reefcraft.ui.layout import Layout, LayoutDirection
 from reefcraft.ui.panel import Panel
 from reefcraft.ui.reef import Reef
@@ -48,16 +49,26 @@ class Window:
             [
                 Layout(
                     [
-                        Icon(self.panel, "play.png", width=16, height=16),
+                        Label(self.panel, text="Time: 00:05", width=120, align=TextAlign.RIGHT),
                         ToggleButton(
-                            self.panel, width=100, height=20, label_on="PLAYING", label_off="PAUSED", on_toggle=lambda state: logger.debug(f"Play {state}")
+                            self.panel,
+                            width=100,
+                            height=20,
+                            label_on="PLAYING",
+                            label_off="PAUSED",
+                            on_toggle=lambda state: logger.debug(f"Play {state}"),
                         ),
-                        Button(self.panel, width=20, height=20, icon="play.png", on_click=lambda: logger.debug("ICON!")),
+                        ToggleButton(
+                            self.panel, width=20, height=20, icon_on="pause.png", icon_off="play.png", on_toggle=lambda state: logger.debug(f"Play {state}")
+                        ),
                     ],
                     LayoutDirection.HORIZONTAL,
                 ),
                 Layout(
                     [
+                        Label(self.panel, text="LEFT", width=100, align=TextAlign.LEFT),
+                        Label(self.panel, text="CENTER", width=100, align=TextAlign.CENTER),
+                        Label(self.panel, text="RIGHT", width=100, align=TextAlign.RIGHT),
                         Slider(self.panel, width=250, on_change=lambda val: logger.debug(f"Slider1 Value: {val}")),
                         Slider(self.panel, width=250, on_change=lambda val: logger.debug(f"Slider2 Value: {val}")),
                         Slider(self.panel, width=250, on_change=lambda val: logger.debug(f"Slider3 Value: {val}")),
@@ -65,7 +76,8 @@ class Window:
                         Button(self.panel, width=250, height=20, label="Grow", on_click=lambda: logger.debug("Let's grow some coral!")),
                     ],
                 ),
-            ]
+            ],
+            spacing=10,
         )
 
     @property

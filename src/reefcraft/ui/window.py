@@ -49,7 +49,7 @@ class Window:
             [
                 Layout(
                     [
-                        Label(self.panel, text="Time: 00:05", width=120, align=TextAlign.RIGHT),
+                        Label(self.panel, text=lambda: f"{engine.get_time():.2f}", width=100, align=TextAlign.LEFT),
                         ToggleButton(
                             self.panel,
                             width=100,

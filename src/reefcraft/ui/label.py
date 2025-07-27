@@ -3,18 +3,20 @@
 # Licensed under the MIT License. See the LICENSE file for details.
 # -----------------------------------------------------------------------------
 
-"""Non-interactive text label widget with alignment support."""
+"""Label widget for displaying static or dynamic text with alignment."""
 
+from collections.abc import Callable
 from enum import Enum
 
 import pygfx as gfx
 
 from reefcraft.ui.panel import Panel
+from reefcraft.ui.theme import Theme
 from reefcraft.ui.widget import Widget
 
 
 class TextAlign(Enum):
-    """Text alignment options for Label widget."""
+    """Alignment options for text labels."""
 
     LEFT = "left"
     CENTER = "center"
@@ -22,28 +24,31 @@ class TextAlign(Enum):
 
 
 class Label(Widget):
-    """Non-interactive text label with optional alignment."""
+    """A non-interactive UI label widget with text alignment and optional dynamic updates."""
 
     def __init__(
         self,
         panel: Panel,
         *,
-        text: str,
+        text: str | Callable[[], str],
         left: int = 0,
         top: int = 0,
         width: int = 100,
         height: int = 20,
         align: TextAlign = TextAlign.CENTER,
+        theme: Theme | None = None,
     ) -> None:
-        """Create a new text label widget."""
-        super().__init__(top, left, width, height)
+        """Create a simple label."""
+        super().__init__(left=left, top=top, width=width, height=height, theme=theme)
+
         self.panel = panel
-        self.text = text
         self.align = align
+        self.text_source: str | Callable[[], str] = text
+        self.text_string: str = self._evaluate_text()
 
         self._text_material = gfx.TextMaterial(color=self.theme.text_color)
         self._text = gfx.Text(
-            text,
+            self.text_string,
             material=self._text_material,
             screen_space=True,
             font_size=self.theme.font_size,
@@ -52,26 +57,31 @@ class Label(Widget):
         self.panel.scene.add(self._text)
         self._update_visuals()
 
-    def set_text(self, text: str) -> None:
-        """Update the label text."""
-        self.text = text
-        self._text.set_text(text)
-        self._update_visuals()
+        # Only register callback if text is dynamic
+        if callable(self.text_source):
+            self.panel.renderer.add_event_handler(self._update_text_pre_render, "prerender")
 
-    def set_align(self, align: TextAlign) -> None:
-        """Update text alignment."""
-        self.align = align
-        self._update_visuals()
+    def _evaluate_text(self) -> str:
+        return self.text_source() if callable(self.text_source) else self.text_source
+
+    def _update_text_pre_render(self, _event: object | None = None) -> None:
+        new_text = self._evaluate_text()
+        if new_text != self.text_string:
+            self.text_string = new_text
+            self._text.set_text(new_text)
+            self._update_visuals()
 
     def _update_visuals(self) -> None:
-        """Update text position and alignment based on properties."""
-        anchor_str = {
-            TextAlign.LEFT: "middle-right",
-            TextAlign.CENTER: "middle-center",
-            TextAlign.RIGHT: "middle-left",
-        }[self.align]
+        # Set the anchor for alignment
+        match self.align:
+            case TextAlign.LEFT:
+                anchor = "middle-left"
+            case TextAlign.RIGHT:
+                anchor = "middle-right"
+            case _:
+                anchor = "middle-center"
 
-        self._text.anchor = anchor_str
+        self._text.anchor = anchor
         self._text.local.position = self._screen_to_world(
             self.left + self.width / 2,
             self.top + self.height / 2,

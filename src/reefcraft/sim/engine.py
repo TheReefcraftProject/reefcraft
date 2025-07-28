@@ -30,8 +30,8 @@ class Engine:
         # Create the internal engine classes
         self.timer = Timer()
         self.state = SimState()
-        self.model = LlabresGrowthModel()
         self.water = ComputeLBM()
+        self.model = LlabresGrowthModel()
 
     # ------------------------------------------------------------------------
     # Timer control
@@ -48,7 +48,7 @@ class Engine:
     def reset(self) -> None:
         """Reset the timer to the initial state."""
         self.timer.reset()
-        self.model.reset()
+        # self.model.reset()
 
     def get_time(self) -> float:
         """Return the current simulation time."""
@@ -60,6 +60,6 @@ class Engine:
 
     def update(self) -> float:
         """Advance the simulation state."""
+        self.water.step(state=self.state)
         self.model.update(self.timer.time, self.state)
-        self.water.step(self.model.get_numpy())
         return self.timer.time

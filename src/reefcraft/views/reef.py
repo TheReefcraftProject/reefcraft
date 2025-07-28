@@ -10,7 +10,7 @@ import numpy as np
 import pygfx as gfx
 
 from reefcraft.sim.state import CoralState, SimState
-from reefcraft.utils.logger import logger
+from reefcraft.views.water import WaterParticles
 
 
 class CoralMesh:
@@ -62,6 +62,9 @@ class Reef:
         self.coral = CoralMesh()
         self.scene.add(self.coral.mesh)
 
+        self.water_particles = WaterParticles()
+        self.scene.add(self.water_particles.get_actor())
+
         self.scene.add(gfx.AmbientLight("#fff", 0.3))
         light = gfx.DirectionalLight("#fff", 3)
         light.local.position = (1.5, 2.0, 1.0)
@@ -93,4 +96,10 @@ class Reef:
     def draw(self, state: SimState) -> None:
         """Update the reef scene and draw."""
         self.coral.sync(state.coral)
+        self.water_particles.advect(state.velocity_field)
+
+        # DEBUG
+        # mean_speed = np.mean(np.linalg.norm(state.velocity_field, axis=-1))
+        # print(f"Mean fluid speed: {mean_speed}")
+
         self.viewport.render(self.scene, self.camera)

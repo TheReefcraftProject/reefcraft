@@ -29,16 +29,12 @@ class SimpleP:
         self.max_time_steps = max_time_steps
         self.resource_concentration = resource_concentration
         self.device = "cuda"
-        # Calculate the radius based on the polyp spacing
+
         self.radius = self.calculate_radius()
 
-        # Initialize polyps as a dictionary with Warp arrays for vertices and indices
         self.mesh = self.initialize_polyps()
-
-        # Initialize normals as a Warp array
         self.normals = wp.zeros((len(self.mesh["vertices"]),), dtype=wp.vec3f, device="cuda")
 
-        # Launch kernel to initialize mesh and normals
         self.launch_mesh_kernel()
 
     def calculate_radius(self) -> float:
@@ -49,7 +45,6 @@ class SimpleP:
         # Total surface area covered by the polyps
         total_area = num_polyps * surface_area_per_polyp
 
-        # Hemisphere surface area formula: 2πr^2 = total_area
         radius = np.sqrt(total_area / (2 * np.pi))
 
         return radius
@@ -72,12 +67,11 @@ class SimpleP:
             phi = np.arccos(1 - (i + 0.5) / num_polyps)  # Polar angle in [0, pi/2] for hemisphere
             theta = golden_angle * i  # Azimuthal angle (0 to 2*pi)
 
-            # Convert spherical to Cartesian coordinates using the calculated radius
+            # Convert spherical to Cartesian coordinates
             x = self.radius * np.sin(phi) * np.cos(theta)
             y = self.radius * np.sin(phi) * np.sin(theta)
             z = self.radius * np.cos(phi)
 
-            # Store the polyp positions in the vertices array
             vertices[i] = [x, y, z]
 
         # Use a convex hull to connect neighboring vertices into a hemisphere shell
@@ -105,7 +99,7 @@ class SimpleP:
         idx = wp.tid()
         if idx < n:
             vertex = vertices[idx]
-            normal = vertex / wp.length(vertex)  # Normalize the vector from the origin
+            normal = vertex / wp.length(vertex)
             normals[idx] = normal
 
     def launch_mesh_kernel(self) -> None:
@@ -117,7 +111,6 @@ class SimpleP:
             # Allocate normals array with the correct Warp type
             self.normals = wp.zeros(num_polyps, dtype=wp.vec3f, device="cuda")
 
-        # Launch the kernel to calculate normals
         wp.launch(self.calculate_normals_kernel, dim=num_polyps, inputs=[self.mesh["vertices"], self.normals, num_polyps])
 
     @wp.kernel
@@ -133,20 +126,18 @@ class SimpleP:
         """Kernel to update polyp positions based on growth and normal vectors."""
         idx = wp.tid()
         if idx < n:
-            # Get the vertex and normal for the current vertex
             vertex = vertices[idx]
             normal = normals[idx]
 
-            # Compute growth amount based on resource concentration and polyp's z-coordinate
             z_position = vertex[2]
             resource_at_polyp = resource_concentration * (z_position / z_max)
 
-            # Compute the angle between the normal and the z-axis
+            # Compute the angle between the normal and the z-axis: THIS NEEDS UPDATE
             angle = wp.acos(wp.dot(normal, wp.vec3(0.0, 0.0, 1.0)) / wp.length(normal))
-            angle_deg = wp.degrees(angle)  # Convert the angle from radians to degrees
+            angle_deg = wp.degrees(angle)
 
             # Scale the resource based on convexity
-            scale = (360.0 - angle_deg) / 360.0  # Convex = more resources
+            scale = (360.0 - angle_deg) / 360.0
 
             # Calculate the final growth amount
             growth = resource_at_polyp * scale
@@ -165,11 +156,10 @@ class SimpleP:
             if np.linalg.norm(vertex - np.array(new_polyp, dtype=np.float32)) < self.polyp_spacing:
                 return
 
-        # Add the new polyp without altering existing vertex order
+        # Add the new polyp
         new_vertices = np.concatenate([vertices_np, np.array([new_polyp], dtype=np.float32)], axis=0)
         new_idx = len(new_vertices) - 1
 
-        # Connect the new polyp to its three nearest neighbours to preserve the current geometry
         indices_np = self.mesh["indices"].numpy()
         distances = np.linalg.norm(vertices_np - np.array(new_polyp, dtype=np.float32), axis=1)
         nearest = np.argsort(distances)[:3]
@@ -190,7 +180,6 @@ class SimpleP:
 
     def growth_step(self) -> None:
         """Update state by growing the polyps and updating the mesh."""
-        # Retrieve the mesh vertices and normals
         vertices = self.mesh["vertices"]
         normals = self.normals
 

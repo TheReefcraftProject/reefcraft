@@ -103,7 +103,7 @@ class ComputeLBM:
             self.boundary_conditions = [bc_walls, bc_left, bc_do_nothing]
             self.stepper.boundary_conditions = self.boundary_conditions
 
-    def get_field_numpy(self) -> dict:
+    def get_field_numpy(self) -> dict[str, np.ndarray]:
         """Get water data fields."""
         rho_field = self.grid.create_field(cardinality=1)
         u_field = self.grid.create_field(cardinality=self.velocity_set.d)

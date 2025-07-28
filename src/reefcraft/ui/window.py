@@ -22,6 +22,7 @@ from reefcraft.ui.layout import Layout, LayoutDirection
 from reefcraft.ui.panel import Panel
 from reefcraft.ui.reef import Reef
 from reefcraft.ui.slider import Slider
+from reefcraft.ui.widget import Widget
 from reefcraft.utils.logger import logger
 from reefcraft.utils.window_style import apply_dark_titlebar_and_icon
 
@@ -56,35 +57,26 @@ class Window:
                             width=48,
                             height=48,
                         ),
-                        IconButton(
-                            self.panel,
-                            "play.png",
-                            width=32,
-                            height=32,
-                        ),
-                        IconButton(
-                            self.panel,
-                            "pause.png",
-                            width=32,
-                            height=32,
-                        ),
                     ],
                     LayoutDirection.HORIZONTAL,
                 ),
                 Layout(
                     [
-                        ToggleButton(
-                            self.panel,
-                            width=20,
-                            height=20,
-                            icon_on="pause.png",
-                            icon_off="play.png",
-                            on_toggle=lambda playing: engine.play() if playing else engine.pause(),
-                            initial=engine.is_playing,
+                        IconButton(
+                            self.panel, "play.png", width=20, height=20, toggle=True, on_toggle=lambda playing: engine.play() if playing else engine.pause()
                         ),
+                        # ToggleButton(
+                        #     self.panel,
+                        #     width=20,
+                        #     height=20,
+                        #     icon_on="pause.png",
+                        #     icon_off="play.png",
+                        #     on_toggle=lambda playing: engine.play() if playing else engine.pause(),
+                        #     initial=engine.is_playing,
+                        # ),
                         # Label(self.panel, text="ENGINE ", width=50, align=TextAlign.LEFT),
                         Label(self.panel, text=lambda: f"{engine.get_time():.2f}", width=100, align=TextAlign.RIGHT),
-                        Label(self.panel, text="   seconds", width=50, align=TextAlign.LEFT),
+                        Label(self.panel, text="seconds", width=50, align=TextAlign.RIGHT),
                         # ToggleButton(
                         #     self.panel,
                         #     width=100,

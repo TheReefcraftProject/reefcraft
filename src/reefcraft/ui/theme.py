@@ -23,3 +23,4 @@ class Theme:
     disabled_text_color: str = "#808080"
     font_size: int = 12
     font_name: str | None = None
+    window_color: str = "#08080A"

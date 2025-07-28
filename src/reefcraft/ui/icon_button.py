@@ -11,6 +11,7 @@ import numpy as np
 import pygfx as gfx
 
 from reefcraft.ui.panel import Panel
+from reefcraft.ui.theme import Theme
 from reefcraft.ui.widget import Widget
 from reefcraft.utils.logger import logger
 from reefcraft.utils.paths import icons_dir
@@ -24,7 +25,7 @@ def tint_image(image: np.ndarray, tint: float) -> np.ndarray:
 
 
 class IconButton(Widget):
-    """An icon-only button with automatic hover/pressed/toggle tinting."""
+    """An icon-only button that visually responds by tinting its texture."""
 
     def __init__(
         self,
@@ -41,54 +42,60 @@ class IconButton(Widget):
         on_click: Callable[[], None] | None = None,
         on_toggle: Callable[[bool], None] | None = None,
         icon_scale: float = 1.0,
+        theme: Theme | None = None,
     ) -> None:
+        """Create a icon button."""
         super().__init__(top, left, width, height)
-        self.panel: Panel = panel
-        self.icon_name: str = icon
-        self.enabled: bool = enabled
-        self.toggle: bool = toggle
-        self._state: bool = initial
+        self.panel = panel
+        self.icon_name = icon
+        self.enabled = enabled
+        self.toggle = toggle
+        self._state = initial
+        self._hovering = False
+        self._dragging = False
         self._on_click_callback = on_click
         self._on_toggle_callback = on_toggle
-        self._dragging = False
-        self._is_pressed = False
-        self._icon_scale = icon_scale
 
-        # Load and generate tinted states
+        # Load and prepare tinted textures
         img = iio.imread(icons_dir() / icon)
+        self._img_normal = gfx.MeshBasicMaterial(map=gfx.Texture(tint_image(img, 0.5), dim=2), depth_test=False, pick_write=False)
+        self._img_hover = gfx.MeshBasicMaterial(map=gfx.Texture(tint_image(img, 0.9), dim=2), depth_test=False, pick_write=False)
+        self._img_pressed = gfx.MeshBasicMaterial(map=gfx.Texture(tint_image(img, 1.3), dim=2), depth_test=False, pick_write=False)
 
-        self._img_normal = gfx.MeshBasicMaterial(map=gfx.Texture(tint_image(img, 0.5), dim=2), pick_write=True)
-        self._img_hover = gfx.MeshBasicMaterial(map=gfx.Texture(tint_image(img, 0.9), dim=2), pick_write=True)
-        self._img_pressed = gfx.MeshBasicMaterial(map=gfx.Texture(tint_image(img, 1.3), dim=2), pick_write=True)
         self._geometry = gfx.plane_geometry(int(width * icon_scale), int(height * icon_scale))
         self._sprite = gfx.Mesh(self._geometry, self._img_normal)
 
-        self.panel.scene.add(self._sprite)
+        # Transparent pickable background for interaction
+        self._bg_material = gfx.MeshBasicMaterial(color=self.theme.window_color, pick_write=True)
+        self._bg_mesh = gfx.Mesh(self._geometry, self._bg_material)
 
-        # Event bindings
-        _ = self._sprite.add_event_handler(self._on_mouse_enter, "pointer_enter")  # type: ignore
-        _ = self._sprite.add_event_handler(self._on_mouse_leave, "pointer_leave")  # type: ignore
-        _ = self._sprite.add_event_handler(self._on_mouse_down, "pointer_down")  # type: ignore
-        _ = self._sprite.add_event_handler(self._on_mouse_up, "pointer_up")  # type: ignore
+        self.panel.scene.add(self._sprite)
+        self.panel.scene.add(self._bg_mesh)
+
+        # Register event handlers on the background mesh
+        _ = self._bg_mesh.add_event_handler(self._on_mouse_enter, "pointer_enter")  # type: ignore
+        _ = self._bg_mesh.add_event_handler(self._on_mouse_leave, "pointer_leave")  # type: ignore
+        _ = self._bg_mesh.add_event_handler(self._on_mouse_down, "pointer_down")  # type: ignore
+        _ = self._bg_mesh.add_event_handler(self._on_mouse_up, "pointer_up")  # type: ignore
 
         self._update_visuals()
 
     def _on_mouse_enter(self, _event: gfx.PointerEvent) -> None:
-        if self.enabled and not self._dragging:
-            logger.debug("MOUSE ENTER ICON BUTTON")
-            self._is_pressed = False
+        if self.enabled:
+            logger.debug("ENTER")
+            self._hovering = True
             self._update_visuals()
 
     def _on_mouse_leave(self, _event: gfx.PointerEvent) -> None:
-        if self.enabled and not self._dragging:
-            self._is_pressed = False
+        if self.enabled:
+            logger.debug("LEAVE")
+            self._hovering = False
             self._update_visuals()
 
     def _on_mouse_down(self, event: gfx.PointerEvent) -> None:
         if not self.enabled:
             return
         self._dragging = True
-        self._is_pressed = True
         event.target.set_pointer_capture(event.pointer_id, self.panel.renderer)
         self._update_visuals()
 
@@ -97,7 +104,6 @@ class IconButton(Widget):
             return
         if self._dragging:
             self._dragging = False
-            self._is_pressed = False
             event.target.release_pointer_capture(event.pointer_id)
 
             if self.toggle:
@@ -111,17 +117,21 @@ class IconButton(Widget):
             self._update_visuals()
 
     def _update_visuals(self) -> None:
-        tex = self._img_normal
+        """Apply the correct icon texture tint based on state."""
         if not self.enabled:
-            tex = self._img_normal
-        elif self.toggle and self._state or self._is_pressed:
-            tex = self._img_pressed
-        elif not self._dragging:
-            tex = self._img_hover
+            mat = self._img_normal
+        elif self.toggle and self._state or self._dragging:
+            mat = self._img_pressed
+        elif self._hovering:
+            mat = self._img_hover
+        else:
+            mat = self._img_normal
 
-        self._sprite.material = tex
-        self._sprite.local.position = self._screen_to_world(
-            self.left + self.width / 2,
-            self.top + self.height / 2,
-            -1,
-        )
+        self._sprite.material = mat
+
+        cx = self.left + self.width / 2
+        cy = self.top + self.height / 2
+        pos = self._screen_to_world(cx, cy, 1)
+
+        self._sprite.local.position = pos
+        self._bg_mesh.local.position = pos

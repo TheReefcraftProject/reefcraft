@@ -33,10 +33,7 @@ class WaterParticles:
         self.positions_buf = gfx.Buffer(init_pos)
         self.geometry = gfx.Geometry(positions=self.positions_buf)
 
-        self.points = gfx.Points(
-            self.geometry,
-            gfx.PointsMaterial(color="#00ffbf", size=4)
-        )
+        self.points = gfx.Points(self.geometry, gfx.PointsMaterial(color="#00ffbf", size=4))
 
         logger.info(f"[Warp] Initialized {num_particles} GPU particles.")
 
@@ -58,7 +55,7 @@ class WaterParticles:
     def get_actor(self) -> gfx.Points:
         """Return the gfx actor to add to the scene."""
         return self.points
-    
+
     def advect(self, velocity_field: np.ndarray, dt: float = 0.1) -> None:
         """Launch a warp kernel to advect particles using the velocity field."""
         # Flatten velocity field for easy indexing (assume shape [Nx, Ny, Nz, 3])
@@ -73,7 +70,7 @@ class WaterParticles:
                 velocity_wp,
                 wp.vec3(*self.grid_shape),
                 dt,
-            ]
+            ],
         )
 
         # Sync back to CPU only for gfx update

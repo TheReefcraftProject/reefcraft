@@ -98,7 +98,7 @@ class Reef:
         self.coral.sync(state.coral)
         self.water_particles.advect(state.velocity_field)
 
-        #DEBUG
+        # DEBUG
         # mean_speed = np.mean(np.linalg.norm(state.velocity_field, axis=-1))
         # print(f"Mean fluid speed: {mean_speed}")
 

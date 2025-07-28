@@ -77,6 +77,9 @@ class Window:
                                     height=20,
                                     toggle=True,
                                     on_toggle=lambda playing: engine.play() if playing else engine.pause(),
+                                    normal_tint=(0.0, 0.5),
+                                    hover_tint=(0.0, 1.0),
+                                    pressed_tint=(120.0, 1.5),  # green play state
                                 ),
                                 Label(self.panel, text=lambda: f"{engine.get_time():.2f}", width=100, align=TextAlign.RIGHT),
                                 Label(self.panel, text="seconds", width=50, align=TextAlign.RIGHT),

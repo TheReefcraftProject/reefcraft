@@ -84,12 +84,12 @@ class ComputeLBM:
     def setup_boundary_conditions(self) -> None:
         """Boundary conditions for the simulation."""
         # Boundary conditions
-        box = self.grid.bounding_box_indices()
+        # box = self.grid.bounding_box_indices()
         box_no_edge = self.grid.bounding_box_indices(remove_edges=True)
 
         inlet = box_no_edge["left"]
         outlet = box_no_edge["right"]
-        walls = [box["bottom"][i] + box["top"][i] + box["front"][i] + box["back"][i] for i in range(self.velocity_set.d)]
+        walls = [box_no_edge["bottom"][i] + box_no_edge["top"][i] + box_no_edge["front"][i] + box_no_edge["back"][i] for i in range(self.velocity_set.d)]
         walls = np.unique(np.array(walls), axis=-1).tolist()
 
         bc_left = RegularizedBC("velocity", prescribed_value=(self.fluid_speed, 0.0, 0.0), indices=inlet)

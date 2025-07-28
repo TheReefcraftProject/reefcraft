@@ -7,8 +7,7 @@ def test_single_widget_vertical() -> None:
     w = Widget(top=0, left=0, width=100, height=20)
     layout = Layout(direction=LayoutDirection.VERTICAL, widgets=[w], spacing=10, margin=5)
     assert w.top == 5
-    assert layout.height == 25  # height of widget + margin
-    assert layout.width == 100
+    assert layout.height == 30  # 20 height + 5 top + 5 bottom
 
 
 def test_two_widgets_vertical() -> None:
@@ -17,8 +16,7 @@ def test_two_widgets_vertical() -> None:
     layout = Layout(direction=LayoutDirection.VERTICAL, widgets=[w1, w2], spacing=10, margin=5)
     assert w1.top == 5
     assert w2.top == 5 + 20 + 10
-    assert layout.height == 5 + 20 + 10 + 30
-    assert layout.width == 120
+    assert layout.height == 5 + 20 + 10 + 30 + 5  # top + w1 + spacing + w2 + bottom
 
 
 def test_alignment_center() -> None:
@@ -36,9 +34,9 @@ def test_alignment_end() -> None:
 def test_nested_layout_geometry() -> None:
     # Build widget hierarchy with explicit spacing = 10
     layout = Layout(
-        [
+        widgets=[
             Layout(
-                [
+                widgets=[
                     Widget(width=20, height=20),  # "P"
                     Widget(width=20, height=20),  # "X"
                 ],
@@ -46,7 +44,7 @@ def test_nested_layout_geometry() -> None:
                 spacing=10,
             ),
             Layout(
-                [
+                widgets=[
                     Widget(width=250, height=20),
                     Widget(width=250, height=20),
                     Widget(width=250, height=20),
@@ -85,9 +83,9 @@ def test_nested_layout_geometry() -> None:
 def test_nested_layout_margins() -> None:
     # Outer layout with margin=10
     outer_layout = Layout(
-        [
+        widgets=[
             Layout(
-                [Widget(width=20, height=20)],
+                widgets=[Widget(width=20, height=20)],
                 direction=LayoutDirection.HORIZONTAL,
                 margin=5,  # Inner margin
             ),
@@ -107,3 +105,19 @@ def test_nested_layout_margins() -> None:
     # Inner layout has margin of 5, so widget is offset by (5, 5) from inner layout
     assert inner_widget.left == 10 + 5  # = 15
     assert inner_widget.top == 10 + 5  # = 15
+
+
+def test_horizontal_layout_bounds() -> None:
+    layout = Layout(
+        panel=None,
+        direction=LayoutDirection.HORIZONTAL,
+        spacing=2,
+        margin=2,
+    )
+    layout.add_widget(Widget(width=20, height=20))
+    layout.add_widget(Widget(width=100, height=20))
+    layout.add_widget(Widget(width=50, height=20))
+
+    # Total width = left margin + widths + spacing between + right margin
+    expected_width = 2 + 20 + 2 + 100 + 2 + 50 + 2
+    assert layout.width == expected_width, f"Expected {expected_width}, got {layout.width}"

@@ -66,7 +66,7 @@ class IconButton(Widget):
         self._sprite = gfx.Mesh(self._geometry, self._img_normal)
 
         # Transparent pickable background for interaction
-        self._bg_material = gfx.MeshBasicMaterial(color=self.theme.window_color, pick_write=True)
+        self._bg_material = gfx.MeshBasicMaterial(color=self.theme.group_color, pick_write=True)
         self._bg_mesh = gfx.Mesh(self._geometry, self._bg_material)
 
         self.panel.scene.add(self._sprite)
@@ -82,13 +82,11 @@ class IconButton(Widget):
 
     def _on_mouse_enter(self, _event: gfx.PointerEvent) -> None:
         if self.enabled:
-            logger.debug("ENTER")
             self._hovering = True
             self._update_visuals()
 
     def _on_mouse_leave(self, _event: gfx.PointerEvent) -> None:
         if self.enabled:
-            logger.debug("LEAVE")
             self._hovering = False
             self._update_visuals()
 

@@ -39,7 +39,7 @@ class Label(Widget):
         align: TextAlign = TextAlign.CENTER,
         theme: Theme | None = None,
     ) -> None:
-        """Create a simple label."""
+        """Create a label with static or callable text and alignment."""
         super().__init__(left=left, top=top, width=width, height=height, theme=theme)
 
         self.panel = panel
@@ -58,15 +58,16 @@ class Label(Widget):
         self.panel.scene.add(self._text)
         self._update_visuals()
 
-        # Only register callback if text is dynamic
         if callable(self.text_source):
             self.panel.renderer.add_event_handler(self._update_text_pre_render, "before_render")
             logger.info("-> Added event handler for callable text update")
 
     def _evaluate_text(self) -> str:
+        """Evaluate the current text string from static or callable source."""
         return self.text_source() if callable(self.text_source) else self.text_source
 
     def _update_text_pre_render(self, _event: object | None = None) -> None:
+        """Check and update text if the source has changed."""
         new_text = self._evaluate_text()
         if new_text != self.text_string:
             self.text_string = new_text
@@ -74,18 +75,19 @@ class Label(Widget):
             self._update_visuals()
 
     def _update_visuals(self) -> None:
-        # Set the anchor for alignment
+        """Update label alignment and position in screen space."""
         match self.align:
             case TextAlign.LEFT:
-                anchor = "middle-right"
-            case TextAlign.RIGHT:
                 anchor = "middle-left"
+                x = self.left
+            case TextAlign.RIGHT:
+                anchor = "middle-right"
+                x = self.left + self.width
             case _:
                 anchor = "middle-center"
+                x = self.left + self.width / 2
+
+        y = self.top + self.height / 2
 
         self._text.anchor = anchor
-        self._text.local.position = self._screen_to_world(
-            self.left + self.width / 2,
-            self.top + self.height / 2,
-            -1,
-        )
+        self._text.local.position = self._screen_to_world(x, y, z=-1)

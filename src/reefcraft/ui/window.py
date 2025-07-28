@@ -18,7 +18,7 @@ from reefcraft.ui.button import Button, ToggleButton
 from reefcraft.ui.icon import Icon
 from reefcraft.ui.icon_button import IconButton
 from reefcraft.ui.label import Label, TextAlign
-from reefcraft.ui.layout import Layout, LayoutDirection
+from reefcraft.ui.layout import Group, Layout, LayoutDirection
 from reefcraft.ui.panel import Panel
 from reefcraft.ui.reef import Reef
 from reefcraft.ui.slider import Slider
@@ -48,9 +48,11 @@ class Window:
         self.panel = Panel(self.renderer)
 
         _ = Layout(
-            [
+            self.panel,
+            widgets=[
                 Layout(
-                    [
+                    self.panel,
+                    widgets=[
                         Icon(
                             self.panel,
                             "logo.png",
@@ -58,51 +60,37 @@ class Window:
                             height=48,
                         ),
                     ],
-                    LayoutDirection.HORIZONTAL,
+                    direction=LayoutDirection.HORIZONTAL,
                 ),
-                Layout(
-                    [
-                        IconButton(
-                            self.panel, "play.png", width=20, height=20, toggle=True, on_toggle=lambda playing: engine.play() if playing else engine.pause()
+                Group(
+                    self.panel,
+                    widgets=[
+                        Label(self.panel, text="ENGINE", width=270, align=TextAlign.LEFT),
+                        Layout(
+                            self.panel,
+                            widgets=[
+                                Widget(width=20),
+                                IconButton(
+                                    self.panel,
+                                    "play.png",
+                                    width=20,
+                                    height=20,
+                                    toggle=True,
+                                    on_toggle=lambda playing: engine.play() if playing else engine.pause(),
+                                ),
+                                Label(self.panel, text=lambda: f"{engine.get_time():.2f}", width=100, align=TextAlign.RIGHT),
+                                Label(self.panel, text="seconds", width=50, align=TextAlign.RIGHT),
+                            ],
+                            direction=LayoutDirection.HORIZONTAL,
+                            margin=5,
                         ),
-                        # ToggleButton(
-                        #     self.panel,
-                        #     width=20,
-                        #     height=20,
-                        #     icon_on="pause.png",
-                        #     icon_off="play.png",
-                        #     on_toggle=lambda playing: engine.play() if playing else engine.pause(),
-                        #     initial=engine.is_playing,
-                        # ),
-                        # Label(self.panel, text="ENGINE ", width=50, align=TextAlign.LEFT),
-                        Label(self.panel, text=lambda: f"{engine.get_time():.2f}", width=100, align=TextAlign.RIGHT),
-                        Label(self.panel, text="seconds", width=50, align=TextAlign.RIGHT),
-                        # ToggleButton(
-                        #     self.panel,
-                        #     width=100,
-                        #     height=20,
-                        #     label_on="PLAYING",
-                        #     label_off="PAUSED",
-                        #     on_toggle=lambda state: logger.debug(f"Play {state}"),
-                        # ),
                     ],
-                    LayoutDirection.HORIZONTAL,
-                ),
-                Layout(
-                    [
-                        Label(self.panel, text="LEFT", width=100, align=TextAlign.LEFT),
-                        Label(self.panel, text="CENTER", width=100, align=TextAlign.CENTER),
-                        Label(self.panel, text="RIGHT", width=100, align=TextAlign.RIGHT),
-                        Slider(self.panel, width=250, on_change=lambda val: logger.debug(f"Slider1 Value: {val}")),
-                        Slider(self.panel, width=250, on_change=lambda val: logger.debug(f"Slider2 Value: {val}")),
-                        Slider(self.panel, width=250, on_change=lambda val: logger.debug(f"Slider3 Value: {val}")),
-                        Button(self.panel, width=250, height=20, label="Mom", on_click=lambda: logger.debug("Hi MOM!")),
-                        Button(self.panel, width=250, height=20, label="Grow", on_click=lambda: logger.debug("Let's grow some coral!")),
-                    ],
+                    direction=LayoutDirection.VERTICAL,
+                    margin=5,
                 ),
             ],
             margin=10,
-            spacing=20,
+            spacing=10,
         )
 
     @property

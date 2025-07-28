@@ -14,36 +14,28 @@ from reefcraft.utils.logger import logger
 
 class WaterParticles:
     """Class to manage water particles for visualization."""
-    def __init__(self, num_particles: int = 2000, grid_shape: tuple = (32, 32, 32)) -> None:
+
+    def __init__(self, num_particles: int = 2000, grid_shape: tuple = (30, 30, 30)) -> None:
         """Initialize particles randomly within LBM grid."""
         self.num_particles = num_particles
         self.grid_shape = grid_shape
 
-        grid_centered = np.array(grid_shape)/2.0
+        grid_centered = np.array(grid_shape) / 2.0
 
         self.positions = np.random.uniform(
-            low = [-grid_centered[0], 0, -grid_centered[2]],
-            high = [grid_centered[0], grid_shape[1], grid_centered[2]],
-            size = (num_particles, 3)
+            low=[-grid_centered[0], 0, -grid_centered[2]], high=[grid_centered[0], grid_shape[1], grid_centered[2]], size=(num_particles, 3)
         ).astype(np.float32)
 
         self.positions_buf = gfx.Buffer(self.positions)
-        self.geometry = gfx.Geometry(positions = self.positions_buf)
+        self.geometry = gfx.Geometry(positions=self.positions_buf)
 
-        self.points = gfx.Points(
-            self.geometry,
-            gfx.PointsMaterial(color = "#00ffbf", size = 2)
-        )
+        self.points = gfx.Points(self.geometry, gfx.PointsMaterial(color="#00ffbf", size=2))
 
         logger.info(f"Initialized {num_particles} water particles.")
 
     def reset(self) -> None:
         """Reseed particles randomly in the domain."""
-        self.positions = np.random.uniform(
-            low = [0, 0, 0],
-            high = self.grid_shape,
-            size = (self.num_particles, 3)
-        ).astype(np.float32)
+        self.positions = np.random.uniform(low=[0, 0, 0], high=self.grid_shape, size=(self.num_particles, 3)).astype(np.float32)
 
         self.positions_buf.set_data(self.positions)
 
@@ -52,7 +44,7 @@ class WaterParticles:
     def get_actor(self) -> gfx.Points:
         """Return the gfx actor to add to the scene."""
         return self.points
-    
+
     def advect(self, velocity_field: np.ndarray, dt: float = 0.1) -> None:
         """Move particles using the velocity field with corrected indexing.
 
@@ -75,12 +67,12 @@ class WaterParticles:
         self.positions += velocities * dt
 
         # Get mask for out-of-bounds axes
-        out_x_low  = self.positions[:, 0] < -x_half
-        out_x_high = self.positions[:, 0] >  x_half
-        out_y_low  = self.positions[:, 1] < 0
+        out_x_low = self.positions[:, 0] < -x_half
+        out_x_high = self.positions[:, 0] > x_half
+        out_y_low = self.positions[:, 1] < 0
         out_y_high = self.positions[:, 1] > y_max
-        out_z_low  = self.positions[:, 2] < -z_half
-        out_z_high = self.positions[:, 2] >  z_half
+        out_z_low = self.positions[:, 2] < -z_half
+        out_z_high = self.positions[:, 2] > z_half
 
         # X wrap: reappear at opposite side
         self.positions[out_x_low, 0] = x_half - 1.0

@@ -16,6 +16,7 @@ from reefcraft.sim.engine import Engine
 from reefcraft.sim.state import SimState
 from reefcraft.ui.button import Button, ToggleButton
 from reefcraft.ui.icon import Icon
+from reefcraft.ui.icon_button import IconButton
 from reefcraft.ui.label import Label, TextAlign
 from reefcraft.ui.layout import Layout, LayoutDirection
 from reefcraft.ui.panel import Panel
@@ -34,7 +35,7 @@ class Window:
         self.canvas = RenderCanvas(size=(1920, 1080), title="Reefcraft", update_mode="continuous", max_fps=60)  # type: ignore
 
         # Make the window beautiful with dark mode titel bar and an icon
-        icon_path = (app_root / "resources" / "icons" / "reefcraft.ico").resolve()
+        icon_path = (app_root / "resources" / "icons" / "logo.ico").resolve()
         apply_dark_titlebar_and_icon("Reefcraft", icon_path)
 
         # Prepare our pygfx renderer
@@ -45,27 +46,33 @@ class Window:
         self.reef = Reef(self.renderer)
         self.panel = Panel(self.renderer)
 
-        self._counter: int = 0
-
         _ = Layout(
             [
                 Layout(
                     [
-                        Label(
+                        Icon(
                             self.panel,
-                            text=lambda: f"Counter: {self._counter}",
-                            width=120,
-                            align=TextAlign.LEFT,
+                            "logo.png",
+                            width=48,
+                            height=48,
                         ),
-                        Label(self.panel, text=lambda: f"{engine.get_time():.2f}", width=100, align=TextAlign.LEFT),
-                        ToggleButton(
+                        IconButton(
                             self.panel,
-                            width=100,
-                            height=20,
-                            label_on="PLAYING",
-                            label_off="PAUSED",
-                            on_toggle=lambda state: logger.debug(f"Play {state}"),
+                            "play.png",
+                            width=32,
+                            height=32,
                         ),
+                        IconButton(
+                            self.panel,
+                            "pause.png",
+                            width=32,
+                            height=32,
+                        ),
+                    ],
+                    LayoutDirection.HORIZONTAL,
+                ),
+                Layout(
+                    [
                         ToggleButton(
                             self.panel,
                             width=20,
@@ -75,6 +82,17 @@ class Window:
                             on_toggle=lambda playing: engine.play() if playing else engine.pause(),
                             initial=engine.is_playing,
                         ),
+                        # Label(self.panel, text="ENGINE ", width=50, align=TextAlign.LEFT),
+                        Label(self.panel, text=lambda: f"{engine.get_time():.2f}", width=100, align=TextAlign.RIGHT),
+                        Label(self.panel, text="   seconds", width=50, align=TextAlign.LEFT),
+                        # ToggleButton(
+                        #     self.panel,
+                        #     width=100,
+                        #     height=20,
+                        #     label_on="PLAYING",
+                        #     label_off="PAUSED",
+                        #     on_toggle=lambda state: logger.debug(f"Play {state}"),
+                        # ),
                     ],
                     LayoutDirection.HORIZONTAL,
                 ),
@@ -91,7 +109,8 @@ class Window:
                     ],
                 ),
             ],
-            spacing=10,
+            margin=10,
+            spacing=20,
         )
 
     @property
@@ -105,7 +124,6 @@ class Window:
 
     def draw(self, state: SimState) -> None:
         """Render one frame of the simulation and overlay UI."""
-        self._counter += 1
         # with self.stats:
         self.reef.draw(state)
         self.panel.draw(state)

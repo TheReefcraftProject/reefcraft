@@ -83,51 +83,45 @@ class Layout(Widget):
 
     def _layout(self) -> None:
         """Internal layout logic: positions widgets and sizes layout accordingly."""
-        # ``offset`` tracks the position along the main axis.  It starts at the
-        # layout's margin which represents a single outer padding at the
-        # beginning of the axis.
         offset = self.margin
         max_cross = 0
 
         for widget in self.widgets:
             if self.direction == LayoutDirection.VERTICAL:
-                widget.top = offset + self.top
+                widget.top = offset + self.top  # don't add margin again
                 offset += widget.height + self.spacing
                 max_cross = max(max_cross, widget.width)
             else:
-                widget.left = offset + self.left
+                widget.left = offset + self.left  # don't add margin again
                 offset += widget.width + self.spacing
                 max_cross = max(max_cross, widget.height)
 
-        # After looping ``offset`` contains an extra ``spacing`` that should not
-        # be included after the final widget.  The size of the layout along the
-        # main axis therefore subtracts the trailing spacing.  Only the initial
-        # margin is included so the layout height/width matches expectations from
-        # the tests.
+        # Remove trailing spacing
         main_size = offset - self.spacing if self.widgets else 0
 
         if self.direction == LayoutDirection.VERTICAL:
             self.height = main_size
-            self.width = max_cross
+            self.width = max_cross + 2 * self.margin
         else:
             self.width = main_size
-            self.height = max_cross
+            self.height = max_cross + 2 * self.margin
 
+        # Cross-axis alignment
         for widget in self.widgets:
             if self.direction == LayoutDirection.VERTICAL:
                 if self.alignment == Alignment.CENTER:
-                    widget.left = self.left + (self.width - widget.width) // 2
+                    widget.left = self.left + self.margin + (self.width - 2 * self.margin - widget.width) // 2
                 elif self.alignment == Alignment.END:
-                    widget.left = self.left + (self.width - widget.width)
+                    widget.left = self.left + self.margin + (self.width - 2 * self.margin - widget.width)
                 else:
-                    widget.left = self.left
+                    widget.left = self.left + self.margin
             else:
                 if self.alignment == Alignment.CENTER:
-                    widget.top = self.top + (self.height - widget.height) // 2
+                    widget.top = self.top + self.margin + (self.height - 2 * self.margin - widget.height) // 2
                 elif self.alignment == Alignment.END:
-                    widget.top = self.top + (self.height - widget.height)
+                    widget.top = self.top + self.margin + (self.height - 2 * self.margin - widget.height)
                 else:
-                    widget.top = self.top
+                    widget.top = self.top + self.margin
 
     def _update_visuals(self) -> None:
         """Update child widget positions when this layout moves."""

@@ -80,3 +80,30 @@ def test_nested_layout_geometry() -> None:
     assert v3.top == 30 + 20 * 3 + 10 * 3  # 120
     assert v4.top == 30 + 20 * 4 + 10 * 4  # 150
     assert all(w.left == 0 for w in [v0, v1, v2, v3, v4])
+
+
+def test_nested_layout_margins() -> None:
+    # Outer layout with margin=10
+    outer_layout = Layout(
+        [
+            Layout(
+                [Widget(width=20, height=20)],
+                direction=LayoutDirection.HORIZONTAL,
+                margin=5,  # Inner margin
+            ),
+        ],
+        direction=LayoutDirection.VERTICAL,
+        margin=10,
+    )
+
+    # Access inner layout and widget
+    inner_layout = outer_layout.widgets[0]
+    inner_widget = inner_layout.widgets[0]
+
+    # Outer layout starts at (0, 0) but margin shifts inner layout by (10, 10)
+    assert inner_layout.left == 10
+    assert inner_layout.top == 10
+
+    # Inner layout has margin of 5, so widget is offset by (5, 5) from inner layout
+    assert inner_widget.left == 10 + 5  # = 15
+    assert inner_widget.top == 10 + 5  # = 15

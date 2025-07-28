@@ -77,9 +77,9 @@ class Label(Widget):
         # Set the anchor for alignment
         match self.align:
             case TextAlign.LEFT:
-                anchor = "middle-left"
-            case TextAlign.RIGHT:
                 anchor = "middle-right"
+            case TextAlign.RIGHT:
+                anchor = "middle-left"
             case _:
                 anchor = "middle-center"
 

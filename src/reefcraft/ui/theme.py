@@ -24,5 +24,7 @@ class Theme:
     font_size: int = 12
     font_name: str | None = None
     window_color: str = "#08080A"
-    outline_color: str = "#1E1E1E"
+    outline_color: str = "#322841"
+    group_header_font_size: int = 14
+    group_header_font_color: str = "#ffffff"
     group_color: str = "#101013"

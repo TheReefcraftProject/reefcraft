@@ -62,10 +62,19 @@ class Window:
                     ],
                     direction=LayoutDirection.HORIZONTAL,
                 ),
+                Widget(height=5),
                 Group(
                     self.panel,
                     widgets=[
-                        Label(self.panel, text="ENGINE", width=270, align=TextAlign.LEFT),
+                        Layout(
+                            self.panel,
+                            widgets=[
+                                Widget(width=10),
+                                Label(self.panel, text="SIMULATION", width=250, align=TextAlign.LEFT, font_color="#F3F6FA"),
+                            ],
+                            direction=LayoutDirection.HORIZONTAL,
+                            margin=5,
+                        ),
                         Layout(
                             self.panel,
                             widgets=[
@@ -85,15 +94,13 @@ class Window:
                                 Label(self.panel, text="seconds", width=50, align=TextAlign.RIGHT),
                             ],
                             direction=LayoutDirection.HORIZONTAL,
-                            margin=5,
                         ),
+                        Widget(height=5),
                     ],
                     direction=LayoutDirection.VERTICAL,
-                    margin=5,
                 ),
             ],
-            margin=10,
-            spacing=10,
+            margin=15,
         )
 
     @property

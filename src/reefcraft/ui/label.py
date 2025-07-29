@@ -38,6 +38,8 @@ class Label(Widget):
         height: int = 20,
         align: TextAlign = TextAlign.CENTER,
         theme: Theme | None = None,
+        font_size: int | None = None,
+        font_color: str | None = None,
     ) -> None:
         """Create a label with static or callable text and alignment."""
         super().__init__(left=left, top=top, width=width, height=height, theme=theme)
@@ -47,12 +49,12 @@ class Label(Widget):
         self.text_source: str | Callable[[], str] = text
         self.text_string: str = self._evaluate_text()
 
-        self._text_material = gfx.TextMaterial(color=self.theme.text_color)
+        self._text_material = gfx.TextMaterial(color=font_color or self.theme.text_color)
         self._text = gfx.Text(
             self.text_string,
             material=self._text_material,
             screen_space=True,
-            font_size=self.theme.font_size,
+            font_size=font_size or self.theme.font_size,
         )
 
         self.panel.scene.add(self._text)

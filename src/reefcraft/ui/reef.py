@@ -150,9 +150,10 @@ class Reef:
             # TODO read the color and line thickness from the theme
             material = gfx.LineSegmentMaterial(
                 color="#45CDF7",
-                thickness=2,
-                dash_pattern=[5, 5],
-                thickness_space="screen",
+                thickness=0.004,
+                dash_pattern=[6, 4],
+                dash_offset=3,
+                thickness_space="model",
             )
             return gfx.Line(geometry, material)
 

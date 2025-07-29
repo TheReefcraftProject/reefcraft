@@ -50,6 +50,40 @@ class CoralMesh:
         # self.positions_buf.set_data(mesh_data["vertices"])
 
 
+def create_rectangle_edges(y: float, width=1.0, depth=1.0, color="#45CDF7") -> gfx.Line:
+    """Create a dashed rectangle made of disconnected segments at y height."""
+    w, d = width / 2, depth / 2
+
+    # Explicit segment pairs (not a line strip)
+    positions = np.array(
+        [
+            [-w, y, -d],
+            [+w, y, -d],  # front edge
+            [+w, y, -d],
+            [+w, y, +d],  # right edge
+            [+w, y, +d],
+            [-w, y, +d],  # back edge
+            [-w, y, +d],
+            [-w, y, -d],  # left edge
+        ],
+        dtype=np.float32,
+    )
+
+    geometry = gfx.Geometry(positions=positions)
+
+    material = gfx.LineSegmentMaterial(
+        color=color,
+        thickness=2,
+        dash_pattern=[
+            5,
+            5,
+        ],
+        thickness_space="screen",
+    )
+
+    return gfx.Line(geometry, material)
+
+
 class Reef:
     """The geometry, lighting, camera, and draw routines for the reef."""
 
@@ -65,6 +99,11 @@ class Reef:
         light = gfx.DirectionalLight("#fff", 3)
         light.local.position = (1.5, 2.0, 1.0)
         self.scene.add(light)
+
+        # TODO read in the size of the simualtion space
+        self._sim_bottom: gfx.Line | None = None
+        self._sim_top: gfx.Line | None = None
+        self.generate_sim_volume(1.0, 1.0, 1.0)
 
         grid = gfx.Grid(
             None,
@@ -87,7 +126,51 @@ class Reef:
 
         self.camera = gfx.PerspectiveCamera()
         self.controller = gfx.OrbitController(self.camera, register_events=self.viewport)
-        # self.camera.show_object(self.scene)
+        self.camera.show_object(self.scene)
+
+    def generate_sim_volume(self, width: float, depth: float, height: float) -> None:
+        """Create dashed box outline for simulation volume."""
+
+        def create_rectangle_edges(y: float) -> gfx.Line:
+            w, d = width / 2, depth / 2
+            positions = np.array(
+                [
+                    [-w, y, -d],
+                    [+w, y, -d],
+                    [+w, y, -d],
+                    [+w, y, +d],
+                    [+w, y, +d],
+                    [-w, y, +d],
+                    [-w, y, +d],
+                    [-w, y, -d],
+                ],
+                dtype=np.float32,
+            )
+            geometry = gfx.Geometry(positions=positions)
+            # TODO read the color and line thickness from the theme
+            material = gfx.LineSegmentMaterial(
+                color="#45CDF7",
+                thickness=2,
+                dash_pattern=[5, 5],
+                thickness_space="screen",
+            )
+            return gfx.Line(geometry, material)
+
+        # Remove old ones if present
+        if self._sim_bottom:
+            self.scene.remove(self._sim_bottom)
+        if self._sim_top:
+            self.scene.remove(self._sim_top)
+
+        self._sim_bottom = create_rectangle_edges(y=0)
+        self._sim_top = create_rectangle_edges(y=height)
+
+        self.sim_width = width
+        self.sim_depth = depth
+        self.sim_height = height
+
+        self.scene.add(self._sim_bottom)
+        self.scene.add(self._sim_top)
 
     def draw(self, state: SimState) -> None:
         """Update the reef scene and draw."""

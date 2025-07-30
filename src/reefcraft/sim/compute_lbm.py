@@ -19,15 +19,15 @@ from xlb.precision_policy import PrecisionPolicy
 class ComputeLBM:
     """Compute water states with LBM."""
 
-    def __init__(self) -> None:
+    def __init__(self, grid_shape: tuple, fluid_speed: float, Re: float) -> None:
         """Initialize ComputeLBM fields and data."""
-        self.grid_shape = (32, 32, 32)
-        self.fluid_speed = 0.2
+        self.grid_shape = grid_shape
+        self.fluid_speed = fluid_speed
         self.current_step = 0
         self.coral_vertices = None
         self.coral_faces = None
         self.boundary_conditions = []
-        self.Re = 30000.0
+        self.Re = Re
         self.clength = self.grid_shape[0] - 1
         self.visc = self.fluid_speed * self.clength / self.Re
         self.omega = 0.5

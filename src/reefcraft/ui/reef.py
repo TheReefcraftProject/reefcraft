@@ -10,13 +10,14 @@ import numpy as np
 import pygfx as gfx
 
 from reefcraft.sim.state import CoralState, SimState
-from reefcraft.views.water import WaterParticles
+from reefcraft.ui.water import WaterParticles
+from reefcraft.utils.logger import logger
 
 
 class CoralMesh:
     """The buffers for the mesh representing the coral we are growing."""
 
-    def __init__(self) -> None:
+    def __init__(self, scene: gfx.Scene) -> None:
         """Allocate raw buffers to hold the coral geometery positions, faces, etc."""
         # Hand-rolled tri as a placeholder
         self.vertices = np.array(
@@ -37,10 +38,13 @@ class CoralMesh:
         self.indices_buf = gfx.Buffer(self.indices)
         self.geometry = gfx.Geometry(positions=self.positions_buf, indices=self.indices_buf)
         self.mesh = gfx.Mesh(self.geometry, gfx.MeshPhongMaterial(color="#0040ff"))
+        scene.add(self.mesh)
 
     def sync(self, state: CoralState) -> None:
         """Update the visualized mesh to the latest from the sim."""
         mesh_data = state.get_render_mesh()
+        num_verts = len(mesh_data["vertices"])
+        # logger.debug(f"SYNC CORAL {num_verts}")
 
         # for now always do a full update!
         # if subdivided:
@@ -106,20 +110,20 @@ class Reef:
         # TODO read in the size of the simualtion space
         self._sim_bottom: gfx.Line | None = None
         self._sim_top: gfx.Line | None = None
-        self.generate_sim_volume(1.0, 1.0, 1.0)
+        self.generate_sim_volume(100.0, 100.0, 100.0)
 
         grid = gfx.Grid(
             None,
             gfx.GridMaterial(
-                major_step=0.1,
-                minor_step=0.01,
+                major_step=10,
+                minor_step=1,
                 thickness_space="world",
-                axis_thickness=0.0025,
-                axis_color="#9A9AE4BD",
-                major_thickness=0.002,
-                major_color="#8D8DC08B",
-                minor_thickness=0.001,
-                minor_color="#5D5D785A",
+                axis_thickness=0.2,
+                axis_color="#9A9AE4C1",
+                major_thickness=0.1,
+                major_color="#8D8DC099",
+                minor_thickness=0.08,
+                minor_color="#5D5D7876",
                 infinite=True,
             ),
             orientation="xz",
@@ -153,9 +157,9 @@ class Reef:
             # TODO read the color and line thickness from the theme
             material = gfx.LineSegmentMaterial(
                 color="#45CDF7",
-                thickness=0.006,
-                dash_pattern=[6, 4],
-                dash_offset=0,
+                thickness=0.2,
+                dash_pattern=[12, 8],
+                dash_offset=6,
                 thickness_space="model",
             )
             return gfx.Line(geometry, material)
@@ -180,10 +184,11 @@ class Reef:
         """Update the reef scene and draw."""
         for coral_state in state.corals:
             if coral_state not in self.corals:
-                self.corals[coral_state] = CoralMesh()
+                self.corals[coral_state] = CoralMesh(self.scene)
             self.corals[coral_state].sync(coral_state)
 
-        self.water_particles.advect(state.velocity_field)
+        # self.water_particles.advect(state.velocity_field)
+        self.water_particles.advect(state.get_fields()["velocity"])
         # DEBUG
         # mean_speed = np.mean(np.linalg.norm(state.velocity_field, axis=-1))
         # print(f"Mean fluid speed: {mean_speed}")

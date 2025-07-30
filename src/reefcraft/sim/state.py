@@ -9,6 +9,7 @@
 import numpy as np
 import warp as wp
 
+from reefcraft.sim.compute_lbm import ComputeLBM
 from reefcraft.utils.logger import logger
 
 
@@ -55,10 +56,19 @@ class SimState:
     def __init__(self) -> None:
         """Initialize the simulation."""
         self.corals = []
-        self.velocity_field: np.ndarray
+        self.water = ComputeLBM()
+        # self.velocity_field: np.ndarray
 
     def add_coral(self) -> CoralState:
         """Add another coral state into the system and return it."""
         new_coral = CoralState()
         self.corals.append(new_coral)
         return new_coral
+
+    def get_fields(self) -> dict:
+        """Return the fields for the state of the environment."""
+        return self.water.get_field_numpy()
+
+    def step(self, dt: float) -> None:
+        """Advance the simulation state by a single dt."""
+        self.water.step()

@@ -32,8 +32,9 @@ class Engine:
         self.sim_time: float = 0.0
         self.running: bool = False
 
+        logger.debug("CREATE SIMSTATE")
         self.state = SimState()
-        self.water = ComputeLBM()
+        # self.water = ComputeLBM()
         self.model = LlabresGrowthModel(self.state)
 
         self._thread: threading.Thread | None = None
@@ -98,7 +99,8 @@ class Engine:
     def step(self) -> float:
         """Advance the simulation by one step and update tracking stats."""
         self.model.update(self.sim_time, self.state)
-        self.water.step(self.model.get_numpy())
+        # self.water.step(self.model.get_numpy())
+        self.state.step(self.dt)
         self.sim_time += self.dt
 
         # Performance tracking

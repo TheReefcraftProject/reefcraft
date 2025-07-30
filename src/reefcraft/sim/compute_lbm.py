@@ -15,8 +15,6 @@ from xlb.operator.macroscopic import Macroscopic
 from xlb.operator.stepper import IncompressibleNavierStokesStepper
 from xlb.precision_policy import PrecisionPolicy
 
-from reefcraft.sim.state import SimState
-
 
 class ComputeLBM:
     """Compute water states with LBM."""
@@ -127,10 +125,12 @@ class ComputeLBM:
 
         return fields
 
-    def step(self, state: SimState) -> None:
+    def step(self) -> None:  # No longer need the state passed in as it will pull from here (state: SimState)
         """Run one iteration of LBM."""
         self.f_0, self.f_1 = self.stepper(self.f_0, self.f_1, self.bc_mask, self.missing_mask, self.current_step)
         self.f_0, self.f_1 = self.f_1, self.f_0
         self.current_step += 1
         # time.sleep(1.0 / steps_per_second)  # Control real-time step rate
-        state.velocity_field = self.get_field_numpy()["velocity"]
+
+        # No longer set back to the state.  Have the state call through to here as the state will own this class
+        # state.velocity_field = self.get_field_numpy()["velocity"]

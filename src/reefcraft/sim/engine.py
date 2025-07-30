@@ -53,9 +53,23 @@ class Engine:
         self.stop_threaded()
 
     def __enter__(self) -> "Engine":
+        """Enter the runtime context related to this object.
+
+        Returns:
+            Engine: The engine instance itself.
+        """
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
+    def __exit__(self, exc_type, exc_value, traceback) -> None:  # noqa: ANN001
+        """Exit the runtime context and perform cleanup.
+
+        Stops any threaded operations and handles exceptions if needed.
+
+        Args:
+            exc_type: The type of the exception (if any).
+            exc_value: The exception instance (if any).
+            traceback: The traceback object (if any).
+        """
         self.stop_threaded()
 
     # ------------------------------------------------------------------------
@@ -87,9 +101,19 @@ class Engine:
 
     @property
     def is_playing(self) -> bool:
+        """Indicates whether the engine is currently running.
+
+        Returns:
+            bool: True if the engine is running, False otherwise.
+        """
         return self.running
 
     def get_time(self) -> float:
+        """Get the current simulation time.
+
+        Returns:
+            float: The current simulation time in seconds.
+        """
         return self.sim_time
 
     # ------------------------------------------------------------------------

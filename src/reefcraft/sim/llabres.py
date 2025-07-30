@@ -5,6 +5,7 @@
 # -----------------------------------------------------------------------------
 
 """Llabres coral growth model based on Llabres Et Al column coral growth."""
+
 import numpy as np
 import warp as wp
 
@@ -103,7 +104,10 @@ class LlabresGrowthModel:
 
     def reset(self) -> None:
         """Reinitialize mesh for simulation restart/reset."""
-        self.__init__()  # reinit in place, optional cleanup if needed
+        # self.__init__()  # reinit in place, optional cleanup if needed
+        # TODO need to implement this well - now requires a SimState to init so think this through
+        logger.error("RESET llabres not implemented")
+        pass
 
     def update(self, time: float, state: SimState) -> None:
         """Perform one growth step and sync to the SimState."""

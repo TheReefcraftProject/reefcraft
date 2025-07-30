@@ -43,8 +43,6 @@ class CoralMesh:
     def sync(self, state: CoralState) -> None:
         """Update the visualized mesh to the latest from the sim."""
         mesh_data = state.get_render_mesh()
-        num_verts = len(mesh_data["vertices"])
-        # logger.debug(f"SYNC CORAL {num_verts}")
 
         # for now always do a full update!
         # if subdivided:
@@ -54,7 +52,7 @@ class CoralMesh:
         # self.positions_buf.set_data(mesh_data["vertices"])
 
 
-def create_rectangle_edges(y: float, width=1.0, depth=1.0, color="#45CDF7") -> gfx.Line:
+def create_rectangle_edges(y: float, width: float = 1.0, depth: float = 1.0, color: str = "#45CDF7") -> gfx.Line:
     """Create a dashed rectangle made of disconnected segments at y height."""
     w, d = width / 2, depth / 2
 
@@ -187,7 +185,6 @@ class Reef:
                 self.corals[coral_state] = CoralMesh(self.scene)
             self.corals[coral_state].sync(coral_state)
 
-        # self.water_particles.advect(state.velocity_field)
         self.water_particles.advect(state.get_fields()["velocity"])
         # DEBUG
         # mean_speed = np.mean(np.linalg.norm(state.velocity_field, axis=-1))

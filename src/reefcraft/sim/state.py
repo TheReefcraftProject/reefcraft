@@ -71,4 +71,4 @@ class SimState:
 
     def step(self, dt: float) -> None:
         """Advance the simulation state by a single dt."""
-        self.water.step()
+        self.water.step(dt)

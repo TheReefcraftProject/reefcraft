@@ -40,3 +40,8 @@ class Timer:
     def time(self) -> float:
         """Current elapsed time in seconds."""
         return self._elapsed if self._paused else time.perf_counter() - self._start
+
+    @property
+    def is_running(self) -> bool:
+        """Return True if the timer is currently running."""
+        return not self._paused

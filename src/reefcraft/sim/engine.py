@@ -33,8 +33,8 @@ class Engine:
         self.running: bool = False
 
         self.state = SimState()
-        self.model = LlabresGrowthModel(self.state)
         self.water = ComputeLBM()
+        self.model = LlabresGrowthModel(self.state)
 
         self._thread: threading.Thread | None = None
         self._stop_event = threading.Event()

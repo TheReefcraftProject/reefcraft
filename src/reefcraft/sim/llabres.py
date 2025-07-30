@@ -4,6 +4,7 @@
 # Licensed under the MIT License. See the LICENSE file for details.
 # -----------------------------------------------------------------------------
 
+"""Llabres coral growth model based on Llabres Et Al column coral growth."""
 import numpy as np
 import warp as wp
 
@@ -195,7 +196,7 @@ class LlabresGrowthModel:
         logger.info("subdiv_I")
         i1_list = []
 
-        for i0, i1, i2 in M12:
+        for i0, i1, _i2 in M12:
             key = tuple(sorted((i0, i1)))
             if key in edge_midpoints:
                 mid_idx = edge_midpoints[key]

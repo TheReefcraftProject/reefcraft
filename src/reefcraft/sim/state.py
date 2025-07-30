@@ -55,6 +55,7 @@ class SimState:
     def __init__(self) -> None:
         """Initialize the simulation."""
         self.corals = []
+        self.velocity_field: np.ndarray
 
     def add_coral(self) -> CoralState:
         """Add another coral state into the system and return it."""

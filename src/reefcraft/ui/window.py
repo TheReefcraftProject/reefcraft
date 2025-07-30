@@ -90,8 +90,12 @@ class Window:
                                     hover_tint=(0.0, 1.0),
                                     pressed_tint=(120.0, 1.5),  # green play state
                                 ),
-                                Label(self.panel, text=lambda: f"{engine.get_time():.2f}", width=100, align=TextAlign.RIGHT),
-                                Label(self.panel, text="seconds", width=50, align=TextAlign.RIGHT),
+                                Label(
+                                    self.panel,
+                                    text=lambda: (f"{engine.get_time():6.2f}s  {engine.step_rate_hz:5.1f} Hz   {engine.sim_speed_ratio:4.2f}×"),
+                                    width=200,
+                                    align=TextAlign.RIGHT,
+                                ),
                             ],
                             direction=LayoutDirection.HORIZONTAL,
                         ),
@@ -103,19 +107,17 @@ class Window:
             margin=15,
         )
 
+        self.renderer.request_draw(self.draw)
+
     @property
     def is_open(self) -> bool:
         """Flag indicating the window is still open."""
         return not self.canvas.get_closed()
 
-    def register_app_step(self, step: Callable) -> None:
-        """Async schedule the update and draw cycles as a single 'step'."""
-        self.renderer.request_draw(step)
-
-    def draw(self, state: SimState) -> None:
+    def draw(self) -> None:
         """Render one frame of the simulation and overlay UI."""
         # with self.stats:
-        self.reef.draw(state)
-        self.panel.draw(state)
+        self.reef.draw(self.engine.state)
+        self.panel.draw(self.engine.state)
         # self.stats.render()
         self.renderer.flush()

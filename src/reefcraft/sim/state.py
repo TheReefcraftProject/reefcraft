@@ -9,6 +9,7 @@
 import numpy as np
 import warp as wp
 
+from reefcraft.sim.compute_lbm import ComputeLBM
 from reefcraft.utils.logger import logger
 
 
@@ -34,15 +35,16 @@ class CoralState:
             "vertices": verts_np,
             "indices": np.array(self.indices.numpy(), copy=True),
         }
-    
+
     """possible options for LBM accessing?"""
+
     def get_physics_mesh(self) -> dict:
         """Return the original right-handed (Z-up) mesh for physics/coupling."""
         return {
             "vertices": np.array(self.vertices.numpy(), copy=True),
             "indices": np.array(self.indices.numpy(), copy=True),
         }
-    
+
     def get_physics_wp(self) -> tuple[wp.array, wp.array]:
         """Return the warp arrays directly (no copies)."""
         return self.vertices, self.indices
@@ -53,5 +55,20 @@ class SimState:
 
     def __init__(self) -> None:
         """Initialize the simulation."""
-        self.coral = CoralState()
-        self.velocity_field: np.ndarray
+        self.corals = []
+        self.water = ComputeLBM()
+        # self.velocity_field: np.ndarray
+
+    def add_coral(self) -> CoralState:
+        """Add another coral state into the system and return it."""
+        new_coral = CoralState()
+        self.corals.append(new_coral)
+        return new_coral
+
+    def get_fields(self) -> dict:
+        """Return the fields for the state of the environment."""
+        return self.water.get_field_numpy()
+
+    def step(self, dt: float) -> None:
+        """Advance the simulation state by a single dt."""
+        self.water.step()

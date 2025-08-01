@@ -100,6 +100,33 @@ class Window:
                     ],
                     direction=LayoutDirection.VERTICAL,
                 ),
+                Widget(height=5),
+                Group(
+                    self.panel,
+                    widgets=[
+                        Layout(
+                            self.panel,
+                            widgets=[
+                                Widget(width=10),
+                                Label(self.panel, text="CORALS", width=230, align=TextAlign.LEFT, font_color="#F3F6FA"),
+                            ],
+                            direction=LayoutDirection.HORIZONTAL,
+                            margin=5,
+                        ),
+                        IconButton(
+                            self.panel,
+                            "add.png",
+                            width=20,
+                            height=20,
+                            toggle=False,
+                            on_click=lambda: logger.debug("ADD CORAL"),
+                            normal_tint=(0.0, 0.5),
+                            hover_tint=(0.0, 1.0),
+                            pressed_tint=(0.0, 1.5),  # theme.highlight_color play state
+                        ),
+                    ],
+                    direction=LayoutDirection.HORIZONTAL,
+                ),
             ],
             margin=15,
         )

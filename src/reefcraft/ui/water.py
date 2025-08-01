@@ -15,6 +15,7 @@ from reefcraft.utils.logger import logger
 
 class WaterParticles:
     """Class to manage water particles for visualization."""
+
     def __init__(self, num_particles: int = 100, grid_shape: tuple = (32, 32, 32)) -> None:
         """Initialize particles randomly within LBM grid."""
         self.num_particles = num_particles
@@ -29,7 +30,7 @@ class WaterParticles:
         ).astype(np.float32)
 
         # Store GPU copy
-        self.positions_wp = wp.array(init_pos, dtype=wp.vec3, device="cuda")
+        self.positions_wp = wp.array(init_pos, dtype=wp.vec3)
         self.positions_buf = gfx.Buffer(init_pos)
         self.geometry = gfx.Geometry(positions=self.positions_buf)
 
@@ -60,7 +61,7 @@ class WaterParticles:
         """Launch a warp kernel to advect particles using the velocity field."""
         # Flatten velocity field for easy indexing (assume shape [Nx, Ny, Nz, 3])
         flat_velocity = velocity_field.reshape(-1, 3).astype(np.float32)
-        velocity_wp = wp.array(flat_velocity, dtype=wp.vec3, device="cuda")
+        velocity_wp = wp.array(flat_velocity, dtype=wp.vec3)
 
         wp.launch(
             kernel=advect_kernel,
@@ -76,6 +77,7 @@ class WaterParticles:
         # Sync back to CPU only for gfx update
         updated = self.positions_wp.numpy()
         self.positions_buf.set_data(updated)
+
 
 @wp.kernel
 def advect_kernel(

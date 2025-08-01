@@ -13,15 +13,12 @@ import pygfx as gfx
 from rendercanvas.auto import RenderCanvas
 
 from reefcraft.sim.engine import Engine
-from reefcraft.sim.state import SimState
-from reefcraft.ui.button import Button, ToggleButton
 from reefcraft.ui.icon import Icon
 from reefcraft.ui.icon_button import IconButton
 from reefcraft.ui.label import Label, TextAlign
 from reefcraft.ui.layout import Group, Layout, LayoutDirection
 from reefcraft.ui.panel import Panel
 from reefcraft.ui.reef import Reef
-from reefcraft.ui.slider import Slider
 from reefcraft.ui.widget import Widget
 from reefcraft.utils.logger import logger
 from reefcraft.utils.window_style import apply_dark_titlebar_and_icon
@@ -88,7 +85,7 @@ class Window:
                                     on_toggle=lambda playing: engine.play() if playing else engine.pause(),
                                     normal_tint=(0.0, 0.5),
                                     hover_tint=(0.0, 1.0),
-                                    pressed_tint=(120.0, 1.5),  # green play state
+                                    pressed_tint=(194.0, 1.5),  # theme.highlight_color play state
                                 ),
                                 Label(
                                     self.panel,

@@ -11,7 +11,6 @@ import time
 
 import warp as wp
 
-from reefcraft.sim.compute_lbm import ComputeLBM
 from reefcraft.sim.llabres import LlabresGrowthModel
 from reefcraft.sim.state import SimState
 from reefcraft.utils.logger import logger

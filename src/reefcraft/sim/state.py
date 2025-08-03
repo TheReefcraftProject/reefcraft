@@ -56,7 +56,7 @@ class SimState:
     def __init__(self) -> None:
         """Initialize the simulation."""
         self.corals = []
-        self.water = ComputeLBM()
+        self.water = ComputeLBM((32, 32, 32), 0.5, 3000.0)
         # self.velocity_field: np.ndarray
 
     def add_coral(self) -> CoralState:
@@ -71,4 +71,7 @@ class SimState:
 
     def step(self, dt: float) -> None:
         """Advance the simulation state by a single dt."""
-        self.water.step(dt)
+        self.water.step()
+        if len(self.corals) == 1:
+            verts, indices = self.corals[0].get_physics_wp()
+            self.water.update_mesh((verts, indices))

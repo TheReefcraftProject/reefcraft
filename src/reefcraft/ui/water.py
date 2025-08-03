@@ -15,6 +15,7 @@ from reefcraft.utils.logger import logger
 
 class WaterParticles:
     """Class to manage water particles for visualization."""
+
     def __init__(self, num_particles: int = 100, grid_shape: tuple = (32, 32, 32)) -> None:
         """Initialize particles randomly within LBM grid."""
         self.num_particles = num_particles
@@ -76,6 +77,7 @@ class WaterParticles:
         # Sync back to CPU only for gfx update
         updated = self.positions_wp.numpy()
         self.positions_buf.set_data(updated)
+
 
 @wp.kernel
 def advect_kernel(

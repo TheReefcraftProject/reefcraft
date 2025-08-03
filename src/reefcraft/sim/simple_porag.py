@@ -28,12 +28,11 @@ class SimpleP:
         self.polyp_spacing = polyp_spacing
         self.max_time_steps = max_time_steps
         self.resource_concentration = resource_concentration
-        self.device = "cuda"
 
         self.radius = self.calculate_radius()
 
         self.mesh = self.initialize_polyps()
-        self.normals = wp.zeros((len(self.mesh["vertices"]),), dtype=wp.vec3f, device="cuda")
+        self.normals = wp.zeros((len(self.mesh["vertices"]),), dtype=wp.vec3f)
 
         self.launch_mesh_kernel()
 
@@ -78,9 +77,9 @@ class SimpleP:
         hull = ConvexHull(vertices)
         indices = hull.simplices.astype(np.int32)
 
-        # Convert the vertices and indices to Warp arrays on CUDA as requested
-        vertices_wp = wp.array(vertices, dtype=wp.vec3f, device="cuda")
-        indices_wp = wp.array(indices, dtype=wp.vec3i, device="cuda")
+        # Convert the vertices and indices to Warp arrays
+        vertices_wp = wp.array(vertices, dtype=wp.vec3f)
+        indices_wp = wp.array(indices, dtype=wp.vec3i)
 
         return {"vertices": vertices_wp, "indices": indices_wp}
 
@@ -109,7 +108,7 @@ class SimpleP:
         # Ensure the normals are initialized as wp.array with dtype wp.vec3f
         if self.normals is None:
             # Allocate normals array with the correct Warp type
-            self.normals = wp.zeros(num_polyps, dtype=wp.vec3f, device="cuda")
+            self.normals = wp.zeros(num_polyps, dtype=wp.vec3f)
 
         wp.launch(self.calculate_normals_kernel, dim=num_polyps, inputs=[self.mesh["vertices"], self.normals, num_polyps])
 
@@ -172,10 +171,10 @@ class SimpleP:
             dtype=np.int32,
         )
 
-        self.mesh["vertices"] = wp.array(new_vertices, dtype=wp.vec3f, device=self.device)
-        self.mesh["indices"] = wp.array(np.concatenate([indices_np, new_tris]), dtype=wp.vec3i, device=self.device)
+        self.mesh["vertices"] = wp.array(new_vertices, dtype=wp.vec3f)
+        self.mesh["indices"] = wp.array(np.concatenate([indices_np, new_tris]), dtype=wp.vec3)
 
-        self.normals = wp.zeros(len(new_vertices), dtype=wp.vec3f, device=self.device)
+        self.normals = wp.zeros(len(new_vertices), dtype=wp.vec3f)
         self.launch_mesh_kernel()
 
     def growth_step(self) -> None:

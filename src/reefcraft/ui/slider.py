@@ -10,16 +10,16 @@ from collections.abc import Callable
 
 import pygfx as gfx
 
-from reefcraft.ui.panel import Panel
-from reefcraft.ui.widget import Widget
+from reefcraft.ui.control import Control
+from reefcraft.ui.views.palette import Palette
 
 
-class Slider(Widget):
+class Slider(Control):
     """A simple retained-mode slider widget."""
 
     def __init__(
         self,
-        panel: Panel,
+        panel: Palette,
         *,
         left: int = 0,
         top: int = 0,

@@ -10,19 +10,18 @@ import imageio.v3 as iio
 import numpy as np
 import pygfx as gfx
 
-from reefcraft.ui.panel import Panel
+from reefcraft.ui.control import Control
 from reefcraft.ui.theme import Theme
-from reefcraft.ui.widget import Widget
 from reefcraft.utils.logger import logger
 from reefcraft.utils.paths import icons_dir
 
 
-class IconButton(Widget):
+class IconButton(Control):
     """An icon-only button that visually responds by tinting its texture."""
 
     def __init__(
         self,
-        panel: Panel,
+        scene: gfx.Scene,
         icon: str,
         *,
         left: int = 0,
@@ -42,7 +41,7 @@ class IconButton(Widget):
     ) -> None:
         """Create a icon button."""
         super().__init__(top, left, width, height)
-        self.panel = panel
+        self.scene = scene
         self.icon_name = icon
         self.enabled = enabled
         self.toggle = toggle
@@ -65,8 +64,8 @@ class IconButton(Widget):
         self._bg_material = gfx.MeshBasicMaterial(color=self.theme.group_color, pick_write=True)
         self._bg_mesh = gfx.Mesh(self._geometry, self._bg_material)
 
-        self.panel.scene.add(self._sprite)
-        self.panel.scene.add(self._bg_mesh)
+        self.scene.add(self._sprite)
+        self.scene.add(self._bg_mesh)
 
         # Register event handlers  on the background mesh
         _ = self._bg_mesh.add_event_handler(self._on_mouse_enter, "pointer_enter")  # type: ignore
@@ -90,7 +89,7 @@ class IconButton(Widget):
         if not self.enabled:
             return
         self._dragging = True
-        event.target.set_pointer_capture(event.pointer_id, self.panel.renderer)
+        event.target.set_pointer_capture(event.pointer_id, self.scene.renderer)
         self._update_visuals()
 
     def _on_mouse_up(self, event: gfx.PointerEvent) -> None:

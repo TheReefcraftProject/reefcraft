@@ -16,13 +16,13 @@ import imageio.v3 as iio
 import numpy as np
 import pygfx as gfx
 
-from reefcraft.ui.widget import Widget
+from reefcraft.ui.control import Control
 from reefcraft.utils.paths import icons_dir
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from reefcraft.ui.panel import Panel
+    from reefcraft.ui.views.palette import Palette
 
 
 class ButtonState(Enum):
@@ -34,12 +34,12 @@ class ButtonState(Enum):
     DISABLED = auto()
 
 
-class Button(Widget):
+class Button(Control):
     """Interactive UI button with optional icon."""
 
     def __init__(
         self,
-        panel: Panel,
+        panel: Palette,
         *,
         left: int = 0,
         top: int = 0,
@@ -54,7 +54,7 @@ class Button(Widget):
     ) -> None:
         """Create a new button widget."""
         super().__init__(top, left, width, height)
-        self.panel: Panel = panel
+        self.panel: Palette = panel
         self.label: str = label
         self.enabled: bool = enabled
         self._on_click_callback: Callable[[], None] | None = on_click
@@ -177,7 +177,7 @@ class ToggleButton(Button):
 
     def __init__(
         self,
-        panel: Panel,
+        panel: Palette,
         label_on: str | None = None,
         label_off: str | None = None,
         *,

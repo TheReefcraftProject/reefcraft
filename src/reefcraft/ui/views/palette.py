@@ -4,17 +4,23 @@
 # Licensed under the MIT License. See the LICENSE file for details.
 # -----------------------------------------------------------------------------
 
-"""Defines the main GUI layout as a side panel."""
+"""Defines a palette window to draw ui elements on."""
 
 import pygfx as gfx
 
+from reefcraft.sim.engine import Engine
 from reefcraft.sim.state import SimState
+from reefcraft.ui.control import Control
+from reefcraft.ui.icon import Icon
+from reefcraft.ui.layout import Layout, LayoutDirection
+from reefcraft.ui.views.coral_section import CoralSection
+from reefcraft.ui.views.engine_section import EngineSection
 
 
-class Panel:
+class Palette:
     """A left-docked panel: covers left 300px of canvas height."""
 
-    def __init__(self, renderer: gfx.WgpuRenderer, width: int = 300, height: int = 1080) -> None:
+    def __init__(self, renderer: gfx.WgpuRenderer, engine: Engine, width: int = 300, height: int = 1080) -> None:
         """Initialize the panel and its correstponding 3D scene and ortho cameras."""
         self.renderer = renderer
         self.viewport = gfx.Viewport(renderer)
@@ -24,7 +30,7 @@ class Panel:
         mesh = gfx.Mesh(geom, mat)
         mesh.local.position = (-((1920 / 2) - (300 / 2)), 0, -100)
 
-        # Block the picking for the background of the panel
+        # Block the picking for the background of the palette
         if mesh.material is not None:
             mesh.material.pick_write = True
         mesh.add_event_handler(self._on_mouse_down, "pointer_down")
@@ -33,6 +39,29 @@ class Panel:
         self.scene = gfx.Scene()
         self.camera = gfx.OrthographicCamera(width=1920, height=1080)
         self.scene.add(mesh)
+
+        _ = Layout(
+            self.scene,
+            controls=[
+                Layout(
+                    self.scene,
+                    controls=[
+                        Icon(
+                            self.scene,
+                            "logo.png",
+                            width=64,
+                            height=64,
+                        ),
+                    ],
+                    direction=LayoutDirection.HORIZONTAL,
+                ),
+                Control(height=5),
+                EngineSection(self.scene, engine),
+                Control(height=5),
+                CoralSection(self.scene, engine),
+            ],
+            margin=15,
+        )
 
     def _on_mouse_down(self, event: gfx.PointerEvent) -> None:
         """When the mouse is clicked in background of the panel, capture the mouse and block others."""

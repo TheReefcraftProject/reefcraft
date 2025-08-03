@@ -11,9 +11,8 @@ from enum import Enum, auto
 import numpy as np
 import pygfx as gfx
 
-from reefcraft.ui.panel import Panel
+from reefcraft.ui.control import Control
 from reefcraft.ui.theme import Theme
-from reefcraft.ui.widget import Widget
 from reefcraft.utils.logger import logger
 
 
@@ -32,14 +31,14 @@ class Alignment(Enum):
     END = auto()
 
 
-class Layout(Widget):
+class Layout(Control):
     """A layout widget that arranges child widgets vertically or horizontally."""
 
     def __init__(
         self,
-        panel: Panel | None = None,
+        scene: gfx.Scene | None = None,
         *,
-        widgets: list[Widget] | None = None,
+        controls: list[Control] | None = None,
         direction: LayoutDirection = LayoutDirection.VERTICAL,
         spacing: int = 2,
         margin: int = 0,
@@ -56,19 +55,19 @@ class Layout(Widget):
         """
         super().__init__(top=0, left=0, width=0, height=0)
 
-        self.panel = panel
+        self.scene = scene
         self.direction = direction
         self.spacing = spacing
         self.margin = margin
         self.alignment = alignment
-        self.widgets: list[Widget] = []
-        if widgets:
-            for widget in widgets:
+        self.controls: list[Control] = []
+        if controls:
+            for widget in controls:
                 self.add_widget(widget)
 
-    def add_widget(self, widget: Widget) -> None:
+    def add_widget(self, widget: Control) -> None:
         """Append a widget to the layout and register for change tracking."""
-        self.widgets.append(widget)
+        self.controls.append(widget)
         widget.on_change(self._layout)
         self._layout()
 
@@ -96,7 +95,7 @@ class Layout(Widget):
         offset = 0
         max_cross = 0
 
-        for widget in self.widgets:
+        for widget in self.controls:
             if self.direction == LayoutDirection.VERTICAL:
                 widget.top = self.top + self.margin + offset
                 offset += widget.height
@@ -108,7 +107,7 @@ class Layout(Widget):
 
             offset += self.spacing
 
-        if self.widgets:
+        if self.controls:
             offset -= self.spacing  # remove last spacing
 
         if self.direction == LayoutDirection.VERTICAL:
@@ -119,7 +118,7 @@ class Layout(Widget):
             self.height = max_cross + self.margin * 2
 
         # Align widgets along cross-axis
-        for widget in self.widgets:
+        for widget in self.controls:
             if self.direction == LayoutDirection.VERTICAL:
                 if self.alignment == Alignment.CENTER:
                     widget.left = self.left + self.margin + (self.width - 2 * self.margin - widget.width) // 2
@@ -160,9 +159,9 @@ class Group(Layout):
 
     def __init__(
         self,
-        panel: Panel,
+        scene: gfx.Scene,
         *,
-        widgets: list[Widget] | None = None,
+        controls: list[Control] | None = None,
         direction: LayoutDirection = LayoutDirection.VERTICAL,
         spacing: int = 2,
         margin: int = 0,
@@ -172,8 +171,8 @@ class Group(Layout):
         theme: Theme | None = None,
     ) -> None:
         super().__init__(
-            panel=panel,
-            widgets=widgets,
+            scene=scene,
+            controls=controls,
             direction=direction,
             spacing=spacing,
             margin=margin,
@@ -194,8 +193,8 @@ class Group(Layout):
             gfx.LineMaterial(color=self.theme.outline_color, thickness=1),
         )
 
-        panel.scene.add(self._bg_mesh)
-        panel.scene.add(self._frame_mesh)
+        scene.add(self._bg_mesh)
+        scene.add(self._frame_mesh)
 
     def _update_visuals(self) -> None:
         super()._update_visuals()

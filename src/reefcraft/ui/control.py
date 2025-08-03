@@ -8,27 +8,32 @@
 
 from collections.abc import Callable
 
+import pygfx as gfx
+
 from reefcraft.ui.theme import Theme
 
 
-class Widget:
+class Control:
     """Base class for all UI elements with geometry and change notification."""
 
-    def __init__(
-        self,
-        left: int = 0,
-        top: int = 0,
-        width: int = 100,
-        height: int = 20,
-        theme: Theme | None = None,
-    ) -> None:
+    def __init__(self, left: int = 0, top: int = 0, width: int = 100, height: int = 20, theme: Theme | None = None) -> None:
         """Initialize a widget with position, size, and optional theme."""
         self._top = top
         self._left = left
         self._width = width
         self._height = height
+        self.root = gfx.Group()
         self.theme = theme or Theme()
         self._on_change_callbacks: list[Callable[[], None]] = []
+
+    @property
+    def name(self) -> str:
+        """Name of the control, routed through the root gfx object."""
+        return self.root.name
+
+    @name.setter
+    def name(self, value: str) -> None:
+        self.root.name = value
 
     @property
     def top(self) -> int:

@@ -10,9 +10,8 @@ from enum import Enum
 
 import pygfx as gfx
 
-from reefcraft.ui.panel import Panel
+from reefcraft.ui.control import Control
 from reefcraft.ui.theme import Theme
-from reefcraft.ui.widget import Widget
 from reefcraft.utils.logger import logger
 
 
@@ -24,18 +23,18 @@ class TextAlign(Enum):
     RIGHT = "right"
 
 
-class Label(Widget):
+class Label(Control):
     """A non-interactive UI label widget with text alignment and optional dynamic updates."""
 
     def __init__(
         self,
-        panel: Panel,
+        scene: gfx.Scene,
         *,
         text: str | Callable[[], str],
         left: int = 0,
         top: int = 0,
         width: int = 100,
-        height: int = 20,
+        height: int = 24,
         align: TextAlign = TextAlign.CENTER,
         theme: Theme | None = None,
         font_size: int | None = None,
@@ -44,7 +43,8 @@ class Label(Widget):
         """Create a label with static or callable text and alignment."""
         super().__init__(left=left, top=top, width=width, height=height, theme=theme)
 
-        self.panel = panel
+        self.scene = scene
+        #    self.renderer = renderer
         self.align = align
         self.text_source: str | Callable[[], str] = text
         self.text_string: str = self._evaluate_text()
@@ -57,12 +57,12 @@ class Label(Widget):
             font_size=font_size or self.theme.font_size,
         )
 
-        self.panel.scene.add(self._text)
+        self.scene.add(self._text)
         self._update_visuals()
 
-        if callable(self.text_source):
-            self.panel.renderer.add_event_handler(self._update_text_pre_render, "before_render")
-            logger.info("-> Added event handler for callable text update")
+    #        if callable(self.text_source):
+    #            self.renderer.add_event_handler(self._update_text_pre_render, "before_render")
+    #            logger.info("-> Added event handler for callable text update")
 
     def _evaluate_text(self) -> str:
         """Evaluate the current text string from static or callable source."""

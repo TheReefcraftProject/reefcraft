@@ -8,17 +8,16 @@ import imageio.v3 as iio
 import numpy as np
 import pygfx as gfx
 
-from reefcraft.ui.panel import Panel
-from reefcraft.ui.widget import Widget
+from reefcraft.ui.control import Control
 from reefcraft.utils.paths import icons_dir
 
 
-class Icon(Widget):
+class Icon(Control):
     """A simple non-interactive widget that displays an icon."""
 
     def __init__(
         self,
-        panel: Panel,
+        scene: gfx.Scene,
         icon: str,
         *,
         left: int = 0,
@@ -30,13 +29,13 @@ class Icon(Widget):
     ) -> None:
         """Display an icon from resources/icons, optionally with a specific icon size."""
         super().__init__(top, left, width, height)
-        self.panel = panel
+        self.scene = scene
         self.icon_name = icon
         self.icon_width = icon_width or width
         self.icon_height = icon_height or height
         self._icon_mesh = self._load_icon(icon)
 
-        self.panel.scene.add(self._icon_mesh)
+        self.scene.add(self._icon_mesh)
         self._update_visuals()
 
     def _load_icon(self, name: str) -> gfx.Mesh:

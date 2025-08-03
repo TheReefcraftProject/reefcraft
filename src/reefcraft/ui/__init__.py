@@ -7,9 +7,9 @@
 """Graphical user interface components for Reefcraft."""
 
 from .button import Button
-from .panel import Panel
 from .section import Section
 from .slider import Slider
+from .views.palette import Palette
 from .window import Window
 
-__all__ = ["Window", "Panel", "Section", "Button", "Slider"]
+__all__ = ["Window", "Palette", "Section", "Button", "Slider"]

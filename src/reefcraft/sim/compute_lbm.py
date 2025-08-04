@@ -118,7 +118,7 @@ class ComputeLBM:
 
         return fields
 
-    def step(self) -> None:
+    def step(self, dt: float) -> None:
         """Run one iteration of LBM."""
         self.f_0, self.f_1 = self.stepper(self.f_0, self.f_1, self.bc_mask, self.missing_mask, self.current_step)
         self.f_0, self.f_1 = self.f_1, self.f_0

@@ -71,7 +71,4 @@ class SimState:
 
     def step(self, dt: float) -> None:
         """Advance the simulation state by a single dt."""
-        self.water.step()
-        if len(self.corals) == 1:
-            verts, indices = self.corals[0].get_physics_wp()
-            self.water.update_mesh((verts, indices))
+        self.water.step(dt)

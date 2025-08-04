@@ -137,7 +137,7 @@ def test_get_fields_numpy() -> None:
 
 def test_field_numeric_stability() -> None:
     """Test numeric stability of fields (e.g. velocity)."""
-    lbm = ComputeLBM((100, 100, 100), 2.0, 3000.0)
+    lbm = ComputeLBM((100, 100, 100), 2.0, 4000.0)
     smaller_box_vertices = np.array(
         [
             [0, 0, 0],
@@ -175,7 +175,7 @@ def test_field_numeric_stability() -> None:
     smaller_box_indices_wp = wp.array(smaller_box_indices, dtype=wp.vec3i)
     lbm.update_mesh((smaller_box_vertices_wp, smaller_box_indices_wp))
 
-    for i in range(10000):
+    for i in range(100000):
         lbm.step(i)
 
     velocity_field = lbm.get_field_numpy()["velocity"]

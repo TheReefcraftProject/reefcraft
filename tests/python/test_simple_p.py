@@ -9,6 +9,7 @@ import numpy as np
 import warp as wp
 
 from reefcraft.sim.simple_porag import SimpleP
+from reefcraft.sim.state import SimState
 
 """Test SimpleP class."""
 
@@ -16,7 +17,8 @@ from reefcraft.sim.simple_porag import SimpleP
 def test_update_mesh() -> None:
     """Test the update_mesh function from SimpleP to ensure the mesh is updated correctly."""
 
-    simple_p = SimpleP()
+    sim_state = SimState()
+    simple_p = SimpleP(sim_state=sim_state)
 
     # Define new mesh vertices and indices (as an example)
     new_vertices = np.array([[1.0, 1.0, 0.0], [2.0, 2.0, 0.0], [3.0, 3.0, 0.0]], dtype=np.float32)
@@ -38,8 +40,8 @@ def test_update_mesh() -> None:
 
 def test_growth_step() -> None:
     """Test that polyps are updated correctly in each growth step."""
-
-    simple_p = SimpleP()
+    sim_state = SimState()
+    simple_p = SimpleP(sim_state=sim_state)
 
     # Get initial position of a polyp (let's pick the first polyp)
     initial_position = simple_p.mesh["vertices"].numpy()[0]
@@ -59,7 +61,8 @@ def test_growth_step() -> None:
 def test_add_polyp() -> None:
     """Test that the add_polyp function adds a new polyp when space is available."""
 
-    simple_p = SimpleP()
+    sim_state = SimState()
+    simple_p = SimpleP(sim_state=sim_state)
 
     # Current number of polyps
     initial_num_polyps = len(simple_p.mesh["vertices"])

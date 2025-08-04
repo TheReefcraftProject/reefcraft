@@ -64,9 +64,6 @@ class ComputeLBM:
 
         self.coral_vertices = self.coral_vertices + shift
 
-        # Update stepper's boundary conditions
-        # self.stepper.boundary_conditions[3].indices = self.coral_indices
-        # self.stepper.boundary_conditions[3].mesh_vertices = self.coral_vertices
         self.setup_boundary_conditions(True)
 
     def setup_boundary_conditions(self, update_coral: bool) -> None:

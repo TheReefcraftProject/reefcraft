@@ -13,13 +13,6 @@ from reefcraft.sim.compute_lbm import ComputeLBM
 """Test ComputeLBM class."""
 
 
-def test_setup_boundary_conditions() -> None:
-    """Test setup_boundary_conditions function from ComputeLBM."""
-    lbm = ComputeLBM((32, 32, 32), 0.02, 3000.0)
-    bounds = lbm.boundary_conditions
-    assert bounds == lbm.stepper.boundary_conditions
-
-
 def test_coral_boundary_conditions() -> None:
     """Ensure dynamic boundaries are functioning."""
 
@@ -79,10 +72,10 @@ def test_coral_boundary_conditions() -> None:
     )
 
     # Convert to Warp arrays
-    larger_box_vertices_wp = wp.array(larger_box_vertices, dtype=wp.vec3f, device="cuda")
-    smaller_box_vertices_wp = wp.array(smaller_box_vertices, dtype=wp.vec3f, device="cuda")
-    larger_box_indices_wp = wp.array(smaller_box_indices, dtype=wp.vec3i, device="cuda")
-    smaller_box_indices_wp = wp.array(smaller_box_indices, dtype=wp.vec3i, device="cuda")
+    larger_box_vertices_wp = wp.array(larger_box_vertices, dtype=wp.vec3f)
+    smaller_box_vertices_wp = wp.array(smaller_box_vertices, dtype=wp.vec3f)
+    larger_box_indices_wp = wp.array(smaller_box_indices, dtype=wp.vec3i)
+    smaller_box_indices_wp = wp.array(smaller_box_indices, dtype=wp.vec3i)
 
     print("Testing with small box...")
     compute_lbm.update_mesh((smaller_box_vertices_wp, smaller_box_indices_wp))
@@ -93,7 +86,6 @@ def test_coral_boundary_conditions() -> None:
 
     # Check the velocity magnitude near the boundary
     velocity_field = compute_lbm.get_field_numpy()["velocity_magnitude"]
-    print(velocity_field)
     inflow_v = velocity_field[5, 16, 16]  # Check near the inflow
     boundary_v = velocity_field[16, 16, 0]  # Check near the boundaries
     print(f"Inflow velocity: {inflow_v}. Boundary velocity: {boundary_v}")
@@ -125,11 +117,18 @@ def test_coral_boundary_conditions() -> None:
     print("Test passed successfully!")
 
 
+def test_setup_boundary_conditions() -> None:
+    """Test setup_boundary_conditions function from ComputeLBM."""
+    lbm = ComputeLBM((32, 32, 32), 0.02, 3000.0)
+    bounds = lbm.boundary_conditions
+    assert bounds == lbm.stepper.boundary_conditions
+
+
 def test_get_fields_numpy() -> None:
     """Test get_fields_numpy function from ComputeLBM."""
     lbm = ComputeLBM((32, 32, 32), 0.02, 3000.0)
     for i in range(2000):
-        lbm.step()
+        lbm.step(i)
 
     fields = lbm.get_field_numpy()
     assert isinstance(fields["velocity"], np.ndarray), f"Expected ndarray, got {type(fields['velocity'])}"
@@ -139,6 +138,43 @@ def test_get_fields_numpy() -> None:
 def test_field_numeric_stability() -> None:
     """Test numeric stability of fields (e.g. velocity)."""
     lbm = ComputeLBM((100, 100, 100), 2.0, 3000.0)
+    smaller_box_vertices = np.array(
+        [
+            [0, 0, 0],
+            [2, 0, 0],
+            [2, 2, 0],
+            [0, 2, 0],  # bottom face
+            [0, 0, 2],
+            [2, 0, 2],
+            [2, 2, 2],
+            [0, 2, 2],  # top face
+        ],
+        dtype=np.float32,
+    )
+
+    smaller_box_indices = np.array(
+        [
+            [0, 1, 2],
+            [0, 2, 3],
+            [4, 5, 6],
+            [4, 6, 7],  # bottom & top faces
+            [0, 1, 5],
+            [0, 5, 4],
+            [1, 2, 6],
+            [1, 6, 5],
+            [2, 3, 7],
+            [2, 7, 6],
+            [3, 0, 4],
+            [3, 4, 7],
+        ],
+        dtype=np.int32,
+    )
+
+    # Convert to Warp arrays
+    smaller_box_vertices_wp = wp.array(smaller_box_vertices, dtype=wp.vec3f)
+    smaller_box_indices_wp = wp.array(smaller_box_indices, dtype=wp.vec3i)
+    lbm.update_mesh((smaller_box_vertices_wp, smaller_box_indices_wp))
+
     for i in range(10000):
         lbm.step(i)
 
@@ -239,7 +275,3 @@ def test_warp_grid() -> None:
 
     # For now assert grid shape is correct:
     assert lbm.grid.shape == lbm.grid_shape
-
-
-test_coral_boundary_conditions()
-test_field_numeric_stability()

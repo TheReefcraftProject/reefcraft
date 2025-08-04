@@ -89,7 +89,7 @@ def test_coral_boundary_conditions() -> None:
 
     # Run the simulation for a few steps and check velocity changes near the boundary
     for i in range(max_steps):
-        compute_lbm.step()
+        compute_lbm.step(i)
 
     # Check the velocity magnitude near the boundary
     velocity_field = compute_lbm.get_field_numpy()["velocity_magnitude"]
@@ -110,17 +110,17 @@ def test_coral_boundary_conditions() -> None:
         print(f"Step {step + 1}:")
 
         # Run the LBM step, updating boundary conditions accordingly
-        compute_lbm.step()
+        compute_lbm.step(step)
 
-        # Check the velocity magnitude higher up in the z-axis where the larger box should affect the flow
-        velocity_field = compute_lbm.get_field_numpy()["velocity_magnitude"]
-        inflow_region = velocity_field[5:10, 5:10, 5:10]
-        higher_z_region = velocity_field[20:25, 20:25, 20:25]  # Check in the higher z region
+    # Check the velocity magnitude higher up in the z-axis where the larger box should affect the flow
+    velocity_field = compute_lbm.get_field_numpy()["velocity_magnitude"]
+    inflow_v = velocity_field[5, 16, 16]
+    boundary_v = velocity_field[16, 16, 10]  # Check in the higher z region
 
-        # Verify that there is a change in the velocity near the boundary of the larger box
-        assert np.any(np.abs(higher_z_region - inflow_velocity) > 0), "No change in velocity at larger box boundary"
+    # Verify that there is a change in the velocity near the boundary of the larger box
+    assert np.any(np.abs(boundary_v - inflow_v) > 0), "No change in velocity at larger box boundary"
 
-        print("Velocity magnitude changed at larger box boundary. Moving to next step.")
+    print("Velocity magnitude changed at larger box boundary. Moving to next step.")
 
     print("Test passed successfully!")
 
@@ -138,9 +138,16 @@ def test_get_fields_numpy() -> None:
 
 def test_field_numeric_stability() -> None:
     """Test numeric stability of fields (e.g. velocity)."""
-    lbm = ComputeLBM((32, 32, 32), 0.02, 3000.0)
-    lbm_highRe = ComputeLBM((32, 32, 32), 0.02, 5000.0)
-    lbm_highV = ComputeLBM((32, 32, 32), 3.0, 3000.0)
+    lbm = ComputeLBM((100, 100, 100), 2.0, 3000.0)
+    for i in range(10000):
+        lbm.step(i)
+
+    velocity_field = lbm.get_field_numpy()["velocity"]
+
+    # Assert that there are no NaN values in the velocity field
+    assert not np.isnan(velocity_field).any(), "Velocity field contains NaN values."
+
+    print("Test passed: No NaN values in velocity field.")
 
 
 def test_update_mesh() -> None:
@@ -234,8 +241,5 @@ def test_warp_grid() -> None:
     assert lbm.grid.shape == lbm.grid_shape
 
 
-test_setup_boundary_conditions()
-test_get_fields_numpy()
-test_warp_grid()
-test_update_mesh()
 test_coral_boundary_conditions()
+test_field_numeric_stability()

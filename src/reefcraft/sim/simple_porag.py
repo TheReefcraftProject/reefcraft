@@ -18,6 +18,7 @@ class SimpleP:
 
     def __init__(
         self,
+        sim_state: SimState,
         grid_shape: tuple = (200, 200, 200),
         polyp_spacing: float = 0.1,
         max_time_steps: int = 1000,
@@ -28,14 +29,17 @@ class SimpleP:
         self.polyp_spacing = polyp_spacing
         self.max_time_steps = max_time_steps
         self.resource_concentration = resource_concentration
-        self.device = "cuda"
 
         self.radius = self.calculate_radius()
 
         self.mesh = self.initialize_polyps()
-        self.normals = wp.zeros((len(self.mesh["vertices"]),), dtype=wp.vec3f, device="cuda")
+        self.normals = wp.zeros((len(self.mesh["vertices"]),), dtype=wp.vec3f)
 
         self.launch_mesh_kernel()
+
+        # Add our new coral to the simulation state
+        self.coral_state = sim_state.add_coral()
+        self.coral_state.set_mesh(self.mesh["vertices"], self.mesh["indices"])
 
     def calculate_radius(self) -> float:
         """Calculates the radius of the hemisphere based on the polyp spacing."""
@@ -55,15 +59,14 @@ class SimpleP:
         Returns:
         - A dictionary with 'vertices' (wp.array) and 'indices' (wp.array).
         """
-        num_polyps = 81
+        num_polyps = 81  # Total number of polyps (vertices)
         vertices = np.zeros((num_polyps, 3), dtype=np.float32)  # NumPy array for vertices
-        indices = np.arange(num_polyps, dtype=np.int32)  # Indices array (simple example)
 
         # Golden angle for even distribution
         golden_angle = np.pi * (3.0 - np.sqrt(5.0))
 
         for i in range(num_polyps):
-            # The polar angle adjusted for a hemisphere only
+            # Polar angle adjusted for a hemisphere only
             phi = np.arccos(1 - (i + 0.5) / num_polyps)  # Polar angle in [0, pi/2] for hemisphere
             theta = golden_angle * i  # Azimuthal angle (0 to 2*pi)
 
@@ -74,20 +77,32 @@ class SimpleP:
 
             vertices[i] = [x, y, z]
 
-        # Use a convex hull to connect neighboring vertices into a hemisphere shell
-        hull = ConvexHull(vertices)
-        indices = hull.simplices.astype(np.int32)
+        # Manually create indices for the hemisphere
+        # Here we are creating triangles by connecting each vertex to the center and its neighbors
+        indices = []
 
-        # Convert the vertices and indices to Warp arrays on CUDA as requested
-        vertices_wp = wp.array(vertices, dtype=wp.vec3f, device="cuda")
-        indices_wp = wp.array(indices, dtype=wp.vec3i, device="cuda")
+        # Add the base of the hemisphere (a circle at the bottom of the hemisphere)
+        bottom_center = num_polyps - 1  # the last vertex is the center of the base
+        for i in range(num_polyps - 1):
+            indices.append([i, (i + 1) % (num_polyps - 1), bottom_center])
+
+        # Create the upper hemisphere faces (a fan structure)
+        for i in range(num_polyps - 1):
+            # Create faces between adjacent points on the surface
+            next_i = (i + 1) % (num_polyps - 1)  # next vertex in the list
+            indices.append([i, next_i, num_polyps - 1])  # Connect the surface vertices to the center
+
+        # Convert the vertices and indices to Warp arrays
+        vertices_wp = wp.array(np.array(vertices, dtype=np.float32), dtype=wp.vec3f)
+        indices_wp = wp.array(np.array(indices, dtype=np.int32), dtype=wp.vec3i)
+        print(f"Type of indeces: {type(indices_wp)}")
 
         return {"vertices": vertices_wp, "indices": indices_wp}
 
     def update(self, state: SimState) -> None:
         """Update SimState mesh."""
         self.growth_step()
-        state.coral.set_mesh(self.mesh.get("vertices"), self.mesh.get("indices"))
+        self.coral_state.set_mesh(self.mesh.get("vertices"), self.mesh.get("indices"))
 
     def update_mesh(self, mesh_data: dict) -> None:
         """Update the mesh with a new set of polyps."""
@@ -109,7 +124,7 @@ class SimpleP:
         # Ensure the normals are initialized as wp.array with dtype wp.vec3f
         if self.normals is None:
             # Allocate normals array with the correct Warp type
-            self.normals = wp.zeros(num_polyps, dtype=wp.vec3f, device="cuda")
+            self.normals = wp.zeros(num_polyps, dtype=wp.vec3f)
 
         wp.launch(self.calculate_normals_kernel, dim=num_polyps, inputs=[self.mesh["vertices"], self.normals, num_polyps])
 
@@ -172,10 +187,10 @@ class SimpleP:
             dtype=np.int32,
         )
 
-        self.mesh["vertices"] = wp.array(new_vertices, dtype=wp.vec3f, device=self.device)
-        self.mesh["indices"] = wp.array(np.concatenate([indices_np, new_tris]), dtype=wp.vec3i, device=self.device)
+        self.mesh["vertices"] = wp.array(new_vertices, dtype=wp.vec3f)
+        self.mesh["indices"] = wp.array(np.concatenate([indices_np, new_tris]), dtype=wp.vec3)
 
-        self.normals = wp.zeros(len(new_vertices), dtype=wp.vec3f, device=self.device)
+        self.normals = wp.zeros(len(new_vertices), dtype=wp.vec3f)
         self.launch_mesh_kernel()
 
     def growth_step(self) -> None:
@@ -184,7 +199,7 @@ class SimpleP:
         normals = self.normals
 
         # Create an array to store the growth amount for each polyp
-        growth_amount = wp.zeros(len(vertices), dtype=wp.float32, device="cuda")
+        growth_amount = wp.zeros(len(vertices), dtype=wp.float32)
 
         # Launch the growth kernel to update the polyps
         wp.launch(

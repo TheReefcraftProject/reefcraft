@@ -19,15 +19,15 @@ from xlb.precision_policy import PrecisionPolicy
 class ComputeLBM:
     """Compute water states with LBM."""
 
-    def __init__(self) -> None:
+    def __init__(self, grid_shape: tuple, fluid_speed: float, Re: float) -> None:
         """Initialize ComputeLBM fields and data."""
-        self.grid_shape = (32, 32, 32)
-        self.fluid_speed = 0.2
+        self.grid_shape = grid_shape
+        self.fluid_speed = fluid_speed
         self.current_step = 0
         self.coral_vertices = None
-        self.coral_faces = None
+        self.coral_indices = None
         self.boundary_conditions = []
-        self.Re = 30000.0
+        self.Re = Re
         self.clength = self.grid_shape[0] - 1
         self.visc = self.fluid_speed * self.clength / self.Re
         self.omega = 0.5
@@ -50,7 +50,7 @@ class ComputeLBM:
             precision_policy=self.precision_policy,
             velocity_set=self.velocity_set,
         )
-        self.setup_boundary_conditions()
+        self.setup_boundary_conditions(False)
         self.f_0, self.f_1, self.bc_mask, self.missing_mask = self.stepper.prepare_fields()
 
     def update_mesh(self, mesh_data: tuple[wp.array, wp.array]) -> None:
@@ -59,27 +59,14 @@ class ComputeLBM:
         self.coral_vertices = mesh_data[0].numpy()  # vertices
         self.coral_indices = mesh_data[1].numpy()  # indices
 
-        # Process the mesh vertices (transform to the grid space)
-        mesh_extents = self.coral_vertices.max(axis=0) - self.coral_vertices.min(axis=0)
-        length_phys_unit = mesh_extents.max()
-        length_lbm_unit = self.grid_shape[0] / 4
-        dx = length_phys_unit / length_lbm_unit
-        self.coral_vertices = self.coral_vertices / dx
+        # Shift mesh to center as is:
+        shift = np.array([self.grid_shape[0] / 2, self.grid_shape[1] / 2, 0.0])
 
-        # Shift mesh to align with the grid
-        shift = np.array([self.grid_shape[0] / 4, (self.grid_shape[1] - mesh_extents[1] / dx) / 2, 0.0])
-        self.coral_vertices += shift
+        self.coral_vertices = self.coral_vertices + shift
 
-        # Calculate the cross-sectional area for the coral mesh (just for boundary condition purposes)
-        self.coral_cross_section = np.prod(mesh_extents[1:]) / dx**2
+        self.setup_boundary_conditions(True)
 
-        # Re-create boundary conditions including the updated coral mesh
-        self.setup_boundary_conditions()
-
-        # Update the stepper with the new boundary conditions and masks
-        self.stepper.boundary_conditions = self.boundary_conditions
-
-    def setup_boundary_conditions(self) -> None:
+    def setup_boundary_conditions(self, update_coral: bool) -> None:
         """Boundary conditions for the simulation."""
         # Boundary conditions
         # box = self.grid.bounding_box_indices()
@@ -95,11 +82,14 @@ class ComputeLBM:
         bc_do_nothing = ExtrapolationOutflowBC(indices=outlet)
 
         if self.coral_vertices is not None:
-            bc_coral = HalfwayBounceBackBC(mesh_vertices=self.coral_vertices)
+            bc_coral = HalfwayBounceBackBC(indices=self.coral_indices, mesh_vertices=self.coral_vertices)
             self.boundary_conditions = [bc_walls, bc_left, bc_do_nothing, bc_coral]
+            self.stepper.boundary_conditions = self.boundary_conditions
+            # self.f_0, self.f_1, self.bc_mask, self.missing_mask = self.stepper.prepare_fields()
         else:
             self.boundary_conditions = [bc_walls, bc_left, bc_do_nothing]
             self.stepper.boundary_conditions = self.boundary_conditions
+            # self.f_0, self.f_1, self.bc_mask, self.missing_mask = self.stepper.prepare_fields()
 
     def get_field_numpy(self) -> dict:
         """Get water data fields."""

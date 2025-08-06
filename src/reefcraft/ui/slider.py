@@ -11,15 +11,16 @@ from collections.abc import Callable
 import pygfx as gfx
 
 from reefcraft.ui.control import Control
-from reefcraft.ui.views.palette import Palette
+from reefcraft.ui.palette import Palette
+from reefcraft.ui.ui_context import UIContext
 
 
 class Slider(Control):
-    """A simple retained-mode slider widget."""
+    """A simple retained-mode slider control."""
 
     def __init__(
         self,
-        panel: Palette,
+        context: UIContext,
         *,
         left: int = 0,
         top: int = 0,
@@ -30,9 +31,9 @@ class Slider(Control):
         value: float | None = None,
         on_change: Callable[[float], None] | None = None,
     ) -> None:
-        """Create the slider and add it to the given ``panel`` scene."""
-        super().__init__(top, left, width, height)
-        self.panel = panel
+        """Create the slider and add it to the given context."""
+        super().__init__(context=context, top=top, left=left, width=width, height=height)
+        self.context = context
         self.min = min_value
         self.max = max_value
         self.value = value if value is not None else min_value
@@ -58,9 +59,9 @@ class Slider(Control):
         text_mat = gfx.TextMaterial(color=self.theme.text_color)
         self._text = gfx.Text(str(self.value), text_mat)
 
-        self.panel.scene.add(self._bg_mesh)
-        self.panel.scene.add(self._fg_mesh)
-        self.panel.scene.add(self._text)
+        self.context.add(self._bg_mesh)
+        self.context.add(self._fg_mesh)
+        self.context.add(self._text)
 
         self._bg_mesh.add_event_handler(self._on_mouse_down, "pointer_down")
         self._bg_mesh.add_event_handler(self._on_mouse_move, "pointer_move")
@@ -89,15 +90,15 @@ class Slider(Control):
         filled = max(0.0, min(1.0, self._percent))
         # Background
         self._bg_mesh.geometry = gfx.plane_geometry(width=self.width, height=self.height)
-        self._bg_mesh.local.position = self._screen_to_world(self.left + self.width / 2, self.top + self.height / 2, -1)
+        self._bg_mesh.local.position = self.context.screen_to_world(self.left + self.width / 2, self.top + self.height / 2, -1)
 
         # Foreground
         self._fg_mesh.geometry = gfx.plane_geometry(width=int(self.width * filled), height=self.height)
-        self._fg_mesh.local.position = self._screen_to_world(self.left + (self.width * filled) / 2, self.top + self.height / 2, 0)
+        self._fg_mesh.local.position = self.context.screen_to_world(self.left + (self.width * filled) / 2, self.top + self.height / 2, 0)
 
         # Text overlay
         self._text.set_text(f"{self.value:.2f}")
-        self._text.local.position = self._screen_to_world(self.left + self.width / 2, self.top + self.height / 2, -2)
+        self._text.local.position = self.context.screen_to_world(self.left + self.width / 2, self.top + self.height / 2, -2)
 
     # ------------------------------------------------------------------
     # Event handlers
@@ -105,7 +106,7 @@ class Slider(Control):
     def _on_mouse_down(self, event: gfx.PointerEvent) -> None:
         """Capture the mouse for slider control."""
         self._dragging = True
-        event.target.set_pointer_capture(event.pointer_id, self.panel.renderer)
+        event.target.set_pointer_capture(event.pointer_id, self.context.renderer)
         self._set_from_screen_x(event.x)
 
     def _on_mouse_move(self, event: gfx.PointerEvent) -> None:

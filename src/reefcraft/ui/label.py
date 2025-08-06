@@ -3,7 +3,7 @@
 # Licensed under the MIT License. See the LICENSE file for details.
 # -----------------------------------------------------------------------------
 
-"""Label widget for displaying static or dynamic text with alignment."""
+"""Label control for displaying static or dynamic text with alignment."""
 
 from collections.abc import Callable
 from enum import Enum
@@ -12,6 +12,7 @@ import pygfx as gfx
 
 from reefcraft.ui.control import Control
 from reefcraft.ui.theme import Theme
+from reefcraft.ui.ui_context import UIContext
 from reefcraft.utils.logger import logger
 
 
@@ -24,26 +25,26 @@ class TextAlign(Enum):
 
 
 class Label(Control):
-    """A non-interactive UI label widget with text alignment and optional dynamic updates."""
+    """A non-interactive UI label control with text alignment and optional dynamic updates."""
 
     def __init__(
         self,
-        scene: gfx.Scene,
+        context: UIContext,
         *,
-        text: str | Callable[[], str],
         left: int = 0,
         top: int = 0,
         width: int = 100,
         height: int = 24,
+        text: str | Callable[[], str],
         align: TextAlign = TextAlign.CENTER,
         theme: Theme | None = None,
         font_size: int | None = None,
         font_color: str | None = None,
     ) -> None:
         """Create a label with static or callable text and alignment."""
-        super().__init__(left=left, top=top, width=width, height=height, theme=theme)
+        super().__init__(context, left=left, top=top, width=width, height=height, theme=theme)
 
-        self.scene = scene
+        self.context = context
         #    self.renderer = renderer
         self.align = align
         self.text_source: str | Callable[[], str] = text
@@ -57,12 +58,12 @@ class Label(Control):
             font_size=font_size or self.theme.font_size,
         )
 
-        self.scene.add(self._text)
+        self.context.add(self._text)
         self._update_visuals()
 
-    #        if callable(self.text_source):
-    #            self.renderer.add_event_handler(self._update_text_pre_render, "before_render")
-    #            logger.info("-> Added event handler for callable text update")
+        if callable(self.text_source):
+            self.context.renderer.add_event_handler(self._update_text_pre_render, "before_render")
+            logger.info("-> Added event handler for callable text update")
 
     def _evaluate_text(self) -> str:
         """Evaluate the current text string from static or callable source."""
@@ -92,4 +93,4 @@ class Label(Control):
         y = self.top + self.height / 2
 
         self._text.anchor = anchor
-        self._text.local.position = self._screen_to_world(x, y, z=-1)
+        self._text.local.position = self.context.screen_to_world(x, y, z=-1)

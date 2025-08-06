@@ -4,9 +4,12 @@
 # Licensed under the MIT License. See the LICENSE file for details.
 # -----------------------------------------------------------------------------
 
-"""Manage auto-layout options for groups of widgets."""
+"""Manage auto-layout options for groups of control."""
+
+from __future__ import annotations
 
 from enum import Enum, auto
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pygfx as gfx
@@ -14,6 +17,9 @@ import pygfx as gfx
 from reefcraft.ui.control import Control
 from reefcraft.ui.theme import Theme
 from reefcraft.utils.logger import logger
+
+if TYPE_CHECKING:
+    from reefcraft.ui.ui_context import UIContext
 
 
 class LayoutDirection(Enum):
@@ -24,7 +30,7 @@ class LayoutDirection(Enum):
 
 
 class Alignment(Enum):
-    """Widget alignment within the cross-axis of the layout."""
+    """Control alignment within the cross-axis of the layout."""
 
     START = auto()
     CENTER = auto()
@@ -32,11 +38,11 @@ class Alignment(Enum):
 
 
 class Layout(Control):
-    """A layout widget that arranges child widgets vertically or horizontally."""
+    """A layout control that arranges child controls vertically or horizontally."""
 
     def __init__(
         self,
-        scene: gfx.Scene | None = None,
+        context: UIContext,
         *,
         controls: list[Control] | None = None,
         direction: LayoutDirection = LayoutDirection.VERTICAL,
@@ -44,35 +50,27 @@ class Layout(Control):
         margin: int = 0,
         alignment: Alignment = Alignment.START,
     ) -> None:
-        """Create a new layout widget.
+        """Create a new layout control."""
+        super().__init__(context)
 
-        Args:
-            direction: LayoutDirection.VERTICAL or HORIZONTAL.
-            widgets: Optional initial list of widgets.
-            spacing: Space between items.
-            margin: Outer margin around layout.
-            alignment: Cross-axis alignment of child widgets.
-        """
-        super().__init__(top=0, left=0, width=0, height=0)
-
-        self.scene = scene
         self.direction = direction
         self.spacing = spacing
         self.margin = margin
         self.alignment = alignment
+        self._layout_in_progress = False
         self.controls: list[Control] = []
         if controls:
-            for widget in controls:
-                self.add_widget(widget)
+            for control in controls:
+                self.add_control(control)
 
-    def add_widget(self, widget: Control) -> None:
-        """Append a widget to the layout and register for change tracking."""
-        self.controls.append(widget)
-        widget.on_change(self._layout)
+    def add_control(self, control: Control) -> None:
+        """Append a control to the layout and register for change tracking."""
+        self.controls.append(control)
+        control.on_change(self._layout)
         self._layout()
 
     def set_spacing(self, spacing: int) -> None:
-        """Set the space between widgets and relayout."""
+        """Set the space between controls and relayout."""
         self.spacing = spacing
         self._layout()
 
@@ -82,7 +80,7 @@ class Layout(Control):
         self._layout()
 
     def set_alignment(self, alignment: Alignment) -> None:
-        """Set widget alignment along the cross-axis and relayout."""
+        """Set control alignment along the cross-axis and relayout."""
         self.alignment = alignment
         self._layout()
 
@@ -92,50 +90,59 @@ class Layout(Control):
 
     def _layout(self) -> None:
         """Internal layout logic: positions widgets and sizes layout accordingly."""
-        offset = 0
-        max_cross = 0
+        if self._layout_in_progress:
+            return  # Prevent recursive layout loops
 
-        for widget in self.controls:
+        self._layout_in_progress = True
+
+        try:
+            offset = 0
+            max_cross = 0
+
+            for widget in self.controls:
+                if self.direction == LayoutDirection.VERTICAL:
+                    widget.top = self.top + self.margin + offset
+                    offset += widget.height
+                    max_cross = max(max_cross, widget.width)
+                else:
+                    widget.left = self.left + self.margin + offset
+                    offset += widget.width
+                    max_cross = max(max_cross, widget.height)
+
+                offset += self.spacing
+
+            if self.controls:
+                offset -= self.spacing  # remove last spacing
+
             if self.direction == LayoutDirection.VERTICAL:
-                widget.top = self.top + self.margin + offset
-                offset += widget.height
-                max_cross = max(max_cross, widget.width)
+                self.height = offset + self.margin * 2
+                self.width = max_cross + self.margin * 2
             else:
-                widget.left = self.left + self.margin + offset
-                offset += widget.width
-                max_cross = max(max_cross, widget.height)
+                self.width = offset + self.margin * 2
+                self.height = max_cross + self.margin * 2
 
-            offset += self.spacing
+            # Align widgets along cross-axis
+            for widget in self.controls:
+                if self.direction == LayoutDirection.VERTICAL:
+                    if self.alignment == Alignment.CENTER:
+                        widget.left = self.left + self.margin + (self.width - 2 * self.margin - widget.width) // 2
+                    elif self.alignment == Alignment.END:
+                        widget.left = self.left + self.width - self.margin - widget.width
+                    else:  # START
+                        widget.left = self.left + self.margin
+                else:
+                    if self.alignment == Alignment.CENTER:
+                        widget.top = self.top + self.margin + (self.height - 2 * self.margin - widget.height) // 2
+                    elif self.alignment == Alignment.END:
+                        widget.top = self.top + self.height - self.margin - widget.height
+                    else:  # START
+                        widget.top = self.top + self.margin
 
-        if self.controls:
-            offset -= self.spacing  # remove last spacing
-
-        if self.direction == LayoutDirection.VERTICAL:
-            self.height = offset + self.margin * 2
-            self.width = max_cross + self.margin * 2
-        else:
-            self.width = offset + self.margin * 2
-            self.height = max_cross + self.margin * 2
-
-        # Align widgets along cross-axis
-        for widget in self.controls:
-            if self.direction == LayoutDirection.VERTICAL:
-                if self.alignment == Alignment.CENTER:
-                    widget.left = self.left + self.margin + (self.width - 2 * self.margin - widget.width) // 2
-                elif self.alignment == Alignment.END:
-                    widget.left = self.left + self.width - self.margin - widget.width
-                else:  # START
-                    widget.left = self.left + self.margin
-            else:
-                if self.alignment == Alignment.CENTER:
-                    widget.top = self.top + self.margin + (self.height - 2 * self.margin - widget.height) // 2
-                elif self.alignment == Alignment.END:
-                    widget.top = self.top + self.height - self.margin - widget.height
-                else:  # START
-                    widget.top = self.top + self.margin
+        finally:
+            self._layout_in_progress = False
 
     def _update_visuals(self) -> None:
-        """Update child widget positions when this layout moves."""
+        """Update child control positions when this layout moves."""
         self._layout()
 
 
@@ -147,7 +154,7 @@ def create_line_rectangle(width: int, height: int) -> gfx.Geometry:
             [+width / 2, -height / 2, 0],
             [+width / 2, +height / 2, 0],
             [-width / 2, +height / 2, 0],
-            [-width / 2, -height / 2, 0],  # close the loop
+            [-width / 2, -height / 2, 0],
         ],
         dtype=np.float32,
     )
@@ -159,7 +166,7 @@ class Group(Layout):
 
     def __init__(
         self,
-        scene: gfx.Scene,
+        context: UIContext,
         *,
         controls: list[Control] | None = None,
         direction: LayoutDirection = LayoutDirection.VERTICAL,
@@ -171,7 +178,7 @@ class Group(Layout):
         theme: Theme | None = None,
     ) -> None:
         super().__init__(
-            scene=scene,
+            context,
             controls=controls,
             direction=direction,
             spacing=spacing,
@@ -193,17 +200,14 @@ class Group(Layout):
             gfx.LineMaterial(color=self.theme.outline_color, thickness=1),
         )
 
-        scene.add(self._bg_mesh)
-        scene.add(self._frame_mesh)
+        self.context.add(self._bg_mesh)
+        self.context.add(self._frame_mesh)
 
     def _update_visuals(self) -> None:
         super()._update_visuals()
 
         if not getattr(self, "draw", False):
-            return  # <--- Early exit if draw is disabled
-
-        self._bg_mesh.visible = False
-        self._frame_mesh.visible = False
+            return
 
         self._bg_mesh.visible = True
         self._frame_mesh.visible = True
@@ -211,7 +215,7 @@ class Group(Layout):
         w, h = self.width, self.height
         cx = self.left + w / 2
         cy = self.top + h / 2
-        pos = self._screen_to_world(cx, cy, z=-50)
+        pos = self.context.screen_to_world(cx, cy, z=-50)
 
         # Update background
         self._bg_mesh.geometry = gfx.plane_geometry(w, h)

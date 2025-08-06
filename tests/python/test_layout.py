@@ -114,9 +114,9 @@ def test_horizontal_layout_bounds() -> None:
         spacing=2,
         margin=2,
     )
-    layout.add_widget(Control(width=20, height=20))
-    layout.add_widget(Control(width=100, height=20))
-    layout.add_widget(Control(width=50, height=20))
+    layout.add_control(Control(width=20, height=20))
+    layout.add_control(Control(width=100, height=20))
+    layout.add_control(Control(width=50, height=20))
 
     # Total width = left margin + widths + spacing between + right margin
     expected_width = 2 + 20 + 2 + 100 + 2 + 50 + 2

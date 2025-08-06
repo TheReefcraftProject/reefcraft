@@ -9,15 +9,16 @@ import numpy as np
 import pygfx as gfx
 
 from reefcraft.ui.control import Control
+from reefcraft.ui.ui_context import UIContext
 from reefcraft.utils.paths import icons_dir
 
 
 class Icon(Control):
-    """A simple non-interactive widget that displays an icon."""
+    """A simple non-interactive control that displays an icon."""
 
     def __init__(
         self,
-        scene: gfx.Scene,
+        context: UIContext,
         icon: str,
         *,
         left: int = 0,
@@ -28,14 +29,14 @@ class Icon(Control):
         icon_height: int | None = None,
     ) -> None:
         """Display an icon from resources/icons, optionally with a specific icon size."""
-        super().__init__(top, left, width, height)
-        self.scene = scene
+        super().__init__(context=context, top=top, left=left, width=width, height=height)
+        self.context = context
         self.icon_name = icon
         self.icon_width = icon_width or width
         self.icon_height = icon_height or height
         self._icon_mesh = self._load_icon(icon)
 
-        self.scene.add(self._icon_mesh)
+        self.context.add(self._icon_mesh)
         self._update_visuals()
 
     def _load_icon(self, name: str) -> gfx.Mesh:
@@ -47,9 +48,9 @@ class Icon(Control):
         return gfx.Mesh(gfx.plane_geometry(1, 1), mat)
 
     def _update_visuals(self) -> None:
-        """Position and size the icon mesh centered within the widget."""
+        """Position and size the icon mesh centered within the control."""
         self._icon_mesh.geometry = gfx.plane_geometry(self.icon_width, self.icon_height)
-        self._icon_mesh.local.position = self._screen_to_world(
+        self._icon_mesh.local.position = self.context.screen_to_world(
             self.left + (self.width - self.icon_width) / 2 + self.icon_width / 2,
             self.top + (self.height - self.icon_height) / 2 + self.icon_height / 2,
             -1,

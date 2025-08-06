@@ -4,7 +4,7 @@
 # Licensed under the MIT License. See the LICENSE file for details.
 # -----------------------------------------------------------------------------
 
-"""Button widget implementation with optional icon support."""
+"""Button control implementation with optional icon support."""
 
 from __future__ import annotations
 
@@ -22,7 +22,8 @@ from reefcraft.utils.paths import icons_dir
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from reefcraft.ui.views.palette import Palette
+    from reefcraft.ui.palette import Palette
+    from reefcraft.ui.ui_context import UIContext
 
 
 class ButtonState(Enum):
@@ -39,7 +40,7 @@ class Button(Control):
 
     def __init__(
         self,
-        panel: Palette,
+        context: UIContext,
         *,
         left: int = 0,
         top: int = 0,
@@ -52,9 +53,9 @@ class Button(Control):
         enabled: bool = True,
         on_click: Callable[[], None] | None = None,
     ) -> None:
-        """Create a new button widget."""
-        super().__init__(top, left, width, height)
-        self.panel: Palette = panel
+        """Create a new button control."""
+        super().__init__(context=context, top=top, left=left, width=width, height=height)
+        self.context: UIContext = context
         self.label: str = label
         self.enabled: bool = enabled
         self._on_click_callback: Callable[[], None] | None = on_click
@@ -75,10 +76,10 @@ class Button(Control):
 
         self._icon_mesh: gfx.Mesh | None = self._load_icon(icon) if icon else None
 
-        _ = self.panel.scene.add(self._bg_mesh)
-        _ = self.panel.scene.add(self._text)
+        _ = self.context.add(self._bg_mesh)
+        _ = self.context.add(self._text)
         if self._icon_mesh:
-            _ = self.panel.scene.add(self._icon_mesh)
+            _ = self.context.add(self._icon_mesh)
 
         self._dragging = False
 
@@ -120,7 +121,7 @@ class Button(Control):
             return
         self._dragging = True
         self.state = ButtonState.PRESSED
-        event.target.set_pointer_capture(event.pointer_id, self.panel.renderer)
+        event.target.set_pointer_capture(event.pointer_id, self.context.renderer)
         self._update_visuals()
 
     def _on_mouse_up(self, event: gfx.PointerEvent) -> None:
@@ -147,17 +148,17 @@ class Button(Control):
 
         # Geometry and placement
         self._bg_mesh.geometry = gfx.plane_geometry(width=self.width, height=self.height)
-        self._bg_mesh.local.position = self._screen_to_world(self.left + self.width / 2, self.top + self.height / 2, 0)
+        self._bg_mesh.local.position = self.context.screen_to_world(self.left + self.width / 2, self.top + self.height / 2, 0)
 
         # Text placement (centered)
-        self._text.local.position = self._screen_to_world(self.left + self.width / 2, self.top + self.height / 2, -2)
+        self._text.local.position = self.context.screen_to_world(self.left + self.width / 2, self.top + self.height / 2, -2)
 
         # Icon placement (centered)
         if self._icon_mesh:
             iw = self.icon_width or self.width
             ih = self.icon_height or self.height
             self._icon_mesh.geometry = gfx.plane_geometry(iw, ih)
-            self._icon_mesh.local.position = self._screen_to_world(
+            self._icon_mesh.local.position = self.context.screen_to_world(
                 self.left + (self.width - iw) / 2 + iw / 2,
                 self.top + (self.height - ih) / 2 + ih / 2,
                 -1,
@@ -203,7 +204,7 @@ class ToggleButton(Button):
         init_icon = self._icon_on if self._state else self._icon_off
 
         super().__init__(
-            panel,
+            self.context,
             label=init_label or "",
             icon=init_icon,
             icon_width=icon_width,
@@ -228,10 +229,10 @@ class ToggleButton(Button):
         new_icon = self._icon_on if self._state else self._icon_off
         if new_icon and new_icon != self.icon_name:
             if self._icon_mesh:
-                self.panel.scene.remove(self._icon_mesh)
+                self.context.remove(self._icon_mesh)
             self.icon_name = new_icon
             self._icon_mesh = self._load_icon(new_icon)
-            self.panel.scene.add(self._icon_mesh)
+            self.context.add(self._icon_mesh)
 
         self._update_visuals()
 

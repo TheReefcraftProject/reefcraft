@@ -12,6 +12,7 @@ import pygfx as gfx
 
 from reefcraft.ui.control import Control
 from reefcraft.ui.theme import Theme
+from reefcraft.ui.ui_context import UIContext
 from reefcraft.utils.logger import logger
 from reefcraft.utils.paths import icons_dir
 
@@ -21,7 +22,7 @@ class IconButton(Control):
 
     def __init__(
         self,
-        scene: gfx.Scene,
+        context: UIContext,
         icon: str,
         *,
         left: int = 0,
@@ -40,8 +41,8 @@ class IconButton(Control):
         theme: Theme | None = None,
     ) -> None:
         """Create a icon button."""
-        super().__init__(top, left, width, height)
-        self.scene = scene
+        super().__init__(context=context, top=top, left=left, width=width, height=height)
+        self.context = context
         self.icon_name = icon
         self.enabled = enabled
         self.toggle = toggle
@@ -64,8 +65,8 @@ class IconButton(Control):
         self._bg_material = gfx.MeshBasicMaterial(color=self.theme.group_color, pick_write=True)
         self._bg_mesh = gfx.Mesh(self._geometry, self._bg_material)
 
-        self.scene.add(self._sprite)
-        self.scene.add(self._bg_mesh)
+        self.context.add(self._sprite)
+        self.context.add(self._bg_mesh)
 
         # Register event handlers  on the background mesh
         _ = self._bg_mesh.add_event_handler(self._on_mouse_enter, "pointer_enter")  # type: ignore
@@ -89,7 +90,7 @@ class IconButton(Control):
         if not self.enabled:
             return
         self._dragging = True
-        event.target.set_pointer_capture(event.pointer_id, self.scene.renderer)
+        event.target.set_pointer_capture(event.pointer_id, self.context.renderer)
         self._update_visuals()
 
     def _on_mouse_up(self, event: gfx.PointerEvent) -> None:
@@ -124,7 +125,7 @@ class IconButton(Control):
 
         cx = self.left + self.width / 2
         cy = self.top + self.height / 2
-        pos = self._screen_to_world(cx, cy, 1)
+        pos = self.context.screen_to_world(cx, cy, 1)
 
         self._sprite.local.position = pos
         self._bg_mesh.local.position = pos

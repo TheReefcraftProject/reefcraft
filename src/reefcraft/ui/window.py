@@ -6,16 +6,21 @@
 
 """Primary window for the application and views."""
 
-from pathlib import Path
+from __future__ import annotations
 
-import pygfx as gfx
+from typing import TYPE_CHECKING
+
 from rendercanvas.auto import RenderCanvas
 
-from reefcraft.sim.engine import Engine
 from reefcraft.ui.reef import Reef
-from reefcraft.ui.views.palette import Palette
-from reefcraft.utils.logger import logger
+from reefcraft.ui.ui_context import UIContext
+from reefcraft.ui.views.panel import Panel
 from reefcraft.utils.window_style import apply_dark_titlebar_and_icon
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from reefcraft.sim.engine import Engine
 
 
 class Window:
@@ -26,19 +31,18 @@ class Window:
         self.engine = engine
         self.canvas = RenderCanvas(size=(1920, 1080), title="Reefcraft", update_mode="continuous", max_fps=60)  # type: ignore
 
-        # Make the window beautiful with dark mode titel bar and an icon
+        # Make the window beautiful with dark mode title bar and an icon
         icon_path = (app_root / "resources" / "icons" / "logo.ico").resolve()
         apply_dark_titlebar_and_icon("Reefcraft", icon_path)
 
-        # Prepare our pygfx renderer
-        self.renderer = gfx.WgpuRenderer(self.canvas)
-        self.stats = gfx.Stats(viewport=self.renderer)
+        # Create the global UI context with renderer state
+        self.context = UIContext(canvas=self.canvas)
 
-        # Create the view of the reef and the ui panel
-        self.reef = Reef(self.renderer)
-        self.panel = Palette(self.renderer, self.engine)
+        # Create the view of the reef and the UI panel
+        self.reef = Reef(self.context.renderer)
+        self.panel = Panel(self.context, engine=self.engine)
 
-        self.renderer.request_draw(self.draw)
+        self.context.renderer.request_draw(self.draw)
 
     @property
     def is_open(self) -> bool:
@@ -47,8 +51,6 @@ class Window:
 
     def draw(self) -> None:
         """Render one frame of the simulation and overlay UI."""
-        # with self.stats:
         self.reef.draw(self.engine.state)
         self.panel.draw(self.engine.state)
-        # self.stats.render()
-        self.renderer.flush()
+        self.context.renderer.flush()

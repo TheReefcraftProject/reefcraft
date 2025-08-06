@@ -13,36 +13,37 @@ from reefcraft.ui.control import Control
 from reefcraft.ui.icon_button import IconButton
 from reefcraft.ui.label import Label, TextAlign
 from reefcraft.ui.layout import Group, Layout, LayoutDirection
+from reefcraft.ui.ui_context import UIContext
 from reefcraft.utils.logger import logger
 
 
 class EngineSection(Group):
     """UI Section to add and change corals in the simulation."""
 
-    def __init__(self, scene: gfx.Scene, engine: Engine) -> None:
+    def __init__(self, context: UIContext, engine: Engine) -> None:
         """Create a new coral ui layout."""
         super().__init__(
-            scene=scene,
+            context=context,
             direction=LayoutDirection.VERTICAL,
             margin=0,
         )
         self.engine = engine
         self.controls = [
             Layout(
-                scene,
+                context,
                 controls=[
-                    Control(width=10),
-                    Label(scene, text="SIMULATION", width=250, align=TextAlign.LEFT, font_color="#F3F6FA"),
+                    Control(context, width=10),
+                    Label(context, text="SIMULATION", width=250, align=TextAlign.LEFT, font_color="#F3F6FA"),
                 ],
                 direction=LayoutDirection.HORIZONTAL,
                 margin=5,
             ),
             Layout(
-                self.scene,
+                self.context,
                 controls=[
-                    Control(width=24),
+                    Control(context, width=24),
                     IconButton(
-                        scene,
+                        context,
                         "play.png",
                         width=24,
                         height=24,
@@ -53,7 +54,7 @@ class EngineSection(Group):
                         pressed_tint=(194.0, 1.5),  # theme.highlight_color play state
                     ),
                     Label(
-                        scene,
+                        context,
                         text=lambda: (f"{engine.get_time():6.2f}s  {engine.step_rate_hz:5.1f} Hz   {engine.sim_speed_ratio:4.2f}×"),
                         width=200,
                         align=TextAlign.RIGHT,
@@ -61,9 +62,9 @@ class EngineSection(Group):
                 ],
                 direction=LayoutDirection.HORIZONTAL,
             ),
-            Control(height=5),
+            Control(context, height=5),
         ]
 
     def _on_add_coral(self) -> None:
         logger.debug("ADD CORAL")
-        # Add logic to modify engine state and inject new coral widgets
+        # Add logic to modify engine state and inject new coral controls

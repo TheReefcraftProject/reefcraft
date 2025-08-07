@@ -53,6 +53,7 @@ class List(Control):
         header: str | None = None,
         theme: Theme | None = None,
     ) -> None:
+        """Create a List Control that lays out the contained controls vertically or horizontally."""
         super().__init__(context)
 
         self.direction = direction
@@ -165,6 +166,7 @@ class List(Control):
             self._layout_in_progress = False
 
     def _update_visuals(self) -> None:
+        """Update the backgound meshes as needed and show and hide as desired."""
         self._layout()
 
         if self.background:
@@ -187,6 +189,7 @@ class List(Control):
 
 
 def create_line_rectangle(width: int, height: int) -> gfx.Geometry:
+    """Utility for the frame around the background."""
     points = np.array(
         [
             [-width / 2, -height / 2, 0],

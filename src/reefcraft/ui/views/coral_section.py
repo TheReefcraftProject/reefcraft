@@ -6,23 +6,75 @@
 
 """A section of UI controls for Coral management."""
 
+from collections.abc import Callable
+
 import pygfx as gfx
 
 from reefcraft.sim.engine import Engine
 from reefcraft.ui.control import Control
 from reefcraft.ui.dropdown import Dropdown
 from reefcraft.ui.icon_button import IconButton
+
+# coral_item.py
 from reefcraft.ui.label import Label, TextAlign
 from reefcraft.ui.list import LayoutDirection, List
 from reefcraft.ui.ui_context import UIContext
 from reefcraft.utils.logger import logger
 
 
+class CoralItem(List):
+    _coral_count = 0  # Class-level counter
+
+    def __init__(
+        self,
+        context: UIContext,
+        on_model_change: Callable[[str], None],
+        on_location_change: Callable[[str], None],
+    ) -> None:
+        super().__init__(
+            context=context,
+            direction=LayoutDirection.HORIZONTAL,
+            spacing=6,
+            margin=4,
+            background=True,
+        )
+
+        CoralItem._coral_count += 1
+        self.name = f"Coral {CoralItem._coral_count}"
+
+        self.label = Label(
+            context,
+            text=self.name,
+            width=100,
+            align=TextAlign.LEFT,
+            font_size=13,
+        )
+
+        self.model_dropdown = Dropdown(
+            context,
+            width=120,
+            height=24,
+            options=["PORAG", "XLB", "Accretive", "Polyp-Based", "Custom SDF"],
+            on_select=on_model_change,
+        )
+
+        self.location_dropdown = Dropdown(
+            context,
+            width=100,
+            height=24,
+            options=["Front", "Center", "Left", "Right"],
+            on_select=on_location_change,
+        )
+
+        self.add_control(self.label)
+        self.add_control(self.model_dropdown)
+        self.add_control(self.location_dropdown)
+
+
 class CoralSection(List):
     """UI Section to add and change corals in the simulation."""
 
     def __init__(self, context: UIContext, engine: Engine) -> None:
-        """Create a new coral ui layout."""
         super().__init__(
             context=context,
             background=True,
@@ -30,7 +82,9 @@ class CoralSection(List):
             margin=0,
         )
         self.engine = engine
-        self.controls = [
+
+        # Title bar with ADD button
+        self.add_control(
             List(
                 context,
                 controls=[
@@ -50,43 +104,23 @@ class CoralSection(List):
                 ],
                 direction=LayoutDirection.HORIZONTAL,
                 margin=5,
-            ),
-            # Additional coral controls can be dynamically inserted here
-        ]
-        # List of models
-        growth_models = ["PORAG", "XLB", "Accretive", "Polyp-Based", "Custom SDF"]
-
-        # Callback when user selects a model
-        def on_model_selected(model_name: str) -> None:
-            print(f"Selected growth model: {model_name}")
-            # You could call `coral.set_growth_model(model_name)` here
-
-        self.add_control(
-            List(
-                context=context,
-                direction=LayoutDirection.HORIZONTAL,
-                spacing=6,
-                margin=6,
-                background=True,
-                controls=[
-                    Label(
-                        context=context,
-                        width=120,
-                        text="Growth Model",
-                        align="left",
-                        font_size=13,
-                    ),
-                    Dropdown(
-                        context=context,
-                        width=150,
-                        height=28,
-                        options=growth_models,
-                        on_select=on_model_selected,
-                    ),
-                ],
             )
         )
 
+        # Container for dynamically added CoralItem controls
+        self.coral_list = List(
+            context=context,
+            direction=LayoutDirection.VERTICAL,
+            spacing=4,
+            margin=4,
+        )
+        self.add_control(self.coral_list)
+
     def _on_add_coral(self) -> None:
         logger.debug("ADD CORAL")
-        # Add logic to modify engine state and inject new coral controls
+        item = CoralItem(
+            context=self.context,
+            on_model_change=lambda name: logger.debug(f"{item.name} model: {name}"),
+            on_location_change=lambda loc: logger.debug(f"{item.name} location: {loc}"),
+        )
+        self.coral_list.add_control(item)

@@ -4,7 +4,7 @@
 # Licensed under the MIT License. See the LICENSE file for details.
 # -----------------------------------------------------------------------------
 
-"""Manage auto-layout options for groups of control."""
+"""List control for arranging child controls vertically or horizontally with optional background and frame."""
 
 from __future__ import annotations
 
@@ -37,8 +37,8 @@ class Alignment(Enum):
     END = auto()
 
 
-class Layout(Control):
-    """A layout control that arranges child controls vertically or horizontally."""
+class List(Control):
+    """A layout container that arranges child controls with optional background and frame."""
 
     def __init__(
         self,
@@ -49,22 +49,46 @@ class Layout(Control):
         spacing: int = 2,
         margin: int = 0,
         alignment: Alignment = Alignment.START,
+        background: bool = False,
+        header: str | None = None,
+        theme: Theme | None = None,
     ) -> None:
-        """Create a new layout control."""
         super().__init__(context)
 
         self.direction = direction
         self.spacing = spacing
         self.margin = margin
         self.alignment = alignment
+        self.background = background
+        self.header = header
+        self.theme = theme or Theme()
+
+        self._bg_mesh = gfx.Mesh(
+            gfx.plane_geometry(1, 1),
+            gfx.MeshBasicMaterial(color=self.theme.group_color),
+        )
+        self.context.add(self._bg_mesh)
+        self._frame_mesh = gfx.Line(
+            create_line_rectangle(1, 1),
+            gfx.LineMaterial(color=self.theme.outline_color, thickness=1),
+        )
+        self.context.add(self._frame_mesh)
+        if self.background:
+            self._bg_mesh.visible = True
+            self._frame_mesh.visible = True
+        else:
+            self._bg_mesh.visible = False
+            self._frame_mesh.visible = False
+
         self._layout_in_progress = False
         self.controls: list[Control] = []
+
         if controls:
             for control in controls:
                 self.add_control(control)
 
     def add_control(self, control: Control) -> None:
-        """Append a control to the layout and register for change tracking."""
+        """Append a control to the list and register for change tracking."""
         self.controls.append(control)
         control.on_change(self._layout)
         self._layout()
@@ -91,7 +115,7 @@ class Layout(Control):
     def _layout(self) -> None:
         """Internal layout logic: positions widgets and sizes layout accordingly."""
         if self._layout_in_progress:
-            return  # Prevent recursive layout loops
+            return
 
         self._layout_in_progress = True
 
@@ -112,7 +136,7 @@ class Layout(Control):
                 offset += self.spacing
 
             if self.controls:
-                offset -= self.spacing  # remove last spacing
+                offset -= self.spacing
 
             if self.direction == LayoutDirection.VERTICAL:
                 self.height = offset + self.margin * 2
@@ -121,33 +145,48 @@ class Layout(Control):
                 self.width = offset + self.margin * 2
                 self.height = max_cross + self.margin * 2
 
-            # Align widgets along cross-axis
             for widget in self.controls:
                 if self.direction == LayoutDirection.VERTICAL:
                     if self.alignment == Alignment.CENTER:
                         widget.left = self.left + self.margin + (self.width - 2 * self.margin - widget.width) // 2
                     elif self.alignment == Alignment.END:
                         widget.left = self.left + self.width - self.margin - widget.width
-                    else:  # START
+                    else:
                         widget.left = self.left + self.margin
                 else:
                     if self.alignment == Alignment.CENTER:
                         widget.top = self.top + self.margin + (self.height - 2 * self.margin - widget.height) // 2
                     elif self.alignment == Alignment.END:
                         widget.top = self.top + self.height - self.margin - widget.height
-                    else:  # START
+                    else:
                         widget.top = self.top + self.margin
 
         finally:
             self._layout_in_progress = False
 
     def _update_visuals(self) -> None:
-        """Update child control positions when this layout moves."""
         self._layout()
+
+        if self.background:
+            self._bg_mesh.visible = True
+            self._frame_mesh.visible = True
+        else:
+            self._bg_mesh.visible = False
+            self._frame_mesh.visible = False
+
+        w, h = self.width, self.height
+        cx = self.left + w / 2
+        cy = self.top + h / 2
+        pos = self.context.screen_to_world(cx, cy, z=-50)
+
+        self._bg_mesh.geometry = gfx.plane_geometry(w, h)
+        self._bg_mesh.local.position = pos
+
+        self._frame_mesh.geometry = create_line_rectangle(w, h)
+        self._frame_mesh.local.position = pos
 
 
 def create_line_rectangle(width: int, height: int) -> gfx.Geometry:
-    """Return a rectangle outline geometry for gfx.Line."""
     points = np.array(
         [
             [-width / 2, -height / 2, 0],
@@ -159,68 +198,3 @@ def create_line_rectangle(width: int, height: int) -> gfx.Geometry:
         dtype=np.float32,
     )
     return gfx.Geometry(positions=points)
-
-
-class Group(Layout):
-    """A drawable layout container with background, frame, and optional header."""
-
-    def __init__(
-        self,
-        context: UIContext,
-        *,
-        controls: list[Control] | None = None,
-        direction: LayoutDirection = LayoutDirection.VERTICAL,
-        spacing: int = 2,
-        margin: int = 0,
-        alignment: Alignment = Alignment.START,
-        draw: bool = True,
-        header: str | None = None,
-        theme: Theme | None = None,
-    ) -> None:
-        super().__init__(
-            context,
-            controls=controls,
-            direction=direction,
-            spacing=spacing,
-            margin=margin,
-            alignment=alignment,
-        )
-
-        self.draw = draw
-        self.header = header
-        self.theme = theme or Theme()
-
-        # Initialize background and frame placeholders
-        self._bg_mesh = gfx.Mesh(
-            gfx.plane_geometry(1, 1),
-            gfx.MeshBasicMaterial(color=self.theme.group_color),
-        )
-        self._frame_mesh = gfx.Line(
-            create_line_rectangle(1, 1),
-            gfx.LineMaterial(color=self.theme.outline_color, thickness=1),
-        )
-
-        self.context.add(self._bg_mesh)
-        self.context.add(self._frame_mesh)
-
-    def _update_visuals(self) -> None:
-        super()._update_visuals()
-
-        if not getattr(self, "draw", False):
-            return
-
-        self._bg_mesh.visible = True
-        self._frame_mesh.visible = True
-
-        w, h = self.width, self.height
-        cx = self.left + w / 2
-        cy = self.top + h / 2
-        pos = self.context.screen_to_world(cx, cy, z=-50)
-
-        # Update background
-        self._bg_mesh.geometry = gfx.plane_geometry(w, h)
-        self._bg_mesh.local.position = pos
-
-        # Update frame
-        self._frame_mesh.geometry = create_line_rectangle(w, h)
-        self._frame_mesh.local.position = pos

@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 
 from reefcraft.sim.state import SimState
 from reefcraft.ui.icon import Icon
-from reefcraft.ui.layout import Layout, LayoutDirection
+from reefcraft.ui.list import LayoutDirection, List
 from reefcraft.ui.palette import Palette
 from reefcraft.ui.views.coral_section import CoralSection
 from reefcraft.ui.views.engine_section import EngineSection
@@ -29,10 +29,10 @@ class Panel(Palette):
         """Initialize the panel and populate it with UI sections."""
         super().__init__(context=context)
 
-        Layout(
+        List(
             context=context,
             controls=[
-                Layout(
+                List(
                     context=context,
                     controls=[
                         Icon(

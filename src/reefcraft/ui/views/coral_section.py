@@ -13,24 +13,25 @@ from reefcraft.ui.control import Control
 from reefcraft.ui.dropdown import Dropdown
 from reefcraft.ui.icon_button import IconButton
 from reefcraft.ui.label import Label, TextAlign
-from reefcraft.ui.layout import Group, Layout, LayoutDirection
+from reefcraft.ui.list import LayoutDirection, List
 from reefcraft.ui.ui_context import UIContext
 from reefcraft.utils.logger import logger
 
 
-class CoralSection(Group):
+class CoralSection(List):
     """UI Section to add and change corals in the simulation."""
 
     def __init__(self, context: UIContext, engine: Engine) -> None:
         """Create a new coral ui layout."""
         super().__init__(
             context=context,
+            background=True,
             direction=LayoutDirection.VERTICAL,
             margin=0,
         )
         self.engine = engine
         self.controls = [
-            Layout(
+            List(
                 context,
                 controls=[
                     Control(context, width=10),
@@ -61,11 +62,12 @@ class CoralSection(Group):
             # You could call `coral.set_growth_model(model_name)` here
 
         self.add_control(
-            Group(
+            List(
                 context=context,
                 direction=LayoutDirection.HORIZONTAL,
                 spacing=6,
                 margin=6,
+                background=True,
                 controls=[
                     Label(
                         context=context,

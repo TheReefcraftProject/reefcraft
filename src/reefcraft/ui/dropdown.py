@@ -12,6 +12,7 @@ from reefcraft.ui.button import Button
 from reefcraft.ui.control import Control
 from reefcraft.ui.theme import Theme
 from reefcraft.ui.ui_context import UIContext
+from reefcraft.utils.logger import logger
 
 
 class Dropdown(Control):
@@ -38,7 +39,7 @@ class Dropdown(Control):
         self.selected = default or options[0]
         self.expanded = False
 
-        # Button that shows the current value
+        # Button to show current selection
         self.button = Button(
             self.context,
             label=self.selected,
@@ -48,7 +49,7 @@ class Dropdown(Control):
         )
         self.root.add(self.button.root)
 
-        # List of option buttons
+        # Create and initially hide option buttons
         self.option_buttons: list[Button] = []
         for i, opt in enumerate(options):
             btn = Button(
@@ -58,7 +59,7 @@ class Dropdown(Control):
                 height=self.height,
                 on_click=lambda opt=opt: self.select(opt),
             )
-            btn.root.visible = False
+            btn.hide()
             self.option_buttons.append(btn)
             self.root.add(btn.root)
 
@@ -70,7 +71,7 @@ class Dropdown(Control):
         self._update_visuals()
 
     def select(self, value: str) -> None:
-        """Select an option from the list."""
+        """Select an option and close the menu."""
         self.selected = value
         self.button.text_string = value
         self.button._text.set_text(value)
@@ -79,12 +80,12 @@ class Dropdown(Control):
         self._update_visuals()
 
     def close(self) -> None:
-        """Close the dropdown menu."""
+        """Programmatically close the dropdown."""
         self.expanded = False
         self._update_visuals()
 
     def _update_visuals(self) -> None:
-        """Update positions and visibility of dropdown elements."""
+        """Update dropdown layout and visibility."""
         self.button.left = self.left
         self.button.top = self.top
         self.button._update_visuals()
@@ -92,5 +93,8 @@ class Dropdown(Control):
         for i, btn in enumerate(self.option_buttons):
             btn.left = self.left
             btn.top = self.top + self.height * (i + 1)
-            btn.root.visible = self.expanded
+            if self.expanded:
+                btn.show()
+            else:
+                btn.hide()
             btn._update_visuals()

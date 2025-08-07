@@ -40,6 +40,7 @@ class Control:
         self._width = width
         self._height = height
         self.root = gfx.Group()
+        self.context.add(self.root)
         self.theme = theme or Theme()
         self._on_change_callbacks: list[Callable[[], None]] = []
 
@@ -83,18 +84,22 @@ class Control:
         self._height = value
         self._trigger_change()
 
-    # @property
-    # def scene(self) -> gfx.Scene:
-    #     """Return the current scene from the UI context."""
-    #     return self.context.scene
+    def show(self) -> None:
+        """Make the control visible."""
+        self.root.visible = True
+        self.context.draw()
 
-    # @property
-    # def renderer(self) -> gfx.WgpuRenderer:
-    #     """Return the current renderer from the UI context."""
-    #     return self.context.renderer
+    def hide(self) -> None:
+        """Hide the control from view."""
+        self.root.visible = False
+        self.context.draw()
+
+    def is_visible(self) -> bool:
+        """Return whether the control is currently visible."""
+        return self.root.visible
 
     def _trigger_change(self) -> None:
-        """Call all registered change listeners."""
+        """Call all registered change listeners and update visuals."""
         for callback in self._on_change_callbacks:
             callback()
         self._update_visuals()

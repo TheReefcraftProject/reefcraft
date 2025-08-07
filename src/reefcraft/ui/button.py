@@ -76,10 +76,10 @@ class Button(Control):
 
         self._icon_mesh: gfx.Mesh | None = self._load_icon(icon) if icon else None
 
-        _ = self.context.add(self._bg_mesh)
-        _ = self.context.add(self._text)
+        self.root.add(self._bg_mesh)
+        self.root.add(self._text)
         if self._icon_mesh:
-            _ = self.context.add(self._icon_mesh)
+            self.root.add(self._icon_mesh)
 
         self._dragging = False
 

@@ -10,14 +10,17 @@ import numpy as np
 import warp as wp
 from scipy.spatial import ConvexHull
 
-from reefcraft.sim.state import SimState
+from reefcraft.sim.growth_model import GrowthModel
+from reefcraft.sim.state import CoralState, SimState
 
 
-class SimpleP:
+class SimplePoragGrowthModel(GrowthModel):
     """Coral growth simulation with polyps evenly spaced on a hemisphere surface."""
 
     def __init__(
         self,
+        sim_state: SimState,
+        coral_state: CoralState,
         grid_shape: tuple = (200, 200, 200),
         polyp_spacing: float = 0.1,
         max_time_steps: int = 1000,

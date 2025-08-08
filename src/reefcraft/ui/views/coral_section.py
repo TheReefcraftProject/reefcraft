@@ -11,6 +11,7 @@ from collections.abc import Callable
 import pygfx as gfx
 
 from reefcraft.sim.engine import Engine
+from reefcraft.sim.state import CoralLocation, CoralState
 from reefcraft.ui.control import Control
 from reefcraft.ui.dropdown import Dropdown
 from reefcraft.ui.icon_button import IconButton
@@ -27,9 +28,8 @@ class CoralItem(List):
 
     def __init__(
         self,
+        state: CoralState,
         context: UIContext,
-        on_model_change: Callable[[str], None],
-        on_location_change: Callable[[str], None],
     ) -> None:
         super().__init__(
             context=context,
@@ -39,36 +39,51 @@ class CoralItem(List):
             background=True,
         )
 
+        self.state: CoralState = state
+
         CoralItem._coral_count += 1
         self.name = f"Coral {CoralItem._coral_count}"
+
+        # Set initial values
+        self.model = state.model
+        self.location = state.location
 
         self.label = Label(
             context,
             text=self.name,
-            width=100,
+            width=70,
             align=TextAlign.LEFT,
             font_size=13,
         )
 
         self.model_dropdown = Dropdown(
             context,
-            width=120,
+            width=95,
             height=24,
-            options=["PORAG", "XLB", "Accretive", "Polyp-Based", "Custom SDF"],
-            on_select=on_model_change,
+            options=["LLABRES", "PORAG", "TEST-RECT"],
+            on_select=self._on_model_change,
         )
 
         self.location_dropdown = Dropdown(
             context,
-            width=100,
+            width=80,
             height=24,
-            options=["Front", "Center", "Left", "Right"],
-            on_select=on_location_change,
+            options=[loc.name for loc in CoralLocation],
+            on_select=self._on_location_change,
         )
 
         self.add_control(self.label)
         self.add_control(self.model_dropdown)
         self.add_control(self.location_dropdown)
+
+    def _on_model_change(self, name: str) -> None:
+        logger.debug("ADD CORAL")
+        self.state.model = name
+
+    def _on_location_change(self, new_location: str) -> None:
+        logger.debug(f"{self.name} location: {new_location}")
+        self.location = new_location
+        self.state.location = new_location
 
 
 class CoralSection(List):
@@ -118,9 +133,9 @@ class CoralSection(List):
 
     def _on_add_coral(self) -> None:
         logger.debug("ADD CORAL")
+        coral_state = self.engine.state.add_coral()
         item = CoralItem(
             context=self.context,
-            on_model_change=lambda name: logger.debug(f"{item.name} model: {name}"),
-            on_location_change=lambda loc: logger.debug(f"{item.name} location: {loc}"),
+            state=coral_state,
         )
         self.coral_list.add_control(item)

@@ -11,16 +11,17 @@ from typing import Literal
 import numpy as np
 import warp as wp
 
-from reefcraft.sim.state import SimState
+from reefcraft.sim.state import CoralState, SimState
 from reefcraft.utils.logger import logger
 
 
 class GrowthModel:
     """A base class for all coral morphological models."""
 
-    def __init__(self, context: SimState) -> None:
+    def __init__(self, sim_state: SimState, coral_state: CoralState) -> None:
         """Initialize the engine with a new :class:`Timer`."""
-        self.context = context
+        self.sim_state: SimState = sim_state
+        self.coral_state: CoralState = coral_state
         self.reset()
 
     @property
@@ -32,27 +33,9 @@ class GrowthModel:
         """Reset the model to its initial conditions including resoring the coral seed mesh."""
         self.default_polyp_mesh()
 
-    def update(self, time: float) -> None:
+    def update(self, dt: float) -> None:
         """Advance the growth of the coral by the time provided."""
-
-        @wp.kernel
-        def wave_in_place(
-            verts: wp.array(dtype=wp.vec3),  # your single vec3 array
-            t: float,  # time in seconds
-            amp: float,  # amplitude of the wave
-            freq: float,  # frequency in Hz
-        ):
-            i = wp.tid()
-            p = verts[i]
-            p.z = wp.sin(t * 2.0 * 3.141592653589793 * freq) * amp
-            verts[i] = p
-
-        vertices = self.context.coral.vertices
-        wp.launch(
-            wave_in_place,
-            dim=vertices.shape[0],
-            inputs=[vertices, time, 0.1, 0.5],
-        )
+        pass
 
     def default_polyp_mesh(self, size: float = 1.0, height: float = 0.3, res: int = 32) -> None:
         """vertices: (res*res, 3) float32 array indices:  ((res-1)*(res-1)*2, 3) uint32 array."""
@@ -84,4 +67,4 @@ class GrowthModel:
         vertices_wp = wp.array(vertices, dtype=wp.vec3)
         indices_wp = wp.array(indices, dtype=wp.uint32)
 
-        self.context.coral.set_mesh(vertices_wp, indices_wp)
+        self.coral_state.set_mesh(vertices_wp, indices_wp)

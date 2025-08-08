@@ -9,15 +9,17 @@
 import numpy as np
 import warp as wp
 
-from reefcraft.sim.state import SimState
+from reefcraft.sim.growth_model import GrowthModel
+from reefcraft.sim.state import CoralState, SimState
 from reefcraft.utils.logger import logger
 
 
-class LlabresGrowthModel:
+class LlabresGrowthModel(GrowthModel):
     """Class based on Llabres Et Al column coral growth."""
 
-    def __init__(self, sim_state: SimState) -> None:
+    def __init__(self, sim_state: SimState, coral_state: CoralState) -> None:
         """Initialization of single Llabres column coral."""
+        super().__init__(sim_state=sim_state, coral_state=coral_state)
         self.verts, self.faces = self.gen_llabres_seed()
         self.norms = wp.zeros(self.verts.shape[0], dtype=wp.vec3f)
         self.fixed = wp.zeros(self.verts.shape[0], dtype=wp.int32)
@@ -30,8 +32,8 @@ class LlabresGrowthModel:
         self.fixed = wp.array(fixed_mask, dtype=wp.int32)
 
         # Add our new coral to the simulation state
-        self.coral_state = sim_state.add_coral()
-        self.coral_state.set_mesh(self.verts, self.faces)
+        # self.coral_state = sim_state.add_coral()
+        # self.coral_state.set_mesh(self.verts, self.faces)
 
     def gen_llabres_seed(self, radius: float = 1.0, height: float = 0.1) -> tuple[wp.array, wp.array]:
         """Generate a hexagonal mesh to start Llabres coral growth."""
@@ -109,10 +111,11 @@ class LlabresGrowthModel:
         logger.error("RESET llabres not implemented")
         pass
 
-    def update(self, time: float, state: SimState) -> None:
+    def update(self, time: float) -> None:  # , state: CoralState) -> None:
         """Perform one growth step and sync to the SimState."""
         self.step()
         self.coral_state.set_mesh(self.verts, self.faces)
+        # state.set_mesh(self.verts, self.faces)
 
     def subdiv(self, edge_midpoints: dict[tuple[int, int], int] | None, edge_thresh: float = 1.0) -> bool:
         """Determine edges and midpoints for subdivision, return boolean of subdiv status."""

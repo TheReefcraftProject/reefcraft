@@ -14,6 +14,7 @@ from rendercanvas.auto import RenderCanvas
 
 from reefcraft.ui.reef import Reef
 from reefcraft.ui.ui_context import UIContext
+from reefcraft.ui.render_bridge import MeshViewer, RenderBridge
 from reefcraft.ui.views.panel import Panel
 from reefcraft.utils.window_style import apply_dark_titlebar_and_icon
 
@@ -39,7 +40,13 @@ class Window:
         self.context = UIContext(canvas=self.canvas)
 
         # Create the view of the reef and the UI panel
-        self.reef = Reef(self.context.renderer)
+        self.reef = Reef(self.context.renderer, engine=self.engine)
+        # Create a render bridge for future store-driven visuals (not yet wired to Reef scene)
+        self.bridge = RenderBridge(store=self.engine.state.store, scene=self.reef.scene)
+        # Example: register viewers for store keys if/when produced
+        # Register viewers for multiple coral ids (first few)
+        for i in range(4):
+            self.bridge.register_viewer(f"coral.{i}.mesh", MeshViewer())
         self.panel = Panel(self.context, engine=self.engine)
 
         self.context.renderer.request_draw(self.draw)
@@ -51,6 +58,8 @@ class Window:
 
     def draw(self) -> None:
         """Render one frame of the simulation and overlay UI."""
+        # Sync any store-driven visuals (mesh/fields)
+        self.bridge.sync()
         self.reef.draw(self.engine.state)
         self.panel.draw(self.engine.state)
         self.context.renderer.flush()

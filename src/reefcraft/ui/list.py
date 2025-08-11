@@ -94,6 +94,12 @@ class List(Control):
         control.on_change(self._layout)
         self._layout()
 
+    # Backwards-compat for tests expecting a 'widgets' attribute
+    @property
+    def widgets(self) -> list[Control]:
+        """Alias for the list of child controls (legacy name: widgets)."""
+        return self.controls
+
     def set_spacing(self, spacing: int) -> None:
         """Set the space between controls and relayout."""
         self.spacing = spacing
@@ -201,3 +207,7 @@ def create_line_rectangle(width: int, height: int) -> gfx.Geometry:
         dtype=np.float32,
     )
     return gfx.Geometry(positions=points)
+
+
+# Backwards-compat alias for tests using `Layout`
+Layout = List

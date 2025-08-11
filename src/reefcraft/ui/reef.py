@@ -43,6 +43,8 @@ class CoralMesh:
     def sync(self, state: CoralState) -> None:
         """Update the visualized mesh to the latest from the sim."""
         mesh_data = state.get_render_mesh()
+        if mesh_data is None:
+            return
 
         # for now always do a full update!
         # if subdivided:
@@ -89,16 +91,18 @@ def create_rectangle_edges(y: float, width: float = 1.0, depth: float = 1.0, col
 class Reef:
     """The geometry, lighting, camera, and draw routines for the reef."""
 
-    def __init__(self, renderer: gfx.WgpuRenderer) -> None:
+    def __init__(self, renderer: gfx.WgpuRenderer, engine=None) -> None:
         """Prepare the Reef class to hold a 3D scene including the coral."""
         self.renderer = renderer
         self.viewport = gfx.Viewport(renderer)
         self.scene = gfx.Scene()
+        self.engine = engine
 
         self.corals: dict[CoralState, CoralMesh] = {}
 
         self.water_particles = WaterParticles()
         self.scene.add(self.water_particles.get_actor())
+        self._advect_counter: int = 0
 
         self.scene.add(gfx.AmbientLight("#fff", 0.3))
         light = gfx.DirectionalLight("#fff", 3)
@@ -180,12 +184,12 @@ class Reef:
 
     def draw(self, state: SimState) -> None:
         """Update the reef scene and draw."""
-        for coral_state in state.corals:
-            if coral_state not in self.corals:
-                self.corals[coral_state] = CoralMesh(self.scene)
-            self.corals[coral_state].sync(coral_state)
-
-        self.water_particles.advect(state.get_fields()["velocity"])
+        # Deprecated direct sync from SimState; RenderBridge now updates meshes via store
+        # Keeping water particles visualization for now; throttle when paused
+        if getattr(self.engine, "is_playing", False):
+            self._advect_counter = (self._advect_counter + 1) % 2  # advect every other frame
+            if self._advect_counter == 0:
+                self.water_particles.advect(state.get_fields()["velocity"])
         # DEBUG
         # mean_speed = np.mean(np.linalg.norm(state.velocity_field, axis=-1))
         # print(f"Mean fluid speed: {mean_speed}")

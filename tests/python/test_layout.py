@@ -1,55 +1,73 @@
 import pytest
 
-from reefcraft.ui.list import Alignment, Control, Layout, LayoutDirection
+from reefcraft.ui.list import Alignment, Layout, LayoutDirection
+from reefcraft.ui.control import Control
+from reefcraft.ui.ui_context import UIContext
+
+
+class DummyCanvas:
+    def __init__(self, size=(800, 600)) -> None:
+        self._size = size
+
+    def get_logical_size(self):  # noqa: D401 - simple dummy
+        return self._size
 
 
 def test_single_widget_vertical() -> None:
-    w = Control(top=0, left=0, width=100, height=20)
-    layout = Layout(direction=LayoutDirection.VERTICAL, controls=[w], spacing=10, margin=5)
+    ctx = UIContext(canvas=DummyCanvas())
+    w = Control(context=ctx, top=0, left=0, width=100, height=20)
+    layout = Layout(context=ctx, direction=LayoutDirection.VERTICAL, controls=[w], spacing=10, margin=5)
     assert w.top == 5
     assert layout.height == 30  # 20 height + 5 top + 5 bottom
 
 
 def test_two_widgets_vertical() -> None:
-    w1 = Control(width=100, height=20)
-    w2 = Control(width=120, height=30)
-    layout = Layout(direction=LayoutDirection.VERTICAL, controls=[w1, w2], spacing=10, margin=5)
+    ctx = UIContext(canvas=DummyCanvas())
+    w1 = Control(context=ctx, width=100, height=20)
+    w2 = Control(context=ctx, width=120, height=30)
+    layout = Layout(context=ctx, direction=LayoutDirection.VERTICAL, controls=[w1, w2], spacing=10, margin=5)
     assert w1.top == 5
     assert w2.top == 5 + 20 + 10
     assert layout.height == 5 + 20 + 10 + 30 + 5  # top + w1 + spacing + w2 + bottom
 
 
 def test_alignment_center() -> None:
-    w = Control(top=0, left=0, width=50, height=20)
-    layout = Layout(direction=LayoutDirection.VERTICAL, controls=[w], spacing=10, margin=0, alignment=Alignment.CENTER)
+    ctx = UIContext(canvas=DummyCanvas())
+    w = Control(context=ctx, top=0, left=0, width=50, height=20)
+    layout = Layout(context=ctx, direction=LayoutDirection.VERTICAL, controls=[w], spacing=10, margin=0, alignment=Alignment.CENTER)
     assert w.left == (layout.width - w.width) // 2
 
 
 def test_alignment_end() -> None:
-    w = Control(top=0, left=0, width=50, height=20)
-    layout = Layout(direction=LayoutDirection.VERTICAL, controls=[w], spacing=10, margin=0, alignment=Alignment.END)
+    ctx = UIContext(canvas=DummyCanvas())
+    w = Control(context=ctx, top=0, left=0, width=50, height=20)
+    layout = Layout(context=ctx, direction=LayoutDirection.VERTICAL, controls=[w], spacing=10, margin=0, alignment=Alignment.END)
     assert w.left == layout.width - w.width
 
 
 def test_nested_layout_geometry() -> None:
+    ctx = UIContext(canvas=DummyCanvas())
     # Build widget hierarchy with explicit spacing = 10
     layout = Layout(
+        context=ctx,
         controls=[
             Layout(
+                context=ctx,
                 controls=[
-                    Control(width=20, height=20),  # "P"
-                    Control(width=20, height=20),  # "X"
+                    Control(context=ctx, width=20, height=20),  # "P"
+                    Control(context=ctx, width=20, height=20),  # "X"
                 ],
                 direction=LayoutDirection.HORIZONTAL,
                 spacing=10,
             ),
             Layout(
+                context=ctx,
                 controls=[
-                    Control(width=250, height=20),
-                    Control(width=250, height=20),
-                    Control(width=250, height=20),
-                    Control(width=250, height=20),
-                    Control(width=250, height=20),
+                    Control(context=ctx, width=250, height=20),
+                    Control(context=ctx, width=250, height=20),
+                    Control(context=ctx, width=250, height=20),
+                    Control(context=ctx, width=250, height=20),
+                    Control(context=ctx, width=250, height=20),
                 ],
                 direction=LayoutDirection.VERTICAL,
                 spacing=10,
@@ -81,11 +99,14 @@ def test_nested_layout_geometry() -> None:
 
 
 def test_nested_layout_margins() -> None:
+    ctx = UIContext(canvas=DummyCanvas())
     # Outer layout with margin=10
     outer_layout = Layout(
+        context=ctx,
         controls=[
             Layout(
-                controls=[Control(width=20, height=20)],
+                context=ctx,
+                controls=[Control(context=ctx, width=20, height=20)],
                 direction=LayoutDirection.HORIZONTAL,
                 margin=5,  # Inner margin
             ),
@@ -108,15 +129,16 @@ def test_nested_layout_margins() -> None:
 
 
 def test_horizontal_layout_bounds() -> None:
+    ctx = UIContext(canvas=DummyCanvas())
     layout = Layout(
-        scene=None,
+        context=ctx,
         direction=LayoutDirection.HORIZONTAL,
         spacing=2,
         margin=2,
     )
-    layout.add_control(Control(width=20, height=20))
-    layout.add_control(Control(width=100, height=20))
-    layout.add_control(Control(width=50, height=20))
+    layout.add_control(Control(context=ctx, width=20, height=20))
+    layout.add_control(Control(context=ctx, width=100, height=20))
+    layout.add_control(Control(context=ctx, width=50, height=20))
 
     # Total width = left margin + widths + spacing between + right margin
     expected_width = 2 + 20 + 2 + 100 + 2 + 50 + 2

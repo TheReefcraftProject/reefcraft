@@ -4,7 +4,7 @@
 # Licensed under the MIT License. See the LICENSE file for details.
 # -----------------------------------------------------------------------------
 
-"""Maintain the data state of the simulation."""
+"""Maintain the data state of the simulation and schedule model execution."""
 
 from enum import Enum
 from typing import TYPE_CHECKING
@@ -12,8 +12,10 @@ from typing import TYPE_CHECKING
 import numpy as np
 import warp as wp
 
-from reefcraft.sim.compute_lbm import ComputeLBM
 from reefcraft.sim.growth_model_factory import CoralModel, GrowthModelFactory
+from reefcraft.sim.graph import ComputeGraph
+from reefcraft.sim.models.water_model import WaterModel
+from reefcraft.sim.data_store import DataStore
 from reefcraft.utils.logger import logger
 
 if TYPE_CHECKING:
@@ -34,11 +36,14 @@ class CoralState:
 
     def __init__(self, model_factory: GrowthModelFactory) -> None:
         """Initialize the coral data state within the sim."""
+        self.coral_id: int = -1
         self.vertices = None
         self.indices = None
         self.model_factory = model_factory
         self._model: GrowthModel | None = None
+        self._model_enum: CoralModel | None = None
         self._location: CoralLocation = CoralLocation.CENTER
+        self.position = self._location.value
 
     @property
     def model(self) -> str:
@@ -76,9 +81,13 @@ class CoralState:
         self.vertices = vertices
         self.indices = indices
 
-    def get_render_mesh(self) -> dict:
-        """Retrieve the mesh data with left-handed (Y-up) coords for rendering."""
-        # TODO: Add a check for None for the arrays
+    def get_render_mesh(self) -> dict | None:
+        """Retrieve the mesh data with left-handed (Y-up) coords for rendering.
+
+        Returns None if the mesh has not been initialized yet.
+        """
+        if self.vertices is None or self.indices is None:
+            return None
         verts_np = np.array(self.vertices.numpy(), copy=True)
         verts_np[:, [1, 2]] = verts_np[:, [2, 1]]  # Swap Y/Z for left-handed view
         return {
@@ -106,25 +115,44 @@ class CoralState:
 
 
 class SimState:
-    """The data context for the simulation including all simulation state."""
+    """Global data context and model scheduler for the simulation."""
 
     def __init__(self) -> None:
-        """Initialize the simulation."""
-        self.corals = []
-        self.water = ComputeLBM()
+        """Initialize the simulation state and compute graph."""
+        # Data containers
+        self.corals: list[CoralState] = []
+
+        # Compute graph, shared data store, and model factory
+        self.graph = ComputeGraph()
+        self.store = DataStore()
+        self.graph.attach_store(self.store)
         self.model_factory = GrowthModelFactory(self)
-        # self.velocity_field: np.ndarray
+
+        # Register core models
+        self._water = WaterModel()
+        self.graph.add_model(self._water)
 
     def add_coral(self) -> CoralState:
-        """Add another coral state into the system and return it."""
+        """Add another coral state into the system, register its model, and return it."""
         new_coral = CoralState(self.model_factory)
+        # Choose a sensible default model so rendering/water coupling has geometry
+        new_coral.model = CoralModel.LLABRES.name
+        # Assign a unique id and append
+        new_coral.coral_id = len(self.corals)
         self.corals.append(new_coral)
+        # Register the coral's growth model into the graph if available
+        if new_coral._model is not None:  # type: ignore[attr-defined]
+            # Require water first so velocity field is available, and schedule growth via .step()
+            # Boost growth responsiveness: substeps=3 for now
+            setattr(new_coral._model, "substeps", 3)
+            self.graph.add_model(new_coral._model, node_id=f"coral.{new_coral.coral_id}", requires=["water"], priority=10)  # type: ignore[arg-type]
         return new_coral
 
     def get_fields(self) -> dict:
         """Return the fields for the state of the environment."""
-        return self.water.get_field_numpy()
+        return self._water.get_field_numpy()
 
     def step(self, dt: float) -> None:
-        """Advance the simulation state by a single dt."""
-        self.water.step(dt)
+        """Advance all registered models by a single dt via the compute graph."""
+        # Entire simulation now runs under the compute graph
+        self.graph.step(dt)

@@ -11,6 +11,8 @@ import time
 
 import warp as wp
 
+from reefcraft.sim.pipeline import Pipeline
+from reefcraft.sim.scheduler import Scheduler
 from reefcraft.sim.state import SimState
 from reefcraft.utils.logger import logger
 
@@ -32,8 +34,9 @@ class Engine:
 
         logger.debug("CREATE SIMSTATE")
         self.state = SimState()
-        # self.water = ComputeLBM()
-        # self.model = LlabresGrowthModel(self.state)
+        # Create pipeline and scheduler to drive the compute graph
+        self.pipeline = Pipeline(name="main", graph=self.state.graph, store=self.state.store)
+        self.scheduler = Scheduler([self.pipeline])
 
         self._thread: threading.Thread | None = None
         self._stop_event = threading.Event()
@@ -121,9 +124,8 @@ class Engine:
 
     def step(self) -> float:
         """Advance the simulation by one step and update tracking stats."""
-        # self.model.update(self.sim_time, self.state)
-        # self.water.step(self.model.get_numpy())
-        self.state.step(self.dt)
+        # Advance the simulation via the scheduler/pipeline/graph
+        self.scheduler.frame(self.dt)
         self.sim_time += self.dt
 
         # Performance tracking

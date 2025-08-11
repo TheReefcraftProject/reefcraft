@@ -104,7 +104,7 @@ class CoralSection(List):
                 context,
                 controls=[
                     Control(context, width=10),
-                    Label(context, text="CORALS", width=226, align=TextAlign.LEFT, font_color="#F3F6FA"),
+                    Label(context, text="CORALS", width=224, align=TextAlign.LEFT, font_color="#F3F6FA"),
                     IconButton(
                         context,
                         "add.png",
@@ -134,6 +134,8 @@ class CoralSection(List):
     def _on_add_coral(self) -> None:
         logger.debug("ADD CORAL")
         coral_state = self.engine.state.add_coral()
+        # Ensure the engine's compute graph aware models get the store, and kick once
+        # The engine runs in a background thread; we just need to create the UI item.
         item = CoralItem(
             context=self.context,
             state=coral_state,

@@ -141,7 +141,9 @@ def tint_image(img: np.ndarray, hue_shift: float = 0.0, brightness: float = 1.0)
     maxc = np.max(rgb, axis=-1)
     minc = np.min(rgb, axis=-1)
     v = maxc
-    s = np.where(maxc == 0, 0, (maxc - minc) / maxc)
+    # Robust saturation: avoid invalid divide warnings (NumPy evaluates both branches in where)
+    s = np.zeros_like(maxc)
+    np.divide(maxc - minc, maxc, out=s, where=maxc > 0)
 
     # Hue calculation
     rc = (maxc - r) / (maxc - minc + 1e-8)

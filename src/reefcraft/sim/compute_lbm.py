@@ -6,11 +6,12 @@
 """LBM computation engine."""
 
 import numpy as np
+import trimesh
 import warp as wp
 import xlb.velocity_set
 from xlb.compute_backend import ComputeBackend
 from xlb.grid import grid_factory
-from xlb.operator.boundary_condition import ExtrapolationOutflowBC, HalfwayBounceBackBC, RegularizedBC
+from xlb.operator.boundary_condition import ExtrapolationOutflowBC, FullwayBounceBackBC, HalfwayBounceBackBC, RegularizedBC
 from xlb.operator.macroscopic import Macroscopic
 from xlb.operator.stepper import IncompressibleNavierStokesStepper
 from xlb.precision_policy import PrecisionPolicy
@@ -50,26 +51,31 @@ class ComputeLBM:
             precision_policy=self.precision_policy,
             velocity_set=self.velocity_set,
         )
-        self.setup_boundary_conditions(False)
-        self.f_0, self.f_1, self.bc_mask, self.missing_mask = self.stepper.prepare_fields()
 
     def update_mesh(self, mesh_data: tuple[wp.array, wp.array]) -> None:
         """Update Coral and boundary conditions."""
-        # Extract the vertices and indices from the mesh_data tuple
-        self.coral_vertices = mesh_data[0].numpy()  # vertices
-        self.coral_indices = mesh_data[1].numpy()  # indices
+        # Convert warp's to NumPy array for vertices
+        self.coral_vertices = mesh_data[0].numpy()
+        self.coral_indices = mesh_data[1].numpy()
 
-        # Shift mesh to center as is:
+        # Shift to xy plane center - from 0,0,0 center
         shift = np.array([self.grid_shape[0] / 2, self.grid_shape[1] / 2, 0.0])
 
+        # Apply the shift to the vertices
         self.coral_vertices = self.coral_vertices + shift
+
+        # Now, create the Trimesh object
+        coral_mesh = trimesh.Trimesh(vertices=self.coral_vertices, faces=self.coral_indices)
+
+        self.coral_vertices = coral_mesh.vertices
+        self.coral_indices = coral_mesh.faces
 
         self.setup_boundary_conditions(True)
 
+        self.f_0, self.f_1, self.bc_mask, self.missing_mask = self.stepper.prepare_fields()
+
     def setup_boundary_conditions(self, update_coral: bool) -> None:
         """Boundary conditions for the simulation."""
-        # Boundary conditions
-        # box = self.grid.bounding_box_indices()
         box_no_edge = self.grid.bounding_box_indices(remove_edges=True)
 
         inlet = box_no_edge["left"]
@@ -78,18 +84,21 @@ class ComputeLBM:
         walls = np.unique(np.array(walls), axis=-1).tolist()
 
         bc_left = RegularizedBC("velocity", prescribed_value=(self.fluid_speed, 0.0, 0.0), indices=inlet)
-        bc_walls = ExtrapolationOutflowBC(indices=walls)
+        bc_walls = FullwayBounceBackBC(indices=walls)
         bc_do_nothing = ExtrapolationOutflowBC(indices=outlet)
 
-        if self.coral_vertices is not None:
-            bc_coral = HalfwayBounceBackBC(indices=self.coral_indices, mesh_vertices=self.coral_vertices)
-            self.boundary_conditions = [bc_walls, bc_left, bc_do_nothing, bc_coral]
+        if update_coral:
+            bc_coral = HalfwayBounceBackBC(
+                velocity_set=self.velocity_set,
+                precision_policy=self.precision_policy,
+                compute_backend=self.compute_backend,
+                mesh_vertices=self.coral_vertices,
+            )
+            self.boundary_conditions = [bc_coral, bc_walls, bc_left, bc_do_nothing]
             self.stepper.boundary_conditions = self.boundary_conditions
-            # self.f_0, self.f_1, self.bc_mask, self.missing_mask = self.stepper.prepare_fields()
         else:
             self.boundary_conditions = [bc_walls, bc_left, bc_do_nothing]
             self.stepper.boundary_conditions = self.boundary_conditions
-            # self.f_0, self.f_1, self.bc_mask, self.missing_mask = self.stepper.prepare_fields()
 
     def get_field_numpy(self) -> dict:
         """Get water data fields."""
@@ -112,7 +121,7 @@ class ComputeLBM:
             "velocity": u_np,
             "velocity_magnitude": vel_mag_np.astype(np.float32),
         }
-
+        # print(fields["velocity"])
         return fields
 
     def step(self, dt: float) -> None:

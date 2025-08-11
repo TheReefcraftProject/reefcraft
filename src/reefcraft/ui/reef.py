@@ -184,8 +184,8 @@ class Reef:
             if coral_state not in self.corals:
                 self.corals[coral_state] = CoralMesh(self.scene)
             self.corals[coral_state].sync(coral_state)
-
-        self.water_particles.advect(state.get_fields()["velocity"])
+        if state.water.coral_vertices is not None:
+            self.water_particles.advect(state.get_fields()["velocity"])
         # DEBUG
         # mean_speed = np.mean(np.linalg.norm(state.velocity_field, axis=-1))
         # print(f"Mean fluid speed: {mean_speed}")

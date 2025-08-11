@@ -16,7 +16,7 @@ from reefcraft.utils.logger import logger
 class WaterParticles:
     """Class to manage water particles for visualization."""
 
-    def __init__(self, num_particles: int = 100, grid_shape: tuple = (32, 32, 32)) -> None:
+    def __init__(self, num_particles: int = 300, grid_shape: tuple = (32, 32, 32)) -> None:
         """Initialize particles randomly within LBM grid."""
         self.num_particles = num_particles
         self.grid_shape = np.array(grid_shape, dtype=np.float32)

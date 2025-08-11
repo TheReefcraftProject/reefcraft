@@ -13,13 +13,50 @@ from reefcraft.sim.compute_lbm import ComputeLBM
 """Test ComputeLBM class."""
 
 
+def plot_velocity_field_xz(velocity_field: np.ndarray, slice_index: int = 16, plot_type="quiver") -> None:
+    """
+    Plots the velocity field along the xz-plane, showing the velocity vectors or streamlines.
+
+    Parameters:
+    - velocity_field: The 3D velocity field (numpy array).
+    - slice_index: The slice index along the y-axis (to slice in the xz-plane).
+    - plot_type: Type of plot, either "quiver" for arrow plot or "stream" for streamlines.
+    """
+
+    # Extract the velocity components for the xz-plane (ignoring y direction)
+    u = velocity_field[:, slice_index, :, 0]  # U velocity (x-component)
+    w = velocity_field[:, slice_index, :, 2]  # W velocity (z-component)
+
+    # Create a grid for the plot (x, z coordinates)
+    X, Z = np.mgrid[0 : u.shape[0], 0 : u.shape[1]]  # Generate grid from u and w field dimensions
+
+    # Create figure and axis
+    fig, ax = plt.subplots(figsize=(8, 6))
+
+    if plot_type == "quiver":
+        # Quiver plot: Plot vectors (arrows) with longer length and clear tails
+        ax.quiver(X, Z, u, w, scale=200, scale_units="xy", angles="xy", pivot="middle", color="b", width=0.003)
+        ax.set_title(f"Velocity field slice in the xz-plane at y = {slice_index}")
+        ax.set_xlabel("X-axis")
+        ax.set_ylabel("Z-axis")
+
+    elif plot_type == "stream":
+        # Streamplot: Visualize the flow using streamlines
+        ax.streamplot(X, Z, u, w, color=np.linalg.norm([u, w], axis=0), linewidth=1, cmap="jet")
+        ax.set_title(f"Streamlines for velocity field slice in the xz-plane at y = {slice_index}")
+        ax.set_xlabel("X-axis")
+        ax.set_ylabel("Z-axis")
+
+    plt.show()
+
+
 def test_coral_boundary_conditions() -> None:
     """Ensure dynamic boundaries are functioning."""
 
     # Set up the grid and fluid properties
     grid_shape = (32, 32, 32)  # Small grid for testing
     fluid_speed = 0.5  # Example fluid speed
-    max_steps = 10  # Short number of steps for testing
+    max_steps = 100  # Short number of steps for testing
 
     # Create a ComputeLBM instance or mock it
     compute_lbm = ComputeLBM(grid_shape, fluid_speed, 3000.0)  # Assume default values are set inside ComputeLBM
@@ -78,7 +115,7 @@ def test_coral_boundary_conditions() -> None:
     smaller_box_indices_wp = wp.array(smaller_box_indices, dtype=wp.vec3i)
 
     print("Testing with small box...")
-    compute_lbm.update_mesh((smaller_box_vertices_wp, smaller_box_indices_wp))
+    compute_lbm.update_mesh((smaller_box_vertices_wp, smaller_box_indices_wp), True)
 
     # Run the simulation for a few steps and check velocity changes near the boundary
     for i in range(max_steps):
@@ -89,6 +126,7 @@ def test_coral_boundary_conditions() -> None:
     inflow_v = velocity_field[5, 16, 16]  # Check near the inflow
     boundary_v = velocity_field[16, 16, 0]  # Check near the boundaries
     print(f"Inflow velocity: {inflow_v}. Boundary velocity: {boundary_v}")
+    plot_velocity_field_xz(velocity_field=compute_lbm.get_field_numpy()["velocity"])
     # Assert that the boundary velocity is significantly different (indicating boundary interaction)
     assert np.abs(boundary_v - inflow_v) > 0, "No change in velocity at the boundary"
 
@@ -96,11 +134,9 @@ def test_coral_boundary_conditions() -> None:
 
     # Now update mesh to larger box and test again
     print("Testing with larger box...")
-    compute_lbm.update_mesh((larger_box_vertices_wp, larger_box_indices_wp))
+    compute_lbm.update_mesh((larger_box_vertices_wp, larger_box_indices_wp), True)
 
     for step in range(max_steps):
-        print(f"Step {step + 1}:")
-
         # Run the LBM step, updating boundary conditions accordingly
         compute_lbm.step(step)
 
@@ -108,11 +144,73 @@ def test_coral_boundary_conditions() -> None:
     velocity_field = compute_lbm.get_field_numpy()["velocity_magnitude"]
     inflow_v = velocity_field[5, 16, 16]
     boundary_v = velocity_field[16, 16, 10]  # Check in the higher z region
-
+    plot_velocity_field_xz(compute_lbm.get_field_numpy()["velocity"])
     # Verify that there is a change in the velocity near the boundary of the larger box
     assert np.any(np.abs(boundary_v - inflow_v) > 0), "No change in velocity at larger box boundary"
 
     print("Velocity magnitude changed at larger box boundary. Moving to next step.")
+
+    print("Test passed successfully!")
+
+
+def test_coral_boundary_conditions_with_wall() -> None:
+    """Ensure dynamic boundaries are functioning with a wall in the middle."""
+
+    # Set up the grid and fluid properties
+    grid_shape = (32, 32, 32)  # Small grid for testing
+    fluid_speed = 0.5  # Example fluid speed
+    max_steps = 100  # Short number of steps for testing
+
+    # Create a ComputeLBM instance or mock it
+    compute_lbm = ComputeLBM(grid_shape, fluid_speed, 3000.0)  # Assume default values are set inside ComputeLBM
+
+    # Define the wall in the middle of the grid along the plane of zy at x = grid_size[0] / 2
+    wall_x = grid_shape[0] // 2  # Wall at x = 16 for a grid of size 32
+    wall_vertices = np.array(
+        [
+            [wall_x, 0, 0],
+            [wall_x, 0, grid_shape[2] - 1],
+            [wall_x, grid_shape[1] - 1, 0],
+            [wall_x, grid_shape[1] - 1, grid_shape[2] - 1],
+        ],
+        dtype=np.float32,
+    )
+
+    # Define the indices for the wall spanning the zy-plane
+    wall_indices = np.array(
+        [
+            [0, 1, 2],
+            [1, 3, 2],
+            [2, 3, 1],  # Wall faces connecting vertices
+        ],
+        dtype=np.int32,
+    )
+
+    # Convert to Warp arrays
+    wall_vertices_wp = wp.array(wall_vertices, dtype=wp.vec3f)
+    wall_indices_wp = wp.array(wall_indices, dtype=wp.vec3i)
+
+    # Test with the wall in the middle of the grid
+    print("Testing with wall at x = grid_size[0] // 2...")
+
+    compute_lbm.update_mesh((wall_vertices_wp, wall_indices_wp), False)
+    print(compute_lbm.stepper.boundary_conditions[0].indices)
+
+    # Run the simulation for a few steps and check velocity changes near the boundary (the wall)
+    for i in range(max_steps):
+        compute_lbm.step(i)
+
+    # Check the velocity magnitude near the boundary (the wall)
+    velocity_field = compute_lbm.get_field_numpy()["velocity_magnitude"]
+    inflow_v = velocity_field[5, 16, 16]  # Check near the inflow
+    boundary_v = velocity_field[18, 16, 16]  # Check near the wall at x = wall_x
+    print(f"Inflow velocity: {inflow_v}. Boundary velocity at wall: {boundary_v}")
+    plot_velocity_field_xz(velocity_field=compute_lbm.get_field_numpy()["velocity"])
+
+    # Assert that the boundary velocity is significantly different (indicating boundary interaction)
+    assert np.abs(boundary_v - inflow_v) > 0, "No change in velocity at the boundary"
+
+    print("Velocity magnitude changed at the wall boundary. Moving to next step.")
 
     print("Test passed successfully!")
 
@@ -275,3 +373,6 @@ def test_warp_grid() -> None:
 
     # For now assert grid shape is correct:
     assert lbm.grid.shape == lbm.grid_shape
+
+
+test_coral_boundary_conditions_with_wall()

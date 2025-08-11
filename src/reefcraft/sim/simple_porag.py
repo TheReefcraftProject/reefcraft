@@ -20,7 +20,7 @@ class SimpleP:
         self,
         sim_state: SimState,
         grid_shape: tuple = (200, 200, 200),
-        polyp_spacing: float = 0.1,
+        polyp_spacing: float = 0.5,
         max_time_steps: int = 1000,
         resource_concentration: float = 1.0,
     ) -> None:
@@ -35,7 +35,7 @@ class SimpleP:
         self.mesh = self.initialize_polyps()
         self.normals = wp.zeros((len(self.mesh["vertices"]),), dtype=wp.vec3f)
 
-        self.launch_mesh_kernel()
+        # self.launch_mesh_kernel()
 
         # Add our new coral to the simulation state
         self.coral_state = sim_state.add_coral()
@@ -95,13 +95,13 @@ class SimpleP:
         # Convert the vertices and indices to Warp arrays
         vertices_wp = wp.array(np.array(vertices, dtype=np.float32), dtype=wp.vec3f)
         indices_wp = wp.array(np.array(indices, dtype=np.int32), dtype=wp.vec3i)
-        print(f"Type of indeces: {type(indices_wp)}")
 
         return {"vertices": vertices_wp, "indices": indices_wp}
 
     def update(self, state: SimState) -> None:
         """Update SimState mesh."""
         self.growth_step()
+        print(f" Verts Type: {type(self.mesh.get('vertices'))}, Indices Type: {type(self.mesh.get('indices'))}")
         self.coral_state.set_mesh(self.mesh.get("vertices"), self.mesh.get("indices"))
 
     def update_mesh(self, mesh_data: dict) -> None:

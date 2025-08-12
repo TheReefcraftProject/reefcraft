@@ -4,11 +4,12 @@
 # Licensed under the MIT License. See the LICENSE file for details.
 # -----------------------------------------------------------------------------
 
-"""Frame scheduler that advances one or more pipelines."""
+"""Scheduler for driving simulation pipelines."""
 
 from __future__ import annotations
 
-from typing import Iterable, List
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, List
 
 from reefcraft.sim.pipeline import Pipeline
 

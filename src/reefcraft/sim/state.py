@@ -130,23 +130,23 @@ class SimState:
 
         # Register core models
         self._water = WaterModel()
-        self.graph.add_model(self._water)
+        self.graph.add_model(self._water, node_id="water")
 
     def add_coral(self) -> CoralState:
         """Add another coral state into the system, register its model, and return it."""
-        new_coral = CoralState(self.model_factory)
-        # Choose a sensible default model so rendering/water coupling has geometry
-        new_coral.model = CoralModel.LLABRES.name
-        # Assign a unique id and append
-        new_coral.coral_id = len(self.corals)
-        self.corals.append(new_coral)
-        # Register the coral's growth model into the graph if available
-        if new_coral._model is not None:  # type: ignore[attr-defined]
-            # Require water first so velocity field is available, and schedule growth via .step()
-            # Boost growth responsiveness: substeps=3 for now
-            setattr(new_coral._model, "substeps", 3)
-            self.graph.add_model(new_coral._model, node_id=f"coral.{new_coral.coral_id}", requires=["water"], priority=10)  # type: ignore[arg-type]
-        return new_coral
+        return self.add_coral_with_model(CoralModel.LLABRES)
+
+    def add_coral_with_model(self, model: CoralModel) -> CoralState:
+        """Add a coral with the specified model and register it with the graph."""
+        coral = CoralState(self.model_factory)
+        # Set desired growth model before registration
+        coral.model = model.name
+        coral.coral_id = len(self.corals)
+        self.corals.append(coral)
+        if coral._model is not None:  # type: ignore[attr-defined]
+            setattr(coral._model, "substeps", 3)
+            self.graph.add_model(coral._model, node_id=f"coral.{coral.coral_id}", requires=["water"], priority=10)  # type: ignore[arg-type]
+        return coral
 
     def get_fields(self) -> dict:
         """Return the fields for the state of the environment."""

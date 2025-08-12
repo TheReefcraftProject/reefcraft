@@ -4,11 +4,12 @@
 # Licensed under the MIT License. See the LICENSE file for details.
 # -----------------------------------------------------------------------------
 
-"""Simple operator registry for discoverability and instantiation by name."""
+"""Registry for simulation operators and models."""
 
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, Type
+from collections.abc import Callable
+from typing import Any, Dict, Type
 
 from reefcraft.sim.model import Model
 

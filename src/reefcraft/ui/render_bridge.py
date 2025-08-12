@@ -4,11 +4,12 @@
 # Licensed under the MIT License. See the LICENSE file for details.
 # -----------------------------------------------------------------------------
 
-"""Render bridge that syncs pygfx scene from the DataStore on version changes."""
+"""Render bridge for decoupling simulation data from 3D visualization."""
 
 from __future__ import annotations
 
-from typing import Any, Dict
+from collections.abc import Callable
+from typing import Any, Dict, TYPE_CHECKING
 
 import numpy as np
 import pygfx as gfx

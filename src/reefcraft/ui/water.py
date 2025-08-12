@@ -48,7 +48,7 @@ class WaterParticles:
         ).astype(np.float32)
 
         # Update both Warp and gfx
-        self.positions_wp = wp.array(reset_pos, dtype=wp.vec3, device="cuda")
+        self.positions_wp = wp.array(reset_pos, dtype=wp.vec3, device="cpu")
         self.positions_buf.set_data(reset_pos)
 
         logger.info("[Warp] Water particles reset.")

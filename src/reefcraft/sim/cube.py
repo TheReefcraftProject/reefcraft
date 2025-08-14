@@ -64,6 +64,8 @@ class Cube:
         self.vertices = wp.array(self.vertices, dtype=wp.vec3f)
         self.indices = wp.array(self.indices, dtype=wp.vec3i)
 
+        self.mesh = (self.vertices, self.indices)
+
     def add_to_state(self, sim_state: SimState) -> None:
         """Add coral to sim state."""
         self.coral_state = sim_state.add_coral()

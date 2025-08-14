@@ -40,23 +40,12 @@ class ComputeLBM:
         xlb.init(velocity_set=self.velocity_set, default_backend=self.compute_backend, default_precision_policy=self.precision_policy)
         self.grid = grid_factory(self.grid_shape, compute_backend=self.compute_backend)
 
-        self.stepper = IncompressibleNavierStokesStepper(
-            omega=self.omega,
-            grid=self.grid,
-            boundary_conditions=self.boundary_conditions,
-            collision_type="BGK",
-        )
-        self.macro = Macroscopic(
-            compute_backend=self.compute_backend,
-            precision_policy=self.precision_policy,
-            velocity_set=self.velocity_set,
-        )
-
-    def update_mesh(self, mesh_data: tuple[wp.array, wp.array]) -> None:
+    def set_mesh(self, mesh_data: tuple[wp.array, wp.array]) -> None:
         """Update Coral and boundary conditions."""
         # Convert warp's to NumPy array for vertices
-        self.coral_vertices = mesh_data[0].numpy()
-        self.coral_indices = mesh_data[1].numpy()
+
+        self.coral_vertices = mesh_data[0]
+        self.coral_indices = mesh_data[1]
 
         # Shift to xy plane center - from 0,0,0 center
         shift = np.array([self.grid_shape[0] / 2, self.grid_shape[1] / 2, 0.0])
@@ -72,7 +61,42 @@ class ComputeLBM:
 
         self.setup_boundary_conditions(True)
 
+        self.stepper = IncompressibleNavierStokesStepper(
+            omega=self.omega,
+            grid=self.grid,
+            boundary_conditions=self.boundary_conditions,
+            collision_type="BGK",
+        )
+        self.macro = Macroscopic(
+            compute_backend=self.compute_backend,
+            precision_policy=self.precision_policy,
+            velocity_set=self.velocity_set,
+        )
+
         self.f_0, self.f_1, self.bc_mask, self.missing_mask = self.stepper.prepare_fields()
+
+    def update_mesh(self, mesh_data: tuple[wp.array, wp.array]) -> None:
+        """Update Coral and boundary conditions."""
+        # Convert warp's to NumPy array for vertices
+
+        self.coral_vertices = mesh_data[0]
+        self.coral_indices = mesh_data[1]
+
+        # Shift to xy plane center - from 0,0,0 center
+        shift = np.array([self.grid_shape[0] / 2, self.grid_shape[1] / 2, 0.0])
+
+        # Apply the shift to the vertices
+        self.coral_vertices = self.coral_vertices + shift
+
+        # Now, create the Trimesh object
+        coral_mesh = trimesh.Trimesh(vertices=self.coral_vertices, faces=self.coral_indices)
+
+        self.coral_vertices = coral_mesh.vertices
+        self.coral_indices = coral_mesh.faces
+
+        self.bc_coral.mesh_vertices = self.coral_vertices
+
+        # self.f_0, self.f_1, self.bc_mask, self.missing_mask = self.stepper.prepare_fields()
 
     def setup_boundary_conditions(self, update_coral: bool) -> None:
         """Boundary conditions for the simulation."""
@@ -83,22 +107,20 @@ class ComputeLBM:
         walls = [box_no_edge["bottom"][i] + box_no_edge["top"][i] + box_no_edge["front"][i] + box_no_edge["back"][i] for i in range(self.velocity_set.d)]
         walls = np.unique(np.array(walls), axis=-1).tolist()
 
-        bc_left = RegularizedBC("velocity", prescribed_value=(self.fluid_speed, 0.0, 0.0), indices=inlet)
-        bc_walls = FullwayBounceBackBC(indices=walls)
-        bc_do_nothing = ExtrapolationOutflowBC(indices=outlet)
+        self.bc_left = RegularizedBC("velocity", prescribed_value=(self.fluid_speed, 0.0, 0.0), indices=inlet)
+        self.bc_walls = FullwayBounceBackBC(indices=walls)
+        self.bc_do_nothing = ExtrapolationOutflowBC(indices=outlet)
 
         if update_coral:
-            bc_coral = HalfwayBounceBackBC(
+            self.bc_coral = HalfwayBounceBackBC(
                 velocity_set=self.velocity_set,
                 precision_policy=self.precision_policy,
                 compute_backend=self.compute_backend,
                 mesh_vertices=self.coral_vertices,
             )
-            self.boundary_conditions = [bc_coral, bc_walls, bc_left, bc_do_nothing]
-            self.stepper.boundary_conditions = self.boundary_conditions
+            self.boundary_conditions = [self.bc_walls, self.bc_left, self.bc_do_nothing, self.bc_coral]
         else:
-            self.boundary_conditions = [bc_walls, bc_left, bc_do_nothing]
-            self.stepper.boundary_conditions = self.boundary_conditions
+            self.boundary_conditions = [self.bc_walls, self.bc_left, self.bc_do_nothing]
 
     def get_field_numpy(self) -> dict:
         """Get water data fields."""

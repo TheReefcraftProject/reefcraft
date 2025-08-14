@@ -11,7 +11,7 @@ import time
 
 import warp as wp
 
-from reefcraft.sim.cube import Cube
+from reefcraft.sim.llabres import LlabresGrowthModel
 from reefcraft.sim.state import SimState
 from reefcraft.utils.logger import logger
 
@@ -33,9 +33,8 @@ class Engine:
 
         logger.debug("CREATE SIMSTATE")
         self.state = SimState()
-        self.model = Cube(self.state)
-        self.state.water.update_mesh((self.model.vertices, self.model.indices))
-        print(self.state.water.stepper.boundary_conditions[0].indices)
+        self.model = LlabresGrowthModel(self.state)
+        self.state.water.set_mesh((self.model.get_numpy()["verts"], self.model.get_numpy()["faces"]))
         self._thread: threading.Thread | None = None
         self._stop_event = threading.Event()
 
@@ -91,7 +90,7 @@ class Engine:
         self.sim_speed_ratio = 0.0
         self._step_counter = 0
         self._last_rate_time = time.perf_counter()
-        # self.model.reset()
+        self.model.reset()
         # Optionally reset self.state or self.water if needed
 
     def set_dt(self, dt: float) -> None:
@@ -123,6 +122,10 @@ class Engine:
         """Advance the simulation by one step and update tracking stats."""
         # self.water.step(self.model.get_numpy())
         self.state.step(self.dt)
+        self.model.update(self.sim_time, self.state)
+
+        if self.state.water.current_step % 50 == 0:
+            self.state.water.update_mesh((self.model.get_numpy()["verts"], self.model.get_numpy()["faces"]))
         self.sim_time += self.dt
 
         # Performance tracking

@@ -226,3 +226,7 @@ class SimpleP:
 
         if candidate is not None:
             self.add_polyp(tuple(candidate))
+
+    def reset(self) -> None:
+        """Reset Coral."""
+        pass

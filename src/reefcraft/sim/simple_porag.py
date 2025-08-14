@@ -26,13 +26,12 @@ class SimpleP:
     def __init__(
         self,
         sim_state: SimState,
-        grid_shape: tuple[int, int, int] = (200, 200, 200),
+        grid_shape: tuple[int, int, int] = (100, 100, 100),
         polyp_spacing: float = 0.5,
         max_time_steps: int = 1000,
         resource_concentration: float = 1.0,
     ) -> None:
         """Initialize the SimpleP coral growth model."""
-
         self.grid_shape = grid_shape
         self.polyp_spacing = polyp_spacing
         self.max_time_steps = max_time_steps
@@ -49,7 +48,6 @@ class SimpleP:
 
     def calculate_radius(self) -> float:
         """Calculate the radius of the hemisphere based on the polyp spacing."""
-
         num_polyps = 81  # Total polyps on the hemisphere
         surface_area_per_polyp = self.polyp_spacing**2
         total_area = num_polyps * surface_area_per_polyp
@@ -58,7 +56,6 @@ class SimpleP:
 
     def initialize_polyps(self) -> trimesh.Trimesh:
         """Initialise a hemispherical distribution of polyps as a mesh."""
-
         num_polyps = 81
         vertices = np.zeros((num_polyps, 3), dtype=np.float32)
 
@@ -87,7 +84,6 @@ class SimpleP:
     # ------------------------------------------------------------------
     def update_wp_arrays(self) -> None:
         """Update Warp arrays for vertices, indices and normals from the mesh."""
-
         verts_np = self.mesh.vertices.astype(np.float32)
         faces_np = self.mesh.faces.astype(np.int32)
         normals_np = self.mesh.vertex_normals.astype(np.float32)
@@ -101,7 +97,6 @@ class SimpleP:
     # ------------------------------------------------------------------
     def update(self, state: SimState) -> None:  # noqa: D401 - Short docstring
         """Update the SimState mesh."""
-
         self.growth_step()
         self.coral_state.set_mesh(self.verts_wp, self.indices_wp)
 
@@ -119,7 +114,6 @@ class SimpleP:
         z_max: float,
     ) -> None:
         """Kernel to update polyp positions based on growth and normal vectors."""
-
         idx = wp.tid()
         if idx < n:
             vertex = vertices[idx]
@@ -139,7 +133,6 @@ class SimpleP:
 
     def add_polyp(self, new_polyp: np.ndarray) -> None:
         """Add a new polyp (vertex) to the mesh if spacing permits."""
-
         if np.any(np.linalg.norm(self.mesh.vertices - new_polyp, axis=1) < self.polyp_spacing):
             return
 
@@ -163,7 +156,6 @@ class SimpleP:
 
     def growth_step(self) -> None:
         """Update state by growing the polyps and updating the mesh."""
-
         growth_amount = wp.zeros(len(self.verts_wp), dtype=wp.float32)
         wp.launch(
             self.growth_kernel,
@@ -203,6 +195,4 @@ class SimpleP:
 
     def reset(self) -> None:  # noqa: D401 - Simple placeholder
         """Reset coral state (currently a placeholder)."""
-
         pass
-

@@ -79,8 +79,8 @@ class ComputeLBM:
         """Update Coral and boundary conditions."""
         # Convert warp's to NumPy array for vertices
 
-        self.coral_vertices = mesh_data[0]
-        self.coral_indices = mesh_data[1]
+        self.coral_vertices = mesh_data[0].numpy()
+        self.coral_indices = mesh_data[1].numpy()
 
         # Shift to xy plane center - from 0,0,0 center
         shift = np.array([self.grid_shape[0] / 2, self.grid_shape[1] / 2, 0.0])

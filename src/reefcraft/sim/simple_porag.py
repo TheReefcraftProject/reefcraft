@@ -8,11 +8,14 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 import trimesh
 import warp as wp
 
-from reefcraft.sim.state import SimState
+if TYPE_CHECKING:
+    from reefcraft.sim.state import SimState
 
 
 class SimpleP:
@@ -56,28 +59,36 @@ class SimpleP:
 
     def initialize_polyps(self) -> trimesh.Trimesh:
         """Initialise a hemispherical distribution of polyps as a mesh."""
-        num_polyps = 81
-        vertices = np.zeros((num_polyps, 3), dtype=np.float32)
+        # Start with an icosphere and keep vertices on or above the equator
+        sphere = trimesh.creation.icosphere(subdivisions=2, radius=self.radius)
+        verts = sphere.vertices
+        faces = sphere.faces
 
-        golden_angle = np.pi * (3.0 - np.sqrt(5.0))
-        for i in range(num_polyps):
-            phi = np.arccos(1 - (i + 0.5) / num_polyps)  # hemisphere polar angle
-            theta = golden_angle * i
-            x = self.radius * np.sin(phi) * np.cos(theta)
-            y = self.radius * np.sin(phi) * np.sin(theta)
-            z = self.radius * np.cos(phi)
-            vertices[i] = [x, y, z]
+        mask = verts[:, 2] >= 0.0
+        index_map = -np.ones(len(verts), dtype=np.int32)
+        index_map[mask] = np.arange(mask.sum(), dtype=np.int32)
+        faces_top = faces[np.all(mask[faces], axis=1)]
+        verts_top = verts[mask]
+        faces_top = index_map[faces_top]
 
-        # Construct indices by connecting neighbouring points and a base centre
-        indices: list[list[int]] = []
-        bottom_center = num_polyps - 1
-        for i in range(num_polyps - 1):
-            indices.append([i, (i + 1) % (num_polyps - 1), bottom_center])
-        for i in range(num_polyps - 1):
-            next_i = (i + 1) % (num_polyps - 1)
-            indices.append([i, next_i, bottom_center])
+        # Find boundary edges of the cut hemisphere
+        edges = np.vstack([faces_top[:, [0, 1]], faces_top[:, [1, 2]], faces_top[:, [2, 0]]])
+        edges_sorted = np.sort(edges, axis=1)
+        unique_edges, counts = np.unique(edges_sorted, axis=0, return_counts=True)
+        boundary_oriented = []
+        for e in unique_edges[counts == 1]:
+            idx = np.where((edges_sorted == e).all(axis=1))[0][0]
+            boundary_oriented.append(edges[idx])
+        boundary_oriented = np.array(boundary_oriented, dtype=np.int32)
 
-        return trimesh.Trimesh(vertices=vertices, faces=np.array(indices, dtype=np.int32), process=False)
+        # Add a base centre vertex and connect boundary edges to form a cap
+        center = np.array([[0.0, 0.0, 0.0]], dtype=np.float32)
+        verts_new = np.vstack([verts_top, center])
+        center_idx = len(verts_new) - 1
+        base_faces = np.hstack([boundary_oriented[:, [1, 0]], np.full((len(boundary_oriented), 1), center_idx)])
+        faces_new = np.vstack([faces_top, base_faces])
+
+        return trimesh.Trimesh(vertices=verts_new, faces=faces_new, process=True)
 
     # ------------------------------------------------------------------
     # Mesh/Warp array helpers
@@ -133,13 +144,14 @@ class SimpleP:
 
     def add_polyp(self, new_polyp: np.ndarray) -> None:
         """Add a new polyp (vertex) to the mesh if spacing permits."""
-        if np.any(np.linalg.norm(self.mesh.vertices - new_polyp, axis=1) < self.polyp_spacing):
+        if np.any(np.linalg.norm(self.mesh.vertices[:-1] - new_polyp, axis=1) < self.polyp_spacing):
             return
 
         verts = np.vstack([self.mesh.vertices, new_polyp]).astype(np.float32)
         new_idx = len(verts) - 1
 
-        distances = np.linalg.norm(verts[:-1] - new_polyp, axis=1)
+        surface_count = len(self.mesh.vertices) - 1
+        distances = np.linalg.norm(verts[:surface_count] - new_polyp, axis=1)
         nearest = np.argsort(distances)[:3]
         new_tris = np.array(
             [
@@ -151,29 +163,30 @@ class SimpleP:
         )
 
         faces = np.vstack([self.mesh.faces, new_tris]).astype(np.int32)
-        self.mesh = trimesh.Trimesh(vertices=verts, faces=faces, process=False)
+        self.mesh = trimesh.Trimesh(vertices=verts, faces=faces, process=True)
         self.update_wp_arrays()
 
     def growth_step(self) -> None:
         """Update state by growing the polyps and updating the mesh."""
+        surface_count = len(self.verts_wp) - 1
         growth_amount = wp.zeros(len(self.verts_wp), dtype=wp.float32)
         wp.launch(
             self.growth_kernel,
-            dim=len(self.verts_wp),
+            dim=surface_count,
             inputs=[
                 self.verts_wp,
                 self.normals_wp,
                 growth_amount,
                 self.polyp_spacing,
-                len(self.verts_wp),
+                surface_count,
                 self.resource_concentration,
                 float(self.grid_shape[2]),
             ],
         )
         wp.synchronize()
 
-        # Update the mesh from the Warp vertex array
-        self.mesh.vertices[:] = self.verts_wp.numpy()
+        # Update the mesh from the Warp vertex array (exclude base centre)
+        self.mesh.vertices[:-1] = self.verts_wp.numpy()[:-1]
         self.mesh.vertex_normals = None  # Force recompute
 
         # Ensure spacing between polyps

@@ -139,7 +139,7 @@ class SimpleP:
             scale = (360.0 - angle_deg) / 360.0
             growth = resource_at_polyp * scale
 
-            growth_amount[idx] = growth * spacing
+            growth_amount[idx] = growth * spacing * 0.1
             vertices[idx] += normal * growth_amount[idx]
 
     def add_polyp(self, new_polyp: np.ndarray) -> None:
@@ -153,17 +153,21 @@ class SimpleP:
         surface_count = len(self.mesh.vertices) - 1
         distances = np.linalg.norm(verts[:surface_count] - new_polyp, axis=1)
         nearest = np.argsort(distances)[:3]
-        new_tris = np.array(
-            [
-                [new_idx, nearest[0], nearest[1]],
-                [new_idx, nearest[1], nearest[2]],
-                [new_idx, nearest[2], nearest[0]],
-            ],
-            dtype=np.int32,
-        )
+        tris = [
+            [new_idx, nearest[0], nearest[1]],
+            [new_idx, nearest[1], nearest[2]],
+            [new_idx, nearest[2], nearest[0]],
+        ]
 
-        faces = np.vstack([self.mesh.faces, new_tris]).astype(np.int32)
-        self.mesh = trimesh.Trimesh(vertices=verts, faces=faces, process=True)
+        # Ensure new triangles have outward-facing normals
+        for tri in tris:
+            v0, v1, v2 = verts[tri]
+            if np.dot(np.cross(v1 - v0, v2 - v0), v0) < 0:
+                tri[1], tri[2] = tri[2], tri[1]
+
+        faces = np.vstack([self.mesh.faces, np.array(tris, dtype=np.int32)])
+        self.mesh = trimesh.Trimesh(vertices=verts, faces=faces, process=False)
+        self.mesh.fix_normals()
         self.update_wp_arrays()
 
     def growth_step(self) -> None:
@@ -185,8 +189,8 @@ class SimpleP:
         )
         wp.synchronize()
 
-        # Update the mesh from the Warp vertex array (exclude base centre)
-        self.mesh.vertices[:-1] = self.verts_wp.numpy()[:-1]
+        # Update the mesh from the Warp vertex array
+        self.mesh.vertices = self.verts_wp.numpy()
         self.mesh.vertex_normals = None  # Force recompute
 
         # Ensure spacing between polyps
@@ -194,7 +198,10 @@ class SimpleP:
         lengths = self.mesh.edges_unique_length
         candidate: np.ndarray | None = None
         max_gap = self.polyp_spacing
+        base_index = len(self.mesh.vertices) - 1
         for edge, length in zip(edges, lengths, strict=False):
+            if base_index in edge:
+                continue
             if length > 2 * self.polyp_spacing and length > max_gap:
                 v0, v1 = self.mesh.vertices[edge]
                 candidate = (v0 + v1) / 2.0

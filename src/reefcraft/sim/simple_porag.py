@@ -167,7 +167,14 @@ class SimpleP:
 
         faces = np.vstack([self.mesh.faces, np.array(tris, dtype=np.int32)])
         self.mesh = trimesh.Trimesh(vertices=verts, faces=faces, process=False)
-        self.mesh.fix_normals()
+        # ``fix_normals`` from :mod:`trimesh` requires :mod:`networkx` which may not
+        # be available in minimal environments.  Since triangle winding is
+        # corrected above, simply recompute vertex normals and proceed if
+        # normal-fixing fails due to the missing dependency.
+        try:  # pragma: no cover - exercised indirectly in environments with networkx
+            self.mesh.fix_normals()
+        except Exception:  # pragma: no cover - networkx not installed
+            self.mesh.vertex_normals = None
         self.update_wp_arrays()
 
     def growth_step(self) -> None:

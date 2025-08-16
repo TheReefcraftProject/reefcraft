@@ -59,6 +59,9 @@ class SimState:
         self.water = ComputeLBM()
         # self.velocity_field: np.ndarray
 
+        self.time = 0.0
+        self.last_dt = 0.01
+
     def add_coral(self) -> CoralState:
         """Add another coral state into the system and return it."""
         new_coral = CoralState()
@@ -71,4 +74,7 @@ class SimState:
 
     def step(self, dt: float) -> None:
         """Advance the simulation state by a single dt."""
+        self.last_dt = dt
+        self.time += self.last_dt
+        
         self.water.step(dt)

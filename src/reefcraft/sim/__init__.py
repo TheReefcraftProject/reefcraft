@@ -7,6 +7,5 @@
 """Simulation Engine."""
 
 from .engine import Engine
-from .timer import Timer
 
-__all__ = ["Engine", "Timer"]
+__all__ = ["Engine"]

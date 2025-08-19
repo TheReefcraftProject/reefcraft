@@ -10,14 +10,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from reefcraft.sim.state import SimState
+from reefcraft.ui.control import Control
 from reefcraft.ui.icon import Icon
 from reefcraft.ui.list import LayoutDirection, List
 from reefcraft.ui.palette import Palette
-from reefcraft.ui.views.coral_section import CoralSection
 from reefcraft.ui.views.engine_section import EngineSection
 from reefcraft.ui.views.pipeline_section import PipelineSection
-from reefcraft.ui.views.engine_section import EngineSection
 
 if TYPE_CHECKING:
     from reefcraft.sim.engine import Engine
@@ -46,9 +44,9 @@ class Panel(Palette):
                     ],
                     direction=LayoutDirection.HORIZONTAL,
                 ),
+                Control(context=context, height=15),
                 EngineSection(context=context, engine=engine),
                 PipelineSection(context=context, engine=engine),
-                CoralSection(context=context, engine=engine),
             ],
             margin=15,
         )

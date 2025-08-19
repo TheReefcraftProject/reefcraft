@@ -45,6 +45,8 @@
 			"editor.formatOnSave": true,
 			"editor.rulers": [160] // Visual indicator where Ruff source formatter breaks, see pyproject.toml for Ruff settings
 		},
+		"cursorpyright.analysis.inlayHints.functionReturnTypes": true,
+		"cursorpyright.analysis.typeCheckingMode": "standard",
 	},
 	"extensions": {
 		"recommendations": [

@@ -31,6 +31,3 @@ class Model(Protocol):
     def step(self, dt: float) -> None:  # pragma: no cover - protocol
         """Advance the model by a fixed time step."""
         ...
-
-
-

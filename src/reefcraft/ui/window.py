@@ -13,8 +13,8 @@ from typing import TYPE_CHECKING
 from rendercanvas.auto import RenderCanvas
 
 from reefcraft.ui.reef import Reef
-from reefcraft.ui.ui_context import UIContext
 from reefcraft.ui.render_bridge import MeshViewer, RenderBridge
+from reefcraft.ui.ui_context import UIContext
 from reefcraft.ui.views.panel import Panel
 from reefcraft.utils.window_style import apply_dark_titlebar_and_icon
 

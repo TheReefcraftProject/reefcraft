@@ -8,12 +8,16 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 import warp as wp
 
 from reefcraft.sim.models.growth_model import GrowthModel
-from reefcraft.sim.state import CoralState, SimState
 from reefcraft.utils.logger import logger
+
+if TYPE_CHECKING:
+    from reefcraft.sim.state import CoralState, SimState
 
 
 class LlabresGrowthModel(GrowthModel):
@@ -22,7 +26,7 @@ class LlabresGrowthModel(GrowthModel):
     def __init__(self, sim_state: SimState, coral_state: CoralState) -> None:
         """Initialization of single Llabres column coral."""
         super().__init__(sim_state=sim_state, coral_state=coral_state)
-        self._name = "LLABRES"
+        self._name = "Llabres"
         # I/O metadata for discovery
         self.inputs = {"water.velocity": "Velocity Field"}
         self.outputs = {"coral.mesh": "Coral Mesh (verts, faces)"}
@@ -272,6 +276,7 @@ class LlabresGrowthModel(GrowthModel):
             k1 = tuple(sorted((i1, i2)))
             k2 = tuple(sorted((i2, i0)))
             k3 = tuple(sorted((i0, i1)))
+
             def get_or_create(key: tuple[int, int], v_start: int, v_end: int) -> int:
                 if key in edge_midpoints:
                     return edge_midpoints[key]
@@ -280,6 +285,7 @@ class LlabresGrowthModel(GrowthModel):
                 edge_midpoints[key] = idx
                 V.append(m.tolist())
                 return idx
+
             m1 = get_or_create(k1, i1, i2)
             m2 = get_or_create(k2, i2, i0)
             m3 = get_or_create(k3, i0, i1)
@@ -289,12 +295,14 @@ class LlabresGrowthModel(GrowthModel):
         i1 = np.array(i1_list, dtype=np.int32)
         i2 = np.array(i2_list, dtype=np.int32)
         i3 = np.array(i3_list, dtype=np.int32)
-        F14 = np.vstack([
-            np.stack([np.array(F)[:, 0], i3, i2], axis=1),
-            np.stack([np.array(F)[:, 1], i1, i3], axis=1),
-            np.stack([np.array(F)[:, 2], i2, i1], axis=1),
-            np.stack([i1, i2, i3], axis=1),
-        ])
+        F14 = np.vstack(
+            [
+                np.stack([np.array(F)[:, 0], i3, i2], axis=1),
+                np.stack([np.array(F)[:, 1], i1, i3], axis=1),
+                np.stack([np.array(F)[:, 2], i2, i1], axis=1),
+                np.stack([i1, i2, i3], axis=1),
+            ]
+        )
         return F14
 
 
@@ -333,5 +341,3 @@ def normalize_normals(norms: wp.array(dtype=wp.vec3f)) -> None:
     """Normalize calculated vertex normals."""
     i = wp.tid()
     norms[i] = wp.normalize(norms[i])
-
-

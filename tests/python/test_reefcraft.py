@@ -5,22 +5,23 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[2] / "src"))
 
 from reefcraft.sim.engine import Engine
-from reefcraft.sim.timer import Timer
+from reefcraft.sim.growth_model_factory import CoralModel
 
 
-def test_timer_pause_and_resume() -> None:
-    timer = Timer()
-    timer.start()
-    time.sleep(0.01)
-    first = timer.time
-    assert first > 0
-    timer.pause()
-    paused = timer.time
-    time.sleep(0.01)
-    assert abs(timer.time - paused) < 0.001
-    timer.start()
-    time.sleep(0.01)
-    assert timer.time > paused
+def test_default_coral_creation() -> None:
+    """Test that a default coral is created on startup with the llabres model."""
+    with Engine(dt=0.01) as engine:
+        # Check that exactly one coral was created
+        assert len(engine.state.corals) == 1
+
+        # Check that it's the llabres model
+        coral = engine.state.corals[0]
+        assert coral.model == "LLABRES"
+        assert coral._model_enum == CoralModel.LLABRES
+
+        # Check that it's registered in the compute graph
+        coral_node_ids = [entry.id for entry in engine.state.graph._entries]
+        assert "coral.0" in coral_node_ids
 
 
 # def test_sim_controls_timer() -> None:

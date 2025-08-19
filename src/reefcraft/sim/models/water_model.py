@@ -18,7 +18,7 @@ class WaterModel:
     """Adapter that exposes the LBM solver as a graph model."""
 
     def __init__(self) -> None:
-        self.name = "water"
+        self.name = "Water"
         self.inputs = {"coral_mesh": "Coral Mesh (verts, faces)"}
         self.outputs = {
             "water.density": "Density Field",
@@ -56,5 +56,3 @@ class WaterModel:
             for k, v in fields.items():
                 self._store.put(f"water.{k}", v)
         return fields
-
-

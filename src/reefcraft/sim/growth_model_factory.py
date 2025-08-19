@@ -14,18 +14,15 @@ This module includes:
 Each coral growth model uses both simulation-wide and per-coral state
 to drive mesh generation and evolution.
 """
+
 from __future__ import annotations
 
 from enum import Enum, auto
-
 from typing import TYPE_CHECKING
 
-from reefcraft.sim.models.growth_model import GrowthModel
-
 if TYPE_CHECKING:  # Avoid runtime circular import
+    from reefcraft.sim.models.growth_model import GrowthModel
     from reefcraft.sim.state import CoralState, SimState
-
-# from reefcraft.sim.models.test_rect import TestRectGrowthModel
 
 
 class CoralModel(Enum):

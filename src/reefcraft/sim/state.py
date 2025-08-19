@@ -12,14 +12,18 @@ from typing import TYPE_CHECKING
 import numpy as np
 import warp as wp
 
-from reefcraft.sim.growth_model_factory import CoralModel, GrowthModelFactory
-from reefcraft.sim.graph import ComputeGraph
-from reefcraft.sim.models.water_model import WaterModel
 from reefcraft.sim.data_store import DataStore
+from reefcraft.sim.graph import ComputeGraph
+from reefcraft.sim.growth_model_factory import CoralModel, GrowthModelFactory
+from reefcraft.sim.models.water_model import WaterModel
 from reefcraft.utils.logger import logger
 
 if TYPE_CHECKING:
     from reefcraft.sim.growth_model import GrowthModel
+
+# Configuration: Default coral growth model to create on startup
+# Set to None to disable auto-creation, or change to another model like CoralModel.PORAG
+DEFAULT_CORAL_MODEL = CoralModel.LLABRES
 
 
 class CoralLocation(Enum):
@@ -131,6 +135,11 @@ class SimState:
         # Register core models
         self._water = WaterModel()
         self.graph.add_model(self._water, node_id="water")
+
+        # Auto-create default coral if configured
+        if DEFAULT_CORAL_MODEL is not None:
+            logger.info(f"Auto-creating default coral with {DEFAULT_CORAL_MODEL.name} model")
+            self.add_coral_with_model(DEFAULT_CORAL_MODEL)
 
     def add_coral(self) -> CoralState:
         """Add another coral state into the system, register its model, and return it."""

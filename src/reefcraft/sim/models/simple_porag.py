@@ -134,7 +134,7 @@ class SimplePoragGrowthModel(GrowthModel):
         indices_np = self.mesh["indices"].numpy()
         distances = np.linalg.norm(vertices_np - np.array(new_polyp, dtype=np.float32), axis=1)
         nearest = np.argsort(distances)[:3]
-        new_tris = np.array([[new_idx, nearest[0], nearest[1]],[new_idx, nearest[1], nearest[2]],[new_idx, nearest[2], nearest[0]]], dtype=np.int32)
+        new_tris = np.array([[new_idx, nearest[0], nearest[1]], [new_idx, nearest[1], nearest[2]], [new_idx, nearest[2], nearest[0]]], dtype=np.int32)
         self.mesh["vertices"] = wp.array(new_vertices, dtype=wp.vec3f, device=self.device)
         self.mesh["indices"] = wp.array(np.concatenate([indices_np, new_tris]), dtype=wp.vec3i, device=self.device)
         self.normals = wp.zeros(len(new_vertices), dtype=wp.vec3f, device=self.device)
@@ -144,7 +144,11 @@ class SimplePoragGrowthModel(GrowthModel):
         vertices = self.mesh["vertices"]
         normals = self.normals
         growth_amount = wp.zeros(len(vertices), dtype=wp.float32, device="cuda")
-        wp.launch(self.growth_kernel, dim=len(vertices), inputs=[vertices, normals, growth_amount, self.polyp_spacing, len(vertices), self.resource_concentration, float(self.grid_shape[2])])
+        wp.launch(
+            self.growth_kernel,
+            dim=len(vertices),
+            inputs=[vertices, normals, growth_amount, self.polyp_spacing, len(vertices), self.resource_concentration, float(self.grid_shape[2])],
+        )
         wp.synchronize()
         verts_np = self.mesh["vertices"].numpy()
         indices_np = self.mesh["indices"].numpy()
@@ -163,5 +167,3 @@ class SimplePoragGrowthModel(GrowthModel):
 
     def step(self, dt: float) -> None:  # noqa: ARG002
         self.update(dt)
-
-

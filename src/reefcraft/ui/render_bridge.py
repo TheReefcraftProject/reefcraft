@@ -9,7 +9,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any, Dict, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict
 
 import numpy as np
 import pygfx as gfx
@@ -107,8 +107,8 @@ class RenderBridge:
     def __init__(self, store: DataStore, scene: gfx.Scene) -> None:
         self.store = store
         self.scene = scene
-        self._key_to_viewer: Dict[str, Viewer] = {}
-        self._last_versions: Dict[str, int] = {}
+        self._key_to_viewer: dict[str, Viewer] = {}
+        self._last_versions: dict[str, int] = {}
 
     def register_viewer(self, key: str, viewer: Viewer) -> None:
         self._key_to_viewer[key] = viewer
@@ -129,5 +129,3 @@ class RenderBridge:
                 if value is not None:
                     viewer.update(value)
                 self._last_versions[key] = v
-
-

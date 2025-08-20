@@ -9,9 +9,7 @@ import numpy as np
 import warp as wp
 
 # Import ComputeLBM directly to avoid running package-level side effects
-spec = importlib.util.spec_from_file_location(
-    "compute_lbm", Path(__file__).resolve().parents[2] / "src" / "reefcraft" / "sim" / "compute_lbm.py"
-)
+spec = importlib.util.spec_from_file_location("compute_lbm", Path(__file__).resolve().parents[2] / "src" / "reefcraft" / "sim" / "compute_lbm.py")
 compute_lbm_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(compute_lbm_module)
 ComputeLBM = compute_lbm_module.ComputeLBM
@@ -66,43 +64,6 @@ CUBE_INDICES = np.array(
 )
 
 
-def plot_velocity_field_xz(velocity_field: np.ndarray, slice_index: int = 16, plot_type="quiver") -> None:
-    """
-    Plots the velocity field along the xz-plane, showing the velocity vectors or streamlines.
-
-    Parameters:
-    - velocity_field: The 3D velocity field (numpy array).
-    - slice_index: The slice index along the y-axis (to slice in the xz-plane).
-    - plot_type: Type of plot, either "quiver" for arrow plot or "stream" for streamlines.
-    """
-
-    # Extract the velocity components for the xz-plane (ignoring y direction)
-    u = velocity_field[:, slice_index, :, 0]  # U velocity (x-component)
-    w = velocity_field[:, slice_index, :, 2]  # W velocity (z-component)
-
-    # Create a grid for the plot (x, z coordinates)
-    X, Z = np.mgrid[0 : u.shape[0], 0 : u.shape[1]]  # Generate grid from u and w field dimensions
-
-    # Create figure and axis
-    fig, ax = plt.subplots(figsize=(8, 6))
-
-    if plot_type == "quiver":
-        # Quiver plot: Plot vectors (arrows) with longer length and clear tails
-        ax.quiver(X, Z, u, w, scale=200, scale_units="xy", angles="xy", pivot="middle", color="b", width=0.003)
-        ax.set_title(f"Velocity field slice in the xz-plane at y = {slice_index}")
-        ax.set_xlabel("X-axis")
-        ax.set_ylabel("Z-axis")
-
-    elif plot_type == "stream":
-        # Streamplot: Visualize the flow using streamlines
-        ax.streamplot(X, Z, u, w, color=np.linalg.norm([u, w], axis=0), linewidth=1, cmap="jet")
-        ax.set_title(f"Streamlines for velocity field slice in the xz-plane at y = {slice_index}")
-        ax.set_xlabel("X-axis")
-        ax.set_ylabel("Z-axis")
-
-    plt.show()
-
-
 def test_coral_boundary_conditions() -> None:
     """Ensure dynamic boundaries are functioning."""
 
@@ -129,7 +90,6 @@ def test_coral_boundary_conditions() -> None:
     inflow_v = velocity_field[5, 16, 16]  # Check near the inflow
     boundary_v = velocity_field[16, 16, 0]  # Check near the boundaries
     print(f"Inflow velocity: {inflow_v}. Boundary velocity: {boundary_v}")
-    plot_velocity_field_xz(velocity_field=compute_lbm.get_field_numpy()["velocity"])
     # Assert that the boundary velocity is significantly different (indicating boundary interaction)
     assert np.abs(boundary_v - inflow_v) > 0, "No change in velocity at the boundary"
 
@@ -147,7 +107,6 @@ def test_coral_boundary_conditions() -> None:
     velocity_field = compute_lbm.get_field_numpy()["velocity_magnitude"]
     inflow_v = velocity_field[5, 16, 16]
     boundary_v = velocity_field[16, 16, 10]  # Check in the higher z region
-    plot_velocity_field_xz(compute_lbm.get_field_numpy()["velocity"])
     # Verify that there is a change in the velocity near the boundary of the larger box
     assert np.any(np.abs(boundary_v - inflow_v) > 0), "No change in velocity at larger box boundary"
 
@@ -211,8 +170,6 @@ def test_coral_boundary_conditions_with_wall() -> None:
     inflow_v = velocity_field[5, 16, 16]  # Check near the inflow
     boundary_v = velocity_field[18, 16, 16]  # Check near the wall at x = wall_x
     print(f"Inflow velocity: {inflow_v}. Boundary velocity at wall: {boundary_v}")
-    plot_velocity_field_xz(velocity_field=compute_lbm.get_field_numpy()["velocity"])
-
     # Assert that the boundary velocity is significantly different (indicating boundary interaction)
     assert np.abs(boundary_v - inflow_v) > 0, "No change in velocity at the boundary"
 

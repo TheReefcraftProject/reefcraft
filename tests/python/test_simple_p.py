@@ -43,14 +43,16 @@ def test_growth_step() -> None:
     sim_state = SimState()
     simple_p = SimpleP(sim_state=sim_state)
 
-    # Get initial position of a polyp (let's pick the first polyp)
-    initial_position = simple_p.mesh["vertices"].numpy()[0]
+    # Select a polyp on the surface with the largest z-value to ensure growth
+    verts = simple_p.mesh["vertices"].numpy()
+    idx = int(np.argmax(verts[:, 2]))
+    initial_position = verts[idx].copy()
 
     # Perform a growth step
     simple_p.growth_step()
 
     # Get the new position of the same polyp
-    new_position = simple_p.mesh["vertices"].numpy()[0]
+    new_position = simple_p.mesh["vertices"].numpy()[idx]
 
     # Assert that the position has changed
     assert not np.array_equal(initial_position, new_position), "Polyp position did not change after growth step."

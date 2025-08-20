@@ -153,13 +153,13 @@ class SimpleP:
             z_position = vertex[2]
             resource_at_polyp = resource_concentration * (z_position / z_max)
 
-            angle = wp.acos(wp.dot(normal, wp.vec3(0.0, 0.0, 1.0)))
+            angle = wp.acos(wp.dot(normal, wp.vec3(0.0, 0.0, 1.0)) / wp.length(normal))
             angle_deg = wp.degrees(angle)
 
             scale = (360.0 - angle_deg) / 360.0
             growth = resource_at_polyp * scale
 
-            growth_amount[idx] = growth * spacing * 0.1
+            growth_amount[idx] = growth * spacing
             vertices[idx] += normal * growth_amount[idx]
 
     def add_polyp(self, new_polyp: np.ndarray) -> None:
@@ -200,7 +200,7 @@ class SimpleP:
     def growth_step(self) -> None:
         """Update state by growing the polyps and updating the mesh."""
         surface_count = len(self.verts_wp) - 1
-        growth_amount = wp.zeros(len(self.verts_wp), dtype=wp.float32)
+        growth_amount = wp.zeros(surface_count, dtype=wp.float32)
         wp.launch(
             self.growth_kernel,
             dim=surface_count,
@@ -220,24 +220,25 @@ class SimpleP:
         self.mesh.vertices = self.verts_wp.numpy()
         self.mesh.vertex_normals = None  # Force recompute
 
-        # Ensure spacing between polyps
-        edges = self.mesh.edges_unique
-        lengths = self.mesh.edges_unique_length
+        verts_np = self.mesh.vertices
+        indices_np = self.mesh.faces
         candidate: np.ndarray | None = None
         max_gap = self.polyp_spacing
-        base_index = len(self.mesh.vertices) - 1
-        for edge, length in zip(edges, lengths, strict=False):
-            if base_index in edge:
-                continue
-            if length > 2 * self.polyp_spacing and length > max_gap:
-                v0, v1 = self.mesh.vertices[edge]
-                candidate = (v0 + v1) / 2.0
-                max_gap = float(length)
+        base_index = len(verts_np) - 1
+        for tri in indices_np:
+            for i in range(3):
+                vi = tri[i]
+                vj = tri[(i + 1) % 3]
+                if base_index in (vi, vj):
+                    continue
+                dist = np.linalg.norm(verts_np[vi] - verts_np[vj])
+                if dist > 2 * self.polyp_spacing and dist > max_gap:
+                    max_gap = float(dist)
+                    candidate = (verts_np[vi] + verts_np[vj]) / 2.0
 
         if candidate is not None:
             self.add_polyp(candidate)
         else:
-            # Mesh updated; refresh Warp arrays and normals
             self.update_wp_arrays()
 
     def reset(self) -> None:  # noqa: D401 - Simple placeholder

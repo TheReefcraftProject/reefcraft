@@ -76,25 +76,39 @@ class SimpleP:
         verts_top = verts[mask]
         faces_top = index_map[faces_top]
 
-        # Determine boundary edges of the hemisphere so that the base can be
-        # capped with a centre vertex.
+        # Determine boundary edges and order them into a loop so the base can
+        # be capped with consistently oriented triangles.
         edges = np.vstack([faces_top[:, [0, 1]], faces_top[:, [1, 2]], faces_top[:, [2, 0]]])
         edges_sorted = np.sort(edges, axis=1)
         unique_edges, counts = np.unique(edges_sorted, axis=0, return_counts=True)
+
         boundary_oriented = []
         for e in unique_edges[counts == 1]:
             idx = np.where((edges_sorted == e).all(axis=1))[0][0]
             boundary_oriented.append(edges[idx])
-        boundary_oriented = np.array(boundary_oriented, dtype=np.int32)
+        boundary_oriented = np.asarray(boundary_oriented, dtype=np.int32)
 
-        # Add a base centre vertex and connect boundary edges to form a cap
+        # Order boundary edges into a circular loop
+        edge_map = dict(boundary_oriented)
+        loop = [boundary_oriented[0, 0]]
+        while True:
+            nxt = edge_map[loop[-1]]
+            if nxt == loop[0]:
+                break
+            loop.append(nxt)
+        loop = np.asarray(loop, dtype=np.int32)
+
+        # Add a base centre vertex and connect boundary loop to form a cap
         center = np.array([[0.0, 0.0, 0.0]], dtype=np.float32)
         verts_new = np.vstack([verts_top, center])
         center_idx = len(verts_new) - 1
-        base_faces = np.hstack([boundary_oriented[:, [1, 0]], np.full((len(boundary_oriented), 1), center_idx)])
+        base_faces = np.array(
+            [[loop[(i + 1) % len(loop)], loop[i], center_idx] for i in range(len(loop))],
+            dtype=np.int32,
+        )
         faces_new = np.vstack([faces_top, base_faces])
 
-        return trimesh.Trimesh(vertices=verts_new, faces=faces_new, process=True)
+        return trimesh.Trimesh(vertices=verts_new, faces=faces_new, process=False)
 
     # ------------------------------------------------------------------
     # Mesh/Warp array helpers
@@ -134,12 +148,12 @@ class SimpleP:
         idx = wp.tid()
         if idx < n:
             vertex = vertices[idx]
-            normal = normals[idx]
+            normal = wp.normalize(normals[idx])
 
             z_position = vertex[2]
             resource_at_polyp = resource_concentration * (z_position / z_max)
 
-            angle = wp.acos(wp.dot(normal, wp.vec3(0.0, 0.0, 1.0)) / wp.length(normal))
+            angle = wp.acos(wp.dot(normal, wp.vec3(0.0, 0.0, 1.0)))
             angle_deg = wp.degrees(angle)
 
             scale = (360.0 - angle_deg) / 360.0

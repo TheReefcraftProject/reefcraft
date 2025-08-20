@@ -60,53 +60,21 @@ class SimpleP:
     def initialize_polyps(self) -> trimesh.Trimesh:
         """Initialise a hemispherical distribution of polyps as a mesh.
 
-        The vertex positions are generated using a Fibonacci (golden-angle)
-        spiral for even coverage while triangle connectivity is borrowed from an
-        icosphere so that no external convex hull dependency is required.
+        A regular icosphere from :mod:`trimesh` provides both the vertex
+        positions and triangle connectivity.  Only the upper hemisphere is kept
+        and capped with a base centre vertex to form a watertight shell.
         """
-        # Use an icosphere for triangle connectivity and keep the upper
-        # hemisphere.  ``verts_top`` is later overwritten with the evenly spaced
-        # Fibonacci points calculated below.
         sphere = trimesh.creation.icosphere(subdivisions=2, radius=self.radius)
         verts = sphere.vertices
         faces = sphere.faces
 
+        # Retain vertices on the upper hemisphere
         mask = verts[:, 2] >= 0.0
         index_map = -np.ones(len(verts), dtype=np.int32)
         index_map[mask] = np.arange(mask.sum(), dtype=np.int32)
         faces_top = faces[np.all(mask[faces], axis=1)]
         verts_top = verts[mask]
         faces_top = index_map[faces_top]
-
-        # Generate evenly spaced hemisphere vertices via the golden angle
-        num_polyps = len(verts_top)
-        golden_angle = np.pi * (3.0 - np.sqrt(5.0))
-        i = np.arange(num_polyps, dtype=np.float32)
-        phi = np.arccos(1.0 - (i + 0.5) / num_polyps)
-        theta = golden_angle * i
-        ga_verts = np.stack(
-            [
-                self.radius * np.sin(phi) * np.cos(theta),
-                self.radius * np.sin(phi) * np.sin(theta),
-                self.radius * np.cos(phi),
-            ],
-            axis=1,
-        )
-
-        # Map the Fibonacci points onto the icosphere topology by sorting both
-        # point sets in spherical coordinates and pairing them.  This keeps local
-        # neighbourhoods roughly consistent without requiring a hull library.
-        def spherical_coords(v: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-            r = np.linalg.norm(v, axis=1)
-            phi = np.arccos(np.clip(v[:, 2] / r, -1.0, 1.0))
-            theta = (np.arctan2(v[:, 1], v[:, 0]) + 2.0 * np.pi) % (2.0 * np.pi)
-            return phi, theta
-
-        phi_ico, theta_ico = spherical_coords(verts_top)
-        phi_fib, theta_fib = spherical_coords(ga_verts)
-        order_ico = np.lexsort((theta_ico, phi_ico))
-        order_fib = np.lexsort((theta_fib, phi_fib))
-        verts_top[order_ico] = ga_verts[order_fib]
 
         # Determine boundary edges of the hemisphere so that the base can be
         # capped with a centre vertex.

@@ -21,7 +21,7 @@ class ComputeLBM:
 
     def __init__(self) -> None:
         """Initialize ComputeLBM fields and data."""
-        self.grid_shape = (32, 32, 32)
+        self.grid_shape = (100, 100, 100)
         self.fluid_speed = 0.2
         self.current_step = 0
         self.coral_vertices = None

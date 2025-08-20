@@ -10,12 +10,14 @@ import numpy as np
 import pygfx as gfx
 import warp as wp
 
+from reefcraft.render.glow_shader import GlowPointsMaterial
 from reefcraft.utils.logger import logger
 
 
 class WaterParticles:
     """Class to manage water particles for visualization."""
-    def __init__(self, num_particles: int = 100, grid_shape: tuple = (32, 32, 32)) -> None:
+
+    def __init__(self, num_particles: int = 50, grid_shape: tuple = (100, 100, 100)) -> None:
         """Initialize particles randomly within LBM grid."""
         self.num_particles = num_particles
         self.grid_shape = np.array(grid_shape, dtype=np.float32)
@@ -29,11 +31,11 @@ class WaterParticles:
         ).astype(np.float32)
 
         # Store GPU copy
-        self.positions_wp = wp.array(init_pos, dtype=wp.vec3, device="cuda")
+        self.positions_wp = wp.array(init_pos, dtype=wp.vec3)
         self.positions_buf = gfx.Buffer(init_pos)
         self.geometry = gfx.Geometry(positions=self.positions_buf)
 
-        self.points = gfx.Points(self.geometry, gfx.PointsMaterial(color="#00ffbf", size=4))
+        self.points = gfx.Points(self.geometry, GlowPointsMaterial(color="#00ffbf", size=40))
 
         logger.info(f"[Warp] Initialized {num_particles} GPU particles.")
 
@@ -47,7 +49,7 @@ class WaterParticles:
         ).astype(np.float32)
 
         # Update both Warp and gfx
-        self.positions_wp = wp.array(reset_pos, dtype=wp.vec3, device="cuda")
+        self.positions_wp = wp.array(reset_pos, dtype=wp.vec3)
         self.positions_buf.set_data(reset_pos)
 
         logger.info("[Warp] Water particles reset.")
@@ -60,7 +62,7 @@ class WaterParticles:
         """Launch a warp kernel to advect particles using the velocity field."""
         # Flatten velocity field for easy indexing (assume shape [Nx, Ny, Nz, 3])
         flat_velocity = velocity_field.reshape(-1, 3).astype(np.float32)
-        velocity_wp = wp.array(flat_velocity, dtype=wp.vec3, device="cuda")
+        velocity_wp = wp.array(flat_velocity, dtype=wp.vec3)
 
         wp.launch(
             kernel=advect_kernel,
@@ -76,6 +78,7 @@ class WaterParticles:
         # Sync back to CPU only for gfx update
         updated = self.positions_wp.numpy()
         self.positions_buf.set_data(updated)
+
 
 @wp.kernel
 def advect_kernel(

@@ -16,7 +16,7 @@ class Theme:
     color: str = "#0F0F3D"
     disabled_color: str = "#0F0F3D"
     hover_color: str = "#1D1D6E"
-    highlight_color: str = "#4343EC"
+    highlight_color: str = "#45CDF7"
     border_color: str = "#000000"
     border_thickness: float = 1.0
     text_color: str = "#ffffff"

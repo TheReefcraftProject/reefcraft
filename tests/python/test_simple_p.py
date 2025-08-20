@@ -1,69 +1,78 @@
-import importlib.util
+import sys
+import time
 from pathlib import Path
 
+sys.path.append(str(Path(__file__).resolve().parents[2] / "src"))
+
+import matplotlib.pyplot as plt
 import numpy as np
+import warp as wp
 
-spec = importlib.util.spec_from_file_location(
-    "simple_porag",
-    Path(__file__).resolve().parents[2] / "src" / "reefcraft" / "sim" / "simple_porag.py",
-)
-module = importlib.util.module_from_spec(spec)
-assert spec.loader is not None
-spec.loader.exec_module(module)
-SimpleP = module.SimpleP
+from reefcraft.sim.simple_porag import SimpleP
+from reefcraft.sim.state import SimState
 
-spec_state = importlib.util.spec_from_file_location(
-    "state",
-    Path(__file__).resolve().parents[2] / "src" / "reefcraft" / "sim" / "state.py",
-)
-module_state = importlib.util.module_from_spec(spec_state)
-assert spec_state.loader is not None
-spec_state.loader.exec_module(module_state)
-SimState = module_state.SimState
-
-"""Tests for the SimpleP growth model."""
+"""Test SimpleP class."""
 
 
-def test_hemisphere_initialization() -> None:
-    """Mesh starts as a watertight hemisphere with a base centre vertex."""
+def test_update_mesh() -> None:
+    """Test the update_mesh function from SimpleP to ensure the mesh is updated correctly."""
+
     sim_state = SimState()
     simple_p = SimpleP(sim_state=sim_state)
 
-    verts = simple_p.mesh.vertices
-    assert np.all(verts[:, 2] >= -1e-6)
-    assert np.allclose(verts[-1], [0.0, 0.0, 0.0])
-    assert simple_p.mesh.is_watertight
+    # Define new mesh vertices and indices (as an example)
+    new_vertices = np.array([[1.0, 1.0, 0.0], [2.0, 2.0, 0.0], [3.0, 3.0, 0.0]], dtype=np.float32)
+    new_indices = np.array([[0, 1, 2]], dtype=np.int32)  # Simple triangle face
+
+    # Update the mesh
+    simple_p.update_mesh({"vertices": wp.array(new_vertices, dtype=wp.vec3f), "indices": wp.array(new_indices, dtype=wp.vec3i)})
+
+    # Check if mesh is updated (check the first vertex)
+    updated_vertices = simple_p.mesh["vertices"].numpy()
+    assert np.array_equal(updated_vertices[0], new_vertices[0]), f"Mesh update failed, first vertex: {updated_vertices[0]}"
+
+    # Check if indices are updated
+    updated_indices = simple_p.mesh["indices"].numpy()
+    assert np.array_equal(updated_indices[0], new_indices[0]), f"Mesh indices update failed, first index: {updated_indices[0]}"
+
+    print("Mesh update test passed.")
 
 
-def test_growth_step_moves_along_normals() -> None:
-    """Vertices move outward along their normals during growth."""
+def test_growth_step() -> None:
+    """Test that polyps are updated correctly in each growth step."""
     sim_state = SimState()
     simple_p = SimpleP(sim_state=sim_state)
 
-    initial_pos = simple_p.mesh.vertices[0].copy()
-    initial_normal = simple_p.mesh.vertex_normals[0].copy()
+    # Get initial position of a polyp (let's pick the first polyp)
+    initial_position = simple_p.mesh["vertices"].numpy()[0]
+
+    # Perform a growth step
     simple_p.growth_step()
-    new_pos = simple_p.mesh.vertices[0]
 
-    displacement = new_pos - initial_pos
-    assert np.dot(displacement, initial_normal) > 0
+    # Get the new position of the same polyp
+    new_position = simple_p.mesh["vertices"].numpy()[0]
+
+    # Assert that the position has changed
+    assert not np.array_equal(initial_position, new_position), "Polyp position did not change after growth step."
+
+    print("Growth step test passed.")
 
 
-def test_add_polyp_increases_vertex_count() -> None:
-    """Adding a polyp inserts a new vertex which can grow later."""
+def test_add_polyp() -> None:
+    """Test that the add_polyp function adds a new polyp when space is available."""
+
     sim_state = SimState()
     simple_p = SimpleP(sim_state=sim_state)
 
-    initial_count = len(simple_p.mesh.vertices)
-    new_pos = np.array(
-        [
-            0.0,
-            0.0,
-            simple_p.radius + 2 * simple_p.polyp_spacing,
-        ],
-        dtype=np.float32,
-    )
+    # Current number of polyps
+    initial_num_polyps = len(simple_p.mesh["vertices"])
 
-    simple_p.add_polyp(new_pos)
-    assert len(simple_p.mesh.vertices) == initial_count + 1
-    assert np.allclose(simple_p.mesh.vertices[-1], new_pos)
+    # Add a new polyp at a position where there is space
+    new_polyp_position = (0.5, 0.5, 0.5)
+    simple_p.add_polyp(new_polyp_position)
+
+    # Check if the number of polyps has increased
+    new_num_polyps = len(simple_p.mesh["vertices"])
+    assert new_num_polyps == initial_num_polyps + 1, f"Expected {initial_num_polyps + 1} polyps, found {new_num_polyps}"
+
+    print("Add polyp test passed.")

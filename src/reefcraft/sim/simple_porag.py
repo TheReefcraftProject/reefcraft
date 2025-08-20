@@ -27,9 +27,9 @@ class SimpleP:
         self,
         sim_state: SimState,
         grid_shape: tuple[int, int, int] = (100, 100, 100),
-        polyp_spacing: float = 0.5,
+        polyp_spacing: float = 0.3,
         max_time_steps: int = 1000,
-        resource_concentration: float = 1.0,
+        resource_concentration: float = 0.5,
     ) -> None:
         """Initialize the SimpleP coral growth model."""
         self.grid_shape = grid_shape

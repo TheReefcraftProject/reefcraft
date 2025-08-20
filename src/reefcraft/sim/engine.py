@@ -11,7 +11,8 @@ import time
 
 import warp as wp
 
-from reefcraft.sim.simple_porag import SimpleP
+from reefcraft.sim.compute_lbm import ComputeLBM
+from reefcraft.sim.llabres import LlabresGrowthModel
 from reefcraft.sim.state import SimState
 from reefcraft.utils.logger import logger
 
@@ -33,8 +34,9 @@ class Engine:
 
         logger.debug("CREATE SIMSTATE")
         self.state = SimState()
-        self.model = SimpleP(self.state)
-        self.state.water.set_mesh(self.model.coral_state.get_physics_wp())
+        # self.water = ComputeLBM()
+        self.model = LlabresGrowthModel(self.state)
+
         self._thread: threading.Thread | None = None
         self._stop_event = threading.Event()
 
@@ -120,12 +122,9 @@ class Engine:
 
     def step(self) -> float:
         """Advance the simulation by one step and update tracking stats."""
+        self.model.update(self.sim_time, self.state)
         # self.water.step(self.model.get_numpy())
         self.state.step(self.dt)
-        self.model.update(self.state)
-
-        if self.state.water.current_step % 50 == 0:
-            self.state.water.update_mesh(self.model.coral_state.get_physics_wp())
         self.sim_time += self.dt
 
         # Performance tracking

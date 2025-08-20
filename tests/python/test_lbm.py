@@ -1,5 +1,5 @@
+import importlib.util
 import sys
-import time
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[2] / "src"))
@@ -8,46 +8,60 @@ import matplotlib.pyplot as plt
 import numpy as np
 import warp as wp
 
-from reefcraft.sim.compute_lbm import ComputeLBM
+# Import ComputeLBM directly to avoid running package-level side effects
+spec = importlib.util.spec_from_file_location("compute_lbm", Path(__file__).resolve().parents[2] / "src" / "reefcraft" / "sim" / "compute_lbm.py")
+compute_lbm_module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(compute_lbm_module)
+ComputeLBM = compute_lbm_module.ComputeLBM
 
 """Test ComputeLBM class."""
 
+# Reusable cube meshes for tests
+SMALL_CUBE_VERTICES = np.array(
+    [
+        [0, 0, 0],
+        [2, 0, 0],
+        [2, 2, 0],
+        [0, 2, 0],  # bottom face
+        [0, 0, 2],
+        [2, 0, 2],
+        [2, 2, 2],
+        [0, 2, 2],  # top face
+    ],
+    dtype=np.float32,
+)
 
-def plot_velocity_field_xz(velocity_field: np.ndarray, slice_index: int = 16, plot_type="quiver") -> None:
-    """
-    Plots the velocity field along the xz-plane, showing the velocity vectors or streamlines.
+LARGE_CUBE_VERTICES = np.array(
+    [
+        [0, 0, 0],
+        [10, 0, 0],
+        [10, 10, 0],
+        [0, 10, 0],  # bottom face
+        [0, 0, 10],
+        [10, 0, 10],
+        [10, 10, 10],
+        [0, 10, 10],  # top face
+    ],
+    dtype=np.float32,
+)
 
-    Parameters:
-    - velocity_field: The 3D velocity field (numpy array).
-    - slice_index: The slice index along the y-axis (to slice in the xz-plane).
-    - plot_type: Type of plot, either "quiver" for arrow plot or "stream" for streamlines.
-    """
-
-    # Extract the velocity components for the xz-plane (ignoring y direction)
-    u = velocity_field[:, slice_index, :, 0]  # U velocity (x-component)
-    w = velocity_field[:, slice_index, :, 2]  # W velocity (z-component)
-
-    # Create a grid for the plot (x, z coordinates)
-    X, Z = np.mgrid[0 : u.shape[0], 0 : u.shape[1]]  # Generate grid from u and w field dimensions
-
-    # Create figure and axis
-    fig, ax = plt.subplots(figsize=(8, 6))
-
-    if plot_type == "quiver":
-        # Quiver plot: Plot vectors (arrows) with longer length and clear tails
-        ax.quiver(X, Z, u, w, scale=200, scale_units="xy", angles="xy", pivot="middle", color="b", width=0.003)
-        ax.set_title(f"Velocity field slice in the xz-plane at y = {slice_index}")
-        ax.set_xlabel("X-axis")
-        ax.set_ylabel("Z-axis")
-
-    elif plot_type == "stream":
-        # Streamplot: Visualize the flow using streamlines
-        ax.streamplot(X, Z, u, w, color=np.linalg.norm([u, w], axis=0), linewidth=1, cmap="jet")
-        ax.set_title(f"Streamlines for velocity field slice in the xz-plane at y = {slice_index}")
-        ax.set_xlabel("X-axis")
-        ax.set_ylabel("Z-axis")
-
-    plt.show()
+CUBE_INDICES = np.array(
+    [
+        [0, 1, 2],
+        [0, 2, 3],
+        [4, 5, 6],
+        [4, 6, 7],  # bottom & top faces
+        [0, 1, 5],
+        [0, 5, 4],
+        [1, 2, 6],
+        [1, 6, 5],
+        [2, 3, 7],
+        [2, 7, 6],
+        [3, 0, 4],
+        [3, 4, 7],
+    ],
+    dtype=np.int32,
+)
 
 
 def test_coral_boundary_conditions() -> None:
@@ -58,64 +72,14 @@ def test_coral_boundary_conditions() -> None:
     fluid_speed = 0.5  # Example fluid speed
     max_steps = 100  # Short number of steps for testing
 
-    # Create a ComputeLBM instance or mock it
-    compute_lbm = ComputeLBM(grid_shape, fluid_speed, 3000.0)  # Assume default values are set inside ComputeLBM
-
-    # Hardcode the two box meshes (one larger than the other)
-    larger_box_vertices = np.array(
-        [
-            [0, 0, 0],
-            [10, 0, 0],
-            [10, 10, 0],
-            [0, 10, 0],  # bottom face
-            [0, 0, 10],
-            [10, 0, 10],
-            [10, 10, 10],
-            [0, 10, 10],  # top face
-        ],
-        dtype=np.float32,
-    )
-
-    smaller_box_vertices = np.array(
-        [
-            [0, 0, 0],
-            [2, 0, 0],
-            [2, 2, 0],
-            [0, 2, 0],  # bottom face
-            [0, 0, 2],
-            [2, 0, 2],
-            [2, 2, 2],
-            [0, 2, 2],  # top face
-        ],
-        dtype=np.float32,
-    )
-
-    smaller_box_indices = np.array(
-        [
-            [0, 1, 2],
-            [0, 2, 3],
-            [4, 5, 6],
-            [4, 6, 7],  # bottom & top faces
-            [0, 1, 5],
-            [0, 5, 4],
-            [1, 2, 6],
-            [1, 6, 5],
-            [2, 3, 7],
-            [2, 7, 6],
-            [3, 0, 4],
-            [3, 4, 7],
-        ],
-        dtype=np.int32,
-    )
-
-    # Convert to Warp arrays
-    larger_box_vertices_wp = wp.array(larger_box_vertices, dtype=wp.vec3f)
-    smaller_box_vertices_wp = wp.array(smaller_box_vertices, dtype=wp.vec3f)
-    larger_box_indices_wp = wp.array(smaller_box_indices, dtype=wp.vec3i)
-    smaller_box_indices_wp = wp.array(smaller_box_indices, dtype=wp.vec3i)
+    # Create a ComputeLBM instance and initialize with the small cube mesh
+    compute_lbm = ComputeLBM(grid_shape, fluid_speed, 3000.0)
+    small_vertices_wp = wp.array(SMALL_CUBE_VERTICES, dtype=wp.vec3f)
+    large_vertices_wp = wp.array(LARGE_CUBE_VERTICES, dtype=wp.vec3f)
+    indices_wp = wp.array(CUBE_INDICES, dtype=wp.vec3i)
+    compute_lbm.set_mesh((small_vertices_wp, indices_wp))
 
     print("Testing with small box...")
-    compute_lbm.update_mesh((smaller_box_vertices_wp, smaller_box_indices_wp), True)
 
     # Run the simulation for a few steps and check velocity changes near the boundary
     for i in range(max_steps):
@@ -126,7 +90,6 @@ def test_coral_boundary_conditions() -> None:
     inflow_v = velocity_field[5, 16, 16]  # Check near the inflow
     boundary_v = velocity_field[16, 16, 0]  # Check near the boundaries
     print(f"Inflow velocity: {inflow_v}. Boundary velocity: {boundary_v}")
-    plot_velocity_field_xz(velocity_field=compute_lbm.get_field_numpy()["velocity"])
     # Assert that the boundary velocity is significantly different (indicating boundary interaction)
     assert np.abs(boundary_v - inflow_v) > 0, "No change in velocity at the boundary"
 
@@ -134,7 +97,7 @@ def test_coral_boundary_conditions() -> None:
 
     # Now update mesh to larger box and test again
     print("Testing with larger box...")
-    compute_lbm.update_mesh((larger_box_vertices_wp, larger_box_indices_wp), True)
+    compute_lbm.update_mesh((large_vertices_wp, indices_wp))
 
     for step in range(max_steps):
         # Run the LBM step, updating boundary conditions accordingly
@@ -144,7 +107,6 @@ def test_coral_boundary_conditions() -> None:
     velocity_field = compute_lbm.get_field_numpy()["velocity_magnitude"]
     inflow_v = velocity_field[5, 16, 16]
     boundary_v = velocity_field[16, 16, 10]  # Check in the higher z region
-    plot_velocity_field_xz(compute_lbm.get_field_numpy()["velocity"])
     # Verify that there is a change in the velocity near the boundary of the larger box
     assert np.any(np.abs(boundary_v - inflow_v) > 0), "No change in velocity at larger box boundary"
 
@@ -161,8 +123,11 @@ def test_coral_boundary_conditions_with_wall() -> None:
     fluid_speed = 0.5  # Example fluid speed
     max_steps = 100  # Short number of steps for testing
 
-    # Create a ComputeLBM instance or mock it
-    compute_lbm = ComputeLBM(grid_shape, fluid_speed, 3000.0)  # Assume default values are set inside ComputeLBM
+    # Create a ComputeLBM instance and initialize with the small cube mesh
+    compute_lbm = ComputeLBM(grid_shape, fluid_speed, 3000.0)
+    small_vertices_wp = wp.array(SMALL_CUBE_VERTICES, dtype=wp.vec3f)
+    indices_wp = wp.array(CUBE_INDICES, dtype=wp.vec3i)
+    compute_lbm.set_mesh((small_vertices_wp, indices_wp))
 
     # Define the wall in the middle of the grid along the plane of zy at x = grid_size[0] / 2
     wall_x = grid_shape[0] // 2  # Wall at x = 16 for a grid of size 32
@@ -193,7 +158,7 @@ def test_coral_boundary_conditions_with_wall() -> None:
     # Test with the wall in the middle of the grid
     print("Testing with wall at x = grid_size[0] // 2...")
 
-    compute_lbm.update_mesh((wall_vertices_wp, wall_indices_wp), False)
+    compute_lbm.update_mesh((wall_vertices_wp, wall_indices_wp))
     print(compute_lbm.stepper.boundary_conditions[0].indices)
 
     # Run the simulation for a few steps and check velocity changes near the boundary (the wall)
@@ -205,8 +170,6 @@ def test_coral_boundary_conditions_with_wall() -> None:
     inflow_v = velocity_field[5, 16, 16]  # Check near the inflow
     boundary_v = velocity_field[18, 16, 16]  # Check near the wall at x = wall_x
     print(f"Inflow velocity: {inflow_v}. Boundary velocity at wall: {boundary_v}")
-    plot_velocity_field_xz(velocity_field=compute_lbm.get_field_numpy()["velocity"])
-
     # Assert that the boundary velocity is significantly different (indicating boundary interaction)
     assert np.abs(boundary_v - inflow_v) > 0, "No change in velocity at the boundary"
 
@@ -218,6 +181,9 @@ def test_coral_boundary_conditions_with_wall() -> None:
 def test_setup_boundary_conditions() -> None:
     """Test setup_boundary_conditions function from ComputeLBM."""
     lbm = ComputeLBM((32, 32, 32), 0.02, 3000.0)
+    small_vertices_wp = wp.array(SMALL_CUBE_VERTICES, dtype=wp.vec3f)
+    indices_wp = wp.array(CUBE_INDICES, dtype=wp.vec3i)
+    lbm.set_mesh((small_vertices_wp, indices_wp))
     bounds = lbm.boundary_conditions
     assert bounds == lbm.stepper.boundary_conditions
 
@@ -225,6 +191,9 @@ def test_setup_boundary_conditions() -> None:
 def test_get_fields_numpy() -> None:
     """Test get_fields_numpy function from ComputeLBM."""
     lbm = ComputeLBM((32, 32, 32), 0.02, 3000.0)
+    small_vertices_wp = wp.array(SMALL_CUBE_VERTICES, dtype=wp.vec3f)
+    indices_wp = wp.array(CUBE_INDICES, dtype=wp.vec3i)
+    lbm.set_mesh((small_vertices_wp, indices_wp))
     for i in range(2000):
         lbm.step(i)
 
@@ -236,42 +205,9 @@ def test_get_fields_numpy() -> None:
 def test_field_numeric_stability() -> None:
     """Test numeric stability of fields (e.g. velocity)."""
     lbm = ComputeLBM((100, 100, 100), 2.0, 4000.0)
-    smaller_box_vertices = np.array(
-        [
-            [0, 0, 0],
-            [2, 0, 0],
-            [2, 2, 0],
-            [0, 2, 0],  # bottom face
-            [0, 0, 2],
-            [2, 0, 2],
-            [2, 2, 2],
-            [0, 2, 2],  # top face
-        ],
-        dtype=np.float32,
-    )
-
-    smaller_box_indices = np.array(
-        [
-            [0, 1, 2],
-            [0, 2, 3],
-            [4, 5, 6],
-            [4, 6, 7],  # bottom & top faces
-            [0, 1, 5],
-            [0, 5, 4],
-            [1, 2, 6],
-            [1, 6, 5],
-            [2, 3, 7],
-            [2, 7, 6],
-            [3, 0, 4],
-            [3, 4, 7],
-        ],
-        dtype=np.int32,
-    )
-
-    # Convert to Warp arrays
-    smaller_box_vertices_wp = wp.array(smaller_box_vertices, dtype=wp.vec3f)
-    smaller_box_indices_wp = wp.array(smaller_box_indices, dtype=wp.vec3i)
-    lbm.update_mesh((smaller_box_vertices_wp, smaller_box_indices_wp))
+    small_vertices_wp = wp.array(SMALL_CUBE_VERTICES, dtype=wp.vec3f)
+    indices_wp = wp.array(CUBE_INDICES, dtype=wp.vec3i)
+    lbm.set_mesh((small_vertices_wp, indices_wp))
 
     for i in range(100000):
         lbm.step(i)
@@ -286,93 +222,36 @@ def test_field_numeric_stability() -> None:
 
 def test_update_mesh() -> None:
     """Test update_mesh function from ComputeLBM."""
-
     compute_lbm = ComputeLBM((32, 32, 32), 0.02, 3000.0)
 
-    # Define a small and large box meshes (to be used as test cases)
-    small_box_vertices = np.array(
-        [
-            [5, 5, 5],
-            [7, 5, 5],
-            [7, 7, 5],
-            [5, 7, 5],  # bottom face
-            [5, 5, 7],
-            [7, 5, 7],
-            [7, 7, 7],
-            [5, 7, 7],  # top face
-        ],
-        dtype=np.float32,
-    )
-
-    # Convert to Warp arrays
-    small_box_vertices_wp = wp.array(small_box_vertices, dtype=wp.vec3f, device="cuda")
-
-    # Hardcode indices for simplicity (same for both small and large boxes)
-    small_box_indices = np.array(
-        [
-            [0, 1, 2],
-            [0, 2, 3],
-            [4, 5, 6],
-            [4, 6, 7],  # bottom & top faces
-            [0, 1, 5],
-            [0, 5, 4],
-            [1, 2, 6],
-            [1, 6, 5],
-            [2, 3, 7],
-            [2, 7, 6],
-            [3, 0, 4],
-            [3, 4, 7],
-        ],
-        dtype=np.int32,
-    )
-
-    larger_box_vertices = np.array(
-        [
-            [0, 0, 0],
-            [10, 0, 0],
-            [10, 10, 0],
-            [0, 10, 0],  # bottom face
-            [0, 0, 10],
-            [10, 0, 10],
-            [10, 10, 10],
-            [0, 10, 10],  # top face
-        ],
-        dtype=np.float32,
-    )
-
-    # Convert to Warp arrays
-    small_box_indices_wp = wp.array(small_box_indices, dtype=wp.vec3i, device="cuda")
-
-    # larger box:
-    larger_box_vertices_wp = wp.array(larger_box_vertices, dtype=wp.vec3i, device="cuda")
-    larger_box_indices_wp = small_box_indices_wp
+    # Convert reusable cube meshes to Warp arrays
+    small_vertices_wp = wp.array(SMALL_CUBE_VERTICES, dtype=wp.vec3f)
+    large_vertices_wp = wp.array(LARGE_CUBE_VERTICES, dtype=wp.vec3f)
+    indices_wp = wp.array(CUBE_INDICES, dtype=wp.vec3i)
 
     # Step 3: Test with small box first
-    print("Testing with small box...")
-    compute_lbm.update_mesh((small_box_vertices_wp, small_box_indices_wp))
+    compute_lbm.set_mesh((small_vertices_wp, indices_wp))
     assert compute_lbm.coral_vertices is not None
 
-    # Step 4: Access the boundary condition (index 3 is where coral mesh is stored)
-    # Here we check the updated mesh by inspecting the boundary condition
-    updated_vertices = compute_lbm.stepper.boundary_conditions[3].mesh_vertices  # Get updated mesh indices (list)
+    # Step 4: Verify the initial mesh was set correctly
+    updated_vertices = compute_lbm.coral_vertices
     print(updated_vertices)
 
-    correct_position = np.array([16, 16, 0])
-    correct_position = small_box_vertices + correct_position
-    assert updated_vertices.all() == correct_position.all()
+    correct_position = SMALL_CUBE_VERTICES + np.array([16, 16, 0])
+    assert np.all(updated_vertices == correct_position)
     print("Test passed successfully!")
 
-    compute_lbm.update_mesh((larger_box_vertices_wp, larger_box_indices_wp))
-    updated_vertices = compute_lbm.stepper.boundary_conditions[3].mesh_vertices  # Get updated mesh indices (list)
+    compute_lbm.update_mesh((large_vertices_wp, indices_wp))
+    updated_vertices = compute_lbm.coral_vertices
     print(updated_vertices)
 
 
 def test_warp_grid() -> None:
     """Test ComputeLBM's warp grid."""
     lbm = ComputeLBM((32, 32, 32), 0.02, 3000.0)
+    small_vertices_wp = wp.array(SMALL_CUBE_VERTICES, dtype=wp.vec3f)
+    indices_wp = wp.array(CUBE_INDICES, dtype=wp.vec3i)
+    lbm.set_mesh((small_vertices_wp, indices_wp))
 
     # For now assert grid shape is correct:
     assert lbm.grid.shape == lbm.grid_shape
-
-
-test_coral_boundary_conditions_with_wall()

@@ -34,8 +34,8 @@ class Engine:
 
         logger.debug("CREATE SIMSTATE")
         self.state = SimState()
-        # self.water = ComputeLBM()
         self.model = LlabresGrowthModel(self.state)
+        self.state.water.set_mesh(self.model.coral_state.get_physics_wp())
 
         self._thread: threading.Thread | None = None
         self._stop_event = threading.Event()

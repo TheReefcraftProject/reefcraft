@@ -4,115 +4,145 @@
 # Licensed under the MIT License. See the LICENSE file for details.
 # -----------------------------------------------------------------------------
 
-"""Simple PORAG inpired growth model."""
+"""Simple PORAG inspired growth model using :mod:`trimesh` for mesh handling."""
+
+from __future__ import annotations
 
 import numpy as np
+import trimesh
 import warp as wp
-from scipy.spatial import ConvexHull
 
-from reefcraft.sim.state import SimState
+from reefcraft.sim.state import SimState  # noqa: TC001
 
 
 class SimpleP:
-    """Coral growth simulation with polyps evenly spaced on a hemisphere surface."""
+    """Coral growth simulation with polyps evenly spaced on a hemisphere surface.
+
+    The mesh is managed internally with :class:`trimesh.Trimesh` for convenient
+    geometric queries while Warp arrays are maintained for GPU kernels and for
+    passing data to other parts of the simulation.
+    """
 
     def __init__(
         self,
-        grid_shape: tuple = (200, 200, 200),
-        polyp_spacing: float = 0.1,
+        sim_state: SimState,
+        grid_shape: tuple[int, int, int] = (100, 100, 100),
+        polyp_spacing: float = 0.3,
         max_time_steps: int = 1000,
-        resource_concentration: float = 1.0,
+        resource_concentration: float = 0.5,
     ) -> None:
-        """Initializes the SimpleP coral growth model with basic parameters and Warp for GPU acceleration."""
+        """Initialize the SimpleP coral growth model."""
         self.grid_shape = grid_shape
         self.polyp_spacing = polyp_spacing
         self.max_time_steps = max_time_steps
         self.resource_concentration = resource_concentration
-        self.device = "cuda"
 
         self.radius = self.calculate_radius()
 
-        self.mesh = self.initialize_polyps()
-        self.normals = wp.zeros((len(self.mesh["vertices"]),), dtype=wp.vec3f, device="cuda")
+        self.mesh_tm = self.initialize_polyps()
+        self.update_wp_arrays()
 
-        self.launch_mesh_kernel()
+        # Add our new coral to the simulation state
+        self.coral_state = sim_state.add_coral()
+        self.coral_state.set_mesh(self.verts_wp, self.indices_wp)
 
     def calculate_radius(self) -> float:
-        """Calculates the radius of the hemisphere based on the polyp spacing."""
+        """Calculate the radius of the hemisphere based on the polyp spacing."""
         num_polyps = 81  # Total polyps on the hemisphere
-        surface_area_per_polyp = self.polyp_spacing**2  # Area occupied by each polyp
-
-        # Total surface area covered by the polyps
+        surface_area_per_polyp = self.polyp_spacing**2
         total_area = num_polyps * surface_area_per_polyp
-
         radius = np.sqrt(total_area / (2 * np.pi))
+        return float(radius)
 
-        return radius
+    def initialize_polyps(self) -> trimesh.Trimesh:
+        """Initialise a hemispherical distribution of polyps as a mesh."""
+        # A regular icosphere from :mod:`trimesh` provides both the vertex
+        # positions and triangle connectivity. Only the upper hemisphere is kept
+        # and capped with a base centre vertex to form a watertight shell.
 
-    def initialize_polyps(self) -> dict:
-        """Initializes the polyps on the hemisphere mesh as a dictionary of Warp arrays.
+        sphere = trimesh.creation.icosphere(subdivisions=2, radius=self.radius)
+        verts = sphere.vertices
+        faces = sphere.faces
 
-        Returns:
-        - A dictionary with 'vertices' (wp.array) and 'indices' (wp.array).
-        """
-        num_polyps = 81
-        vertices = np.zeros((num_polyps, 3), dtype=np.float32)  # NumPy array for vertices
-        indices = np.arange(num_polyps, dtype=np.int32)  # Indices array (simple example)
+        # Retain vertices on the upper hemisphere
+        mask = verts[:, 2] >= 0.0
+        index_map = -np.ones(len(verts), dtype=np.int32)
+        index_map[mask] = np.arange(mask.sum(), dtype=np.int32)
+        faces_top = faces[np.all(mask[faces], axis=1)]
+        verts_top = verts[mask]
+        faces_top = index_map[faces_top]
 
-        # Golden angle for even distribution
-        golden_angle = np.pi * (3.0 - np.sqrt(5.0))
+        # Determine boundary edges and order them into a loop so the base can
+        # be capped with consistently oriented triangles.
+        edges = np.vstack([faces_top[:, [0, 1]], faces_top[:, [1, 2]], faces_top[:, [2, 0]]])
+        edges_sorted = np.sort(edges, axis=1)
+        unique_edges, counts = np.unique(edges_sorted, axis=0, return_counts=True)
 
-        for i in range(num_polyps):
-            # The polar angle adjusted for a hemisphere only
-            phi = np.arccos(1 - (i + 0.5) / num_polyps)  # Polar angle in [0, pi/2] for hemisphere
-            theta = golden_angle * i  # Azimuthal angle (0 to 2*pi)
+        boundary_oriented: list[list[int]] = []
+        for e in unique_edges[counts == 1]:
+            idx = np.where((edges_sorted == e).all(axis=1))[0][0]
+            boundary_oriented.append(edges[idx])
+        boundary_oriented = np.asarray(boundary_oriented, dtype=np.int32)
 
-            # Convert spherical to Cartesian coordinates
-            x = self.radius * np.sin(phi) * np.cos(theta)
-            y = self.radius * np.sin(phi) * np.sin(theta)
-            z = self.radius * np.cos(phi)
+        # Order boundary edges into a circular loop
+        edge_map = dict(boundary_oriented)
+        loop = [boundary_oriented[0, 0]]
+        while True:
+            nxt = edge_map[loop[-1]]
+            if nxt == loop[0]:
+                break
+            loop.append(nxt)
+        loop = np.asarray(loop, dtype=np.int32)
 
-            vertices[i] = [x, y, z]
+        # Add a base centre vertex and connect boundary loop to form a cap
+        center = np.array([[0.0, 0.0, 0.0]], dtype=np.float32)
+        verts_new = np.vstack([verts_top, center])
+        self.base_index = len(verts_new) - 1
+        base_faces = np.array(
+            [[loop[(i + 1) % len(loop)], loop[i], self.base_index] for i in range(len(loop))],
+            dtype=np.int32,
+        )
+        faces_new = np.vstack([faces_top, base_faces])
 
-        # Use a convex hull to connect neighboring vertices into a hemisphere shell
-        hull = ConvexHull(vertices)
-        indices = hull.simplices.astype(np.int32)
+        return trimesh.Trimesh(vertices=verts_new, faces=faces_new, process=False)
 
-        # Convert the vertices and indices to Warp arrays on CUDA as requested
-        vertices_wp = wp.array(vertices, dtype=wp.vec3f, device="cuda")
-        indices_wp = wp.array(indices, dtype=wp.vec3i, device="cuda")
+    # ------------------------------------------------------------------
+    # Mesh/Warp array helpers
+    # ------------------------------------------------------------------
+    def update_wp_arrays(self) -> None:
+        """Update Warp arrays for vertices, indices and normals from the mesh."""
+        verts_np = self.mesh_tm.vertices.astype(np.float32)
+        faces_np = self.mesh_tm.faces.astype(np.int32)
+        normals_np = self.mesh_tm.vertex_normals.astype(np.float32)
 
-        return {"vertices": vertices_wp, "indices": indices_wp}
+        self.verts_wp = wp.array(verts_np, dtype=wp.vec3f)
+        self.indices_wp = wp.array(faces_np, dtype=wp.vec3i)
+        self.normals_wp = wp.array(normals_np, dtype=wp.vec3f)
+        self.mesh = {"vertices": self.verts_wp, "indices": self.indices_wp}
 
-    def update(self, state: SimState) -> None:
-        """Update SimState mesh."""
+    # ------------------------------------------------------------------
+    # Simulation update interface
+    # ------------------------------------------------------------------
+    def update(self, state: SimState) -> None:  # noqa: D401 - Short docstring
+        """Update the SimState mesh."""
         self.growth_step()
-        state.coral.set_mesh(self.mesh.get("vertices"), self.mesh.get("indices"))
+        self.coral_state.set_mesh(self.verts_wp, self.indices_wp)
 
     def update_mesh(self, mesh_data: dict) -> None:
         """Update the mesh with a new set of polyps."""
         self.mesh = mesh_data
+        verts_np = mesh_data["vertices"].numpy()
+        indices_np = mesh_data["indices"].numpy()
+        self.mesh_tm = trimesh.Trimesh(vertices=verts_np, faces=indices_np, process=False)
+        try:  # pragma: no cover - networkx may be missing
+            self.mesh_tm.fix_normals()
+        except Exception:  # pragma: no cover - networkx not installed
+            self.mesh_tm.vertex_normals = None
+        self.update_wp_arrays()
 
-    @wp.kernel
-    def calculate_normals_kernel(vertices: wp.array(dtype=wp.vec3f), normals: wp.array(dtype=wp.vec3f), n: int) -> None:
-        """Kernel to calculate normals for each vertex based on the hemisphere structure."""
-        idx = wp.tid()
-        if idx < n:
-            vertex = vertices[idx]
-            normal = vertex / wp.length(vertex)
-            normals[idx] = normal
-
-    def launch_mesh_kernel(self) -> None:
-        """Launch kernels to initialize mesh and compute normals."""
-        num_polyps = len(self.mesh["vertices"])
-
-        # Ensure the normals are initialized as wp.array with dtype wp.vec3f
-        if self.normals is None:
-            # Allocate normals array with the correct Warp type
-            self.normals = wp.zeros(num_polyps, dtype=wp.vec3f, device="cuda")
-
-        wp.launch(self.calculate_normals_kernel, dim=num_polyps, inputs=[self.mesh["vertices"], self.normals, num_polyps])
-
+    # ------------------------------------------------------------------
+    # Growth logic
+    # ------------------------------------------------------------------
     @wp.kernel
     def growth_kernel(
         vertices: wp.array(dtype=wp.vec3f),
@@ -122,92 +152,98 @@ class SimpleP:
         n: int,
         resource_concentration: float,
         z_max: float,
+        base_index: int,
     ) -> None:
         """Kernel to update polyp positions based on growth and normal vectors."""
         idx = wp.tid()
-        if idx < n:
+        if idx < n and idx != base_index:
             vertex = vertices[idx]
             normal = normals[idx]
 
             z_position = vertex[2]
             resource_at_polyp = resource_concentration * (z_position / z_max)
 
-            # Compute the angle between the normal and the z-axis: THIS NEEDS UPDATE
             angle = wp.acos(wp.dot(normal, wp.vec3(0.0, 0.0, 1.0)) / wp.length(normal))
             angle_deg = wp.degrees(angle)
 
-            # Scale the resource based on convexity
             scale = (360.0 - angle_deg) / 360.0
-
-            # Calculate the final growth amount
             growth = resource_at_polyp * scale
 
-            # Update the growth_amount (apply spacing for movement)
             growth_amount[idx] = growth * spacing
-
-            # Update the polyp's position based on the growth amount and the normal direction
             vertices[idx] += normal * growth_amount[idx]
 
-    def add_polyp(self, new_polyp: tuple) -> None:
-        """Add a new polyp (vertex) to the list of polyps if space allows."""
-        # Check if there’s space for the new polyp based on spacing
-        vertices_np = self.mesh["vertices"].numpy()
-        for vertex in vertices_np:
-            if np.linalg.norm(vertex - np.array(new_polyp, dtype=np.float32)) < self.polyp_spacing:
-                return
+    def add_polyp(self, new_polyp: np.ndarray) -> None:
+        """Add a new polyp (vertex) to the mesh if spacing permits."""
+        if np.any(np.linalg.norm(self.mesh_tm.vertices[:-1] - new_polyp, axis=1) < self.polyp_spacing):
+            return
 
-        # Add the new polyp
-        new_vertices = np.concatenate([vertices_np, np.array([new_polyp], dtype=np.float32)], axis=0)
-        new_idx = len(new_vertices) - 1
+        verts = np.vstack([self.mesh_tm.vertices, new_polyp]).astype(np.float32)
+        new_idx = len(verts) - 1
 
-        indices_np = self.mesh["indices"].numpy()
-        distances = np.linalg.norm(vertices_np - np.array(new_polyp, dtype=np.float32), axis=1)
+        distances = np.linalg.norm(verts[:-1] - new_polyp, axis=1)
         nearest = np.argsort(distances)[:3]
-        new_tris = np.array(
-            [
-                [new_idx, nearest[0], nearest[1]],
-                [new_idx, nearest[1], nearest[2]],
-                [new_idx, nearest[2], nearest[0]],
-            ],
-            dtype=np.int32,
-        )
+        tris = [
+            [new_idx, nearest[0], nearest[1]],
+            [new_idx, nearest[1], nearest[2]],
+            [new_idx, nearest[2], nearest[0]],
+        ]
 
-        self.mesh["vertices"] = wp.array(new_vertices, dtype=wp.vec3f, device=self.device)
-        self.mesh["indices"] = wp.array(np.concatenate([indices_np, new_tris]), dtype=wp.vec3i, device=self.device)
+        # Ensure new triangles have outward-facing normals
+        for tri in tris:
+            v0, v1, v2 = verts[tri]
+            if np.dot(np.cross(v1 - v0, v2 - v0), v0) < 0:
+                tri[1], tri[2] = tri[2], tri[1]
 
-        self.normals = wp.zeros(len(new_vertices), dtype=wp.vec3f, device=self.device)
-        self.launch_mesh_kernel()
+        faces = np.vstack([self.mesh_tm.faces, np.array(tris, dtype=np.int32)])
+        self.mesh_tm = trimesh.Trimesh(vertices=verts, faces=faces, process=False)
+        try:  # pragma: no cover - networkx may be missing
+            self.mesh_tm.fix_normals()
+        except Exception:  # pragma: no cover - networkx not installed
+            self.mesh_tm.vertex_normals = None
+        self.update_wp_arrays()
 
     def growth_step(self) -> None:
         """Update state by growing the polyps and updating the mesh."""
-        vertices = self.mesh["vertices"]
-        normals = self.normals
-
-        # Create an array to store the growth amount for each polyp
-        growth_amount = wp.zeros(len(vertices), dtype=wp.float32, device="cuda")
-
-        # Launch the growth kernel to update the polyps
+        n = len(self.verts_wp)
+        growth_amount = wp.zeros(n, dtype=wp.float32)
         wp.launch(
             self.growth_kernel,
-            dim=len(vertices),
-            inputs=[vertices, normals, growth_amount, self.polyp_spacing, len(vertices), self.resource_concentration, float(self.grid_shape[2])],
-        )  # Pass resource concentration and z_max (grid size)
-
+            dim=n,
+            inputs=[
+                self.verts_wp,
+                self.normals_wp,
+                growth_amount,
+                self.polyp_spacing,
+                n,
+                self.resource_concentration,
+                float(self.grid_shape[2]),
+                self.base_index,
+            ],
+        )
         wp.synchronize()
-        verts_np = self.mesh["vertices"].numpy()
-        indices_np = self.mesh["indices"].numpy()
 
-        candidate = None
+        # Update the mesh from the Warp vertex array
+        self.mesh_tm.vertices[:] = self.verts_wp.numpy()
+        self.mesh_tm.vertex_normals = None  # Force recompute
+
+        # Ensure spacing between polyps, ignoring edges connected to the base
+        edges = self.mesh_tm.edges_unique
+        lengths = self.mesh_tm.edges_unique_length
+        candidate: np.ndarray | None = None
         max_gap = self.polyp_spacing
-
-        for tri in indices_np:
-            for i in range(3):
-                vi = tri[i]
-                vj = tri[(i + 1) % 3]
-                dist = np.linalg.norm(verts_np[vi] - verts_np[vj])
-                if dist > 2 * self.polyp_spacing and dist > max_gap:
-                    max_gap = dist
-                    candidate = (verts_np[vi] + verts_np[vj]) / 2.0
+        for edge, length in zip(edges, lengths, strict=False):
+            if self.base_index in edge:
+                continue
+            if length > 2 * self.polyp_spacing and length > max_gap:
+                v0, v1 = self.mesh_tm.vertices[edge]
+                candidate = (v0 + v1) / 2.0
+                max_gap = float(length)
 
         if candidate is not None:
-            self.add_polyp(tuple(candidate))
+            self.add_polyp(candidate)
+        else:
+            self.update_wp_arrays()
+
+    def reset(self) -> None:  # noqa: D401 - Simple placeholder
+        """Reset coral state (currently a placeholder)."""
+        pass

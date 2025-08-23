@@ -56,7 +56,7 @@ class SimState:
     def __init__(self) -> None:
         """Initialize the simulation."""
         self.corals = []
-        self.water = ComputeLBM()
+        self.water = ComputeLBM(grid_shape=(32, 32, 32), fluid_speed=0.2, Re=2000.0)
         # self.velocity_field: np.ndarray
 
         self.time = 0.0

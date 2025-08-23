@@ -157,6 +157,10 @@ def test_update_mesh() -> None:
     updated_vertices = compute_lbm.coral_vertices
     print(updated_vertices)
 
+    correct_position = LARGE_CUBE_VERTICES + np.array([16, 16, 0])
+    assert np.all(updated_vertices == correct_position)
+    print("Test passed successfully!")
+
 
 def test_warp_grid() -> None:
     """Test ComputeLBM's warp grid."""

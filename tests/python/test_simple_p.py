@@ -62,7 +62,6 @@ def test_growth_step() -> None:
 
 def test_add_polyp() -> None:
     """Test that the add_polyp function adds a new polyp when space is available."""
-
     sim_state = SimState()
     simple_p = SimpleP(sim_state=sim_state)
 
@@ -70,7 +69,7 @@ def test_add_polyp() -> None:
     initial_num_polyps = len(simple_p.mesh["vertices"])
 
     # Add a new polyp at a position where there is space
-    new_polyp_position = (0.5, 0.5, 0.5)
+    new_polyp_position = np.array([5, 5, 5], dtype=float)
     simple_p.add_polyp(new_polyp_position)
 
     # Check if the number of polyps has increased

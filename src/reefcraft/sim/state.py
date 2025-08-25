@@ -337,6 +337,9 @@ class SimState:
             logger.info(f"Auto-creating default coral with {DEFAULT_CORAL_MODEL.name} model")
             self.add_coral_with_model(DEFAULT_CORAL_MODEL)
 
+        self.time = 0.0
+        self.last_dt = 0.01
+
     def add_coral(self) -> CoralState:
         """Add another coral state into the system, register its model, and return it.
 

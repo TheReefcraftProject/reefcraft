@@ -25,6 +25,8 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pygfx as gfx
 
+from reefcraft.sim.state import CoralState, SimState
+from reefcraft.ui.school import FishSchool
 from reefcraft.ui.water import WaterParticles
 
 if TYPE_CHECKING:
@@ -208,9 +210,10 @@ class Reef:
 
         self.corals: dict[CoralState, CoralMesh] = {}
 
-        self.water_particles = WaterParticles()
-        self.scene.add(self.water_particles.get_actor())
-        self._advect_counter: int = 0
+        # self.water_particles = WaterParticles()
+        # self.scene.add(self.water_particles.get_actor())
+        self.school = FishSchool()
+        self.scene.add(self.school.get_actor())
 
         # Setup lighting
         self.scene.add(gfx.AmbientLight("#fff", 0.3))
@@ -324,10 +327,8 @@ class Reef:
         """
         # Deprecated direct sync from SimState; RenderBridge now updates meshes via store
         # Keeping water particles visualization for now; throttle when paused
-        if getattr(self.engine, "is_playing", False):
-            self._advect_counter = (self._advect_counter + 1) % 2  # advect every other frame
-            if self._advect_counter == 0:
-                self.water_particles.advect(state.get_fields()["velocity"])
+        if getattr(self.engine, "is_playing", False) and state.water.coral_vertices is not None:
+            self.school.step(state.get_fields()["velocity"], state.time, state.last_dt)
 
         # DEBUG: Uncomment for fluid speed monitoring
         # mean_speed = np.mean(np.linalg.norm(state.velocity_field, axis=-1))

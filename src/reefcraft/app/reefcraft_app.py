@@ -14,7 +14,7 @@ from rendercanvas.auto import loop
 
 from reefcraft.sim.engine import Engine
 from reefcraft.ui.window import Window
-from reefcraft.utils.logger import configure_logging, logger
+from reefcraft.utils.logger import configure_logging
 from reefcraft.utils.paths import get_app_root, set_app_root
 
 

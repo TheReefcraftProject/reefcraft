@@ -96,7 +96,8 @@ class ComputeLBM:
         self.coral_vertices = coral_mesh.vertices
         self.coral_indices = coral_mesh.faces
 
-        self.bc_coral.mesh_vertices = self.coral_vertices
+        if hasattr(self, "bc_coral") and self.bc_coral is not None:
+            self.bc_coral.mesh_vertices = self.coral_vertices
 
         # self.f_0, self.f_1, self.bc_mask, self.missing_mask = self.stepper.prepare_fields()
 
@@ -126,6 +127,16 @@ class ComputeLBM:
 
     def get_field_numpy(self) -> dict:
         """Get water data fields."""
+        if not hasattr(self, "macro") or self.macro is None:
+            # Return default fields if not initialized yet
+            shape = self.grid_shape
+            return {
+                "density": np.ones(shape, dtype=np.float32),
+                "pressure": np.zeros(shape, dtype=np.float32),
+                "velocity": np.zeros((*shape, 3), dtype=np.float32),
+                "velocity_magnitude": np.zeros(shape, dtype=np.float32),
+            }
+
         rho_field = self.grid.create_field(cardinality=1)
         u_field = self.grid.create_field(cardinality=self.velocity_set.d)
 
@@ -150,6 +161,9 @@ class ComputeLBM:
 
     def step(self, dt: float) -> None:
         """Run one iteration of LBM."""
+        if not hasattr(self, "stepper") or self.stepper is None:
+            # No mesh has been set yet, so we can't step the simulation
+            return
         self.f_0, self.f_1 = self.stepper(self.f_0, self.f_1, self.bc_mask, self.missing_mask, self.current_step)
         self.f_0, self.f_1 = self.f_1, self.f_0
         self.current_step += 1

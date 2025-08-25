@@ -4,8 +4,10 @@
 # Licensed under the MIT License. See the LICENSE file for details.
 # -----------------------------------------------------------------------------
 
-"""Simulation Engine."""
+"""Model adapters for the simulation compute graph."""
 
-from .engine import Engine
+from .water_model import WaterModel
 
-__all__ = ["Engine"]
+__all__ = ["WaterModel"]
+
+

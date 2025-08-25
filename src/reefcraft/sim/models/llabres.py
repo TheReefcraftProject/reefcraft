@@ -6,32 +6,44 @@
 
 """Llabres coral growth model based on Llabres Et Al column coral growth."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import numpy as np
 import warp as wp
 
-from reefcraft.sim.state import SimState
+from reefcraft.sim.models.growth_model import GrowthModel
 from reefcraft.utils.logger import logger
 
+if TYPE_CHECKING:
+    from reefcraft.sim.state import CoralState, SimState
 
-class LlabresGrowthModel:
+
+class LlabresGrowthModel(GrowthModel):
     """Class based on Llabres Et Al column coral growth."""
 
-    def __init__(self, sim_state: SimState) -> None:
+    def __init__(self, sim_state: SimState, coral_state: CoralState) -> None:
         """Initialization of single Llabres column coral."""
+        super().__init__(sim_state=sim_state, coral_state=coral_state)
+        self._name = "Llabres"
+        # I/O metadata for discovery
+        self.inputs = {"water.velocity": "Velocity Field"}
+        self.outputs = {"coral.mesh": "Coral Mesh (verts, faces)"}
+        self._store = None
         self.verts, self.faces = self.gen_llabres_seed()
         self.norms = wp.zeros(self.verts.shape[0], dtype=wp.vec3f)
         self.fixed = wp.zeros(self.verts.shape[0], dtype=wp.int32)
         self.num_steps = 0
         self.edge_midpoints = {}
 
+        # Publish initial mesh so renderers have something immediately
+        self.coral_state.set_mesh(self.verts, self.faces)
+
         # Initialize fixed verts
         verts_np = self.verts.numpy()
         fixed_mask = (verts_np[:, 2] <= 0.0).astype(np.int32)
         self.fixed = wp.array(fixed_mask, dtype=wp.int32)
-
-        # Add our new coral to the simulation state
-        self.coral_state = sim_state.add_coral()
-        self.coral_state.set_mesh(self.verts, self.faces)
 
     def gen_llabres_seed(self, radius: float = 1.0, height: float = 0.1) -> tuple[wp.array, wp.array]:
         """Generate a hexagonal mesh to start Llabres coral growth."""
@@ -59,8 +71,8 @@ class LlabresGrowthModel:
 
         return verts_wp, faces_wp
 
-    def step(self, base_thresh: float = 0.47, amount: float = 0.001, dmax: float = 1.0, decay: float = 0.02, floor: float = 0.2) -> bool:
-        """Single step of coral growth and subdivision. Returns boolean of subdivision status to help with resetting rendering buffers."""
+    def _advance_growth(self, base_thresh: float = 0.47, amount: float = 0.001, dmax: float = 1.0, decay: float = 0.02, floor: float = 0.2) -> bool:
+        """Advance coral growth and subdivision once. Returns True if subdivided."""
         self.compute_normals()
 
         wp.launch(grow, dim=self.verts.shape[0], inputs=[self.verts, self.norms, self.fixed, base_thresh, amount])
@@ -104,15 +116,28 @@ class LlabresGrowthModel:
 
     def reset(self) -> None:
         """Reinitialize mesh for simulation restart/reset."""
-        # self.__init__()  # reinit in place, optional cleanup if needed
-        # TODO need to implement this well - now requires a SimState to init so think this through
         logger.error("RESET llabres not implemented")
-        pass
 
-    def update(self, time: float, state: SimState) -> None:
+    def attach_store(self, store) -> None:
+        """Optional injection of a shared DataStore for I/O by key."""
+        self._store = store
+
+    def update(self, dt: float) -> None:
         """Perform one growth step and sync to the SimState."""
-        self.step()
+        if self._store is not None and self._store.has("water.velocity"):
+            _vel = self._store.get("water.velocity")
+            # Potentially influence thresholds or growth here
+
+        # Make growth rate depend on dt via self.substeps handled by graph
+        self._advance_growth(amount=0.003)
         self.coral_state.set_mesh(self.verts, self.faces)
+        if self._store is not None:
+            # Publish under the current coral id if present
+            coral_id = getattr(self.coral_state, "coral_id", 0)
+            self._store.put(f"coral.{coral_id}.mesh", (self.verts, self.faces))
+
+    def step(self, dt: float) -> None:  # noqa: ARG002
+        self.update(dt)
 
     def subdiv(self, edge_midpoints: dict[tuple[int, int], int] | None, edge_thresh: float = 1.0) -> bool:
         """Determine edges and midpoints for subdivision, return boolean of subdiv status."""
@@ -123,13 +148,13 @@ class LlabresGrowthModel:
         faces_np = self.faces.numpy()
 
         new_verts = verts_np.tolist()
-        new_faces = []
+        new_faces: list[list[int]] = []
 
-        M12 = []  # 1 edge splits
-        M13 = []  # 2 edge splits
-        M14 = []  # 3 edge splits
+        M12: list[list[int]] = []  # 1 edge splits
+        M13: list[list[int]] = []  # 2 edge splits
+        M14: list[list[int]] = []  # 3 edge splits
 
-        subdivd = False  # track if subdiv happens so we can rebuild buffers
+        subdivd = False
 
         for f in faces_np:
             i0, i1, i2 = f
@@ -143,25 +168,20 @@ class LlabresGrowthModel:
             split1 = e1 > edge_thresh
             split2 = e2 > edge_thresh
 
-            n_splits = split0 + split1 + split2
-
-            if n_splits < 0 or n_splits > 3:
-                raise RuntimeError(f"Invalid subdivision: triangle has {n_splits} splits")
+            n_splits = int(split0) + int(split1) + int(split2)
 
             if n_splits == 0:
                 new_faces.append([i0, i1, i2])
             else:
                 subdivd = True
                 if n_splits == 1:
-                    # For subdiv_I, order matters: first two entries are the split edge
                     if split0:
                         M12.append([i0, i1, i2])
                     elif split1:
                         M12.append([i1, i2, i0])
-                    else:  # split2
+                    else:
                         M12.append([i2, i0, i1])
                 elif n_splits == 2:
-                    # For subdiv_II, the unsplit edge determines ordering
                     if not split0:
                         M13.append([i0, i1, i2])
                     elif not split1:
@@ -188,18 +208,17 @@ class LlabresGrowthModel:
         self.faces = wp.array(np.array(new_faces, dtype=np.int32), dtype=wp.vec3i)
 
         # Recompute fixed and norms
-        verts_np = np.array(new_verts, dtype=np.float32)
-        fixed_mask = (verts_np[:, 2] <= 0.0).astype(np.int32)
+        verts_np2 = np.array(new_verts, dtype=np.float32)
+        fixed_mask = (verts_np2[:, 2] <= 0.0).astype(np.int32)
         self.fixed = wp.array(fixed_mask, dtype=wp.int32)
         self.norms = wp.zeros(len(new_verts), dtype=wp.vec3f)
 
         return subdivd
 
-    def subdiv_I(self, V: list[list[float]], M12: list[tuple[int, int, int]], edge_midpoints: dict[tuple[int, int], int]) -> np.ndarray:
+    def subdiv_I(self, V: list[list[float]], M12: list[list[int]], edge_midpoints: dict[tuple[int, int], int]) -> np.ndarray:
         """Subdivide single edge of triangle."""
         logger.info("subdiv_I")
-        i1_list = []
-
+        i1_list: list[int] = []
         for i0, i1, _i2 in M12:
             key = tuple(sorted((i0, i1)))
             if key in edge_midpoints:
@@ -209,25 +228,19 @@ class LlabresGrowthModel:
                 mid_idx = len(V)
                 edge_midpoints[key] = mid_idx
                 V.append(midpoint.tolist())
-
             i1_list.append(mid_idx)
-
         i1 = np.array(i1_list, dtype=np.int32)
         M12_np = np.array(M12, dtype=np.int32)
         O1, O2, O3 = M12_np[:, 0], M12_np[:, 1], M12_np[:, 2]
-
         F12 = np.vstack([np.stack([O3, O1, i1], axis=1), np.stack([i1, O2, O3], axis=1)])
-
         return F12
 
-    def subdiv_II(self, V: list[list[float]], M13: list[tuple[int, int, int]], edge_midpoints: dict[tuple[int, int], int]) -> np.ndarray:
+    def subdiv_II(self, V: list[list[float]], M13: list[list[int]], edge_midpoints: dict[tuple[int, int], int]) -> np.ndarray:
         """Subdivide two edges of triangle."""
         logger.info("subdiv_II")
-        i1_list = []
-        i2_list = []
-
+        i1_list: list[int] = []
+        i2_list: list[int] = []
         for i0, i1, i2 in M13:
-            # Midpoint of (i0, i1)
             key1 = tuple(sorted((i0, i1)))
             if key1 in edge_midpoints:
                 m1_idx = edge_midpoints[key1]
@@ -236,8 +249,6 @@ class LlabresGrowthModel:
                 m1_idx = len(V)
                 edge_midpoints[key1] = m1_idx
                 V.append(m1.tolist())
-
-            # Midpoint of (i1, i2)
             key2 = tuple(sorted((i1, i2)))
             if key2 in edge_midpoints:
                 m2_idx = edge_midpoints[key2]
@@ -246,28 +257,22 @@ class LlabresGrowthModel:
                 m2_idx = len(V)
                 edge_midpoints[key2] = m2_idx
                 V.append(m2.tolist())
-
             i1_list.append(m1_idx)
             i2_list.append(m2_idx)
-
         i1 = np.array(i1_list, dtype=np.int32)
         i2 = np.array(i2_list, dtype=np.int32)
         M13_np = np.array(M13, dtype=np.int32)
         O1, O2, O3 = M13_np[:, 0], M13_np[:, 1], M13_np[:, 2]
-
         F13 = np.vstack([np.stack([O1, i1, O3], axis=1), np.stack([i1, i2, O3], axis=1), np.stack([i1, O2, i2], axis=1)])
-
         return F13
 
-    def subdiv_III(self, V: list[list[float]], F: list[tuple[int, int, int]], edge_midpoints: dict[tuple[int, int], int]) -> np.ndarray:
+    def subdiv_III(self, V: list[list[float]], F: list[list[int]], edge_midpoints: dict[tuple[int, int], int]) -> np.ndarray:
         """Subdivide three edges of triangle."""
         logger.info("subdiv_III")
-        i1_list = []
-        i2_list = []
-        i3_list = []
-
-        for idx, (i0, i1, i2) in enumerate(F):
-            # Midpoints
+        i1_list: list[int] = []
+        i2_list: list[int] = []
+        i3_list: list[int] = []
+        for i0, i1, i2 in F:
             k1 = tuple(sorted((i1, i2)))
             k2 = tuple(sorted((i2, i0)))
             k3 = tuple(sorted((i0, i1)))
@@ -275,29 +280,29 @@ class LlabresGrowthModel:
             def get_or_create(key: tuple[int, int], v_start: int, v_end: int) -> int:
                 if key in edge_midpoints:
                     return edge_midpoints[key]
-                else:
-                    m = 0.5 * (np.array(V[v_start]) + np.array(V[v_end]))
-                    idx = len(V)
-                    edge_midpoints[key] = idx
-                    V.append(m.tolist())
-                    return idx
+                m = 0.5 * (np.array(V[v_start]) + np.array(V[v_end]))
+                idx = len(V)
+                edge_midpoints[key] = idx
+                V.append(m.tolist())
+                return idx
 
             m1 = get_or_create(k1, i1, i2)
             m2 = get_or_create(k2, i2, i0)
             m3 = get_or_create(k3, i0, i1)
-
             i1_list.append(m3)
             i2_list.append(m1)
             i3_list.append(m2)
-
         i1 = np.array(i1_list, dtype=np.int32)
         i2 = np.array(i2_list, dtype=np.int32)
         i3 = np.array(i3_list, dtype=np.int32)
-
         F14 = np.vstack(
-            [np.stack([F[:, 0], i3, i2], axis=1), np.stack([F[:, 1], i1, i3], axis=1), np.stack([F[:, 2], i2, i1], axis=1), np.stack([i1, i2, i3], axis=1)]
+            [
+                np.stack([np.array(F)[:, 0], i3, i2], axis=1),
+                np.stack([np.array(F)[:, 1], i1, i3], axis=1),
+                np.stack([np.array(F)[:, 2], i2, i1], axis=1),
+                np.stack([i1, i2, i3], axis=1),
+            ]
         )
-
         return F14
 
 
@@ -307,10 +312,8 @@ def grow(verts: wp.array(dtype=wp.vec3f), norms: wp.array(dtype=wp.vec3f), fixed
     i = wp.tid()
     if fixed[i]:
         return
-
     n = norms[i]
     sigma = n[2] / wp.sqrt(n[0] * n[0] + n[1] * n[1] + 1e-6)
-
     if sigma > thresh:
         verts[i] += n * amount
 
@@ -319,20 +322,15 @@ def grow(verts: wp.array(dtype=wp.vec3f), norms: wp.array(dtype=wp.vec3f), fixed
 def accumulate_normals(verts: wp.array(dtype=wp.vec3f), faces: wp.array(dtype=wp.vec3i), norms: wp.array(dtype=wp.vec3f)) -> None:
     """First step of vertex normals."""
     t = wp.tid()
-
     i0, i1, i2 = faces[t][0], faces[t][1], faces[t][2]
-
     v0 = verts[i0]
     v1 = verts[i1]
     v2 = verts[i2]
-
     e1 = v1 - v0
     e2 = v2 - v0
-
     cross = wp.cross(e1, e2)
     if wp.length(cross) > 1e-8:
         n = wp.normalize(cross)
-
         wp.atomic_add(norms, i0, n)
         wp.atomic_add(norms, i1, n)
         wp.atomic_add(norms, i2, n)

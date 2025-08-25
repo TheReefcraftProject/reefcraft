@@ -4,7 +4,7 @@
 # Licensed under the MIT License. See the LICENSE file for details.
 # -----------------------------------------------------------------------------
 
-"""Simple PORAG inspired growth model using :mod:`trimesh` for mesh handling."""
+"""Simple PORAG-inspired growth model (relocated to sim.models)."""
 
 from __future__ import annotations
 
@@ -12,26 +12,28 @@ import numpy as np
 import trimesh
 import warp as wp
 
-from reefcraft.sim.state import SimState  # noqa: TC001
+from reefcraft.sim.models.growth_model import GrowthModel
+from reefcraft.sim.state import CoralState, SimState
 
 
-class SimpleP:
-    """Coral growth simulation with polyps evenly spaced on a hemisphere surface.
-
-    The mesh is managed internally with :class:`trimesh.Trimesh` for convenient
-    geometric queries while Warp arrays are maintained for GPU kernels and for
-    passing data to other parts of the simulation.
-    """
+class SimplePoragGrowthModel(GrowthModel):
+    """Coral growth simulation with polyps evenly spaced on a hemisphere surface."""
 
     def __init__(
         self,
         sim_state: SimState,
+        coral_state: CoralState,
         grid_shape: tuple[int, int, int] = (100, 100, 100),
         polyp_spacing: float = 0.3,
         max_time_steps: int = 1000,
         resource_concentration: float = 0.5,
     ) -> None:
-        """Initialize the SimpleP coral growth model."""
+        """Initializes the PORAG-inspired growth model."""
+        super().__init__(sim_state=sim_state, coral_state=coral_state)
+        self._name = "PORAG"
+        self.inputs = {"water.velocity": "Velocity Field"}
+        self.outputs = {"coral.mesh": "Coral Mesh (verts, faces)"}
+        self._store = None
         self.grid_shape = grid_shape
         self.polyp_spacing = polyp_spacing
         self.max_time_steps = max_time_steps
@@ -129,7 +131,6 @@ class SimpleP:
         self.coral_state.set_mesh(self.verts_wp, self.indices_wp)
 
     def update_mesh(self, mesh_data: dict) -> None:
-        """Update the mesh with a new set of polyps."""
         self.mesh = mesh_data
         verts_np = mesh_data["vertices"].numpy()
         indices_np = mesh_data["indices"].numpy()
@@ -154,12 +155,10 @@ class SimpleP:
         z_max: float,
         base_index: int,
     ) -> None:
-        """Kernel to update polyp positions based on growth and normal vectors."""
         idx = wp.tid()
         if idx < n and idx != base_index:
             vertex = vertices[idx]
             normal = normals[idx]
-
             z_position = vertex[2]
             resource_at_polyp = resource_concentration * (z_position / z_max)
 

@@ -77,9 +77,16 @@ class WaterModel(Model):
         }
         self.substeps: int | None = None
         self.update_rate_hz: float | None = None
-        self._lbm = ComputeLBM()
+        self._lbm = ComputeLBM(grid_shape=(32, 32, 32), fluid_speed=0.02, Re=3000.0)
         self._pending_coral_mesh: tuple | None = None
         self._store: "DataStore" | None = None
+
+    @property
+    def coral_vertices(self):
+        """Access coral vertices for UI compatibility."""
+        if hasattr(self._lbm, "coral_vertices"):
+            return self._lbm.coral_vertices
+        return None
 
     def set_coral_mesh(self, mesh: tuple) -> None:
         """Provide coral mesh for boundary conditions.

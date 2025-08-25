@@ -407,6 +407,11 @@ class SimState:
         """
         return self._water.get_field_numpy()
 
+    @property
+    def water(self):
+        """Access the water model for UI compatibility."""
+        return self._water
+
     def step(self, dt: float) -> None:
         """Advance all registered models by a single dt via the compute graph.
 

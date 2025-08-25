@@ -379,7 +379,8 @@ class Engine:
             >>> # ... use engine ...
             >>> engine.stop_threaded()  # Clean shutdown
         """
-        self._stop_event.set()
-        if self._thread:
+        if hasattr(self, "_stop_event"):
+            self._stop_event.set()
+        if hasattr(self, "_thread") and self._thread:
             self._thread.join()
             self._thread = None
